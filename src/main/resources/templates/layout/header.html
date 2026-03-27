@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>공통 헤더</title>
+</head>
+<body>
+
+<!--
+    header.html — 공통 헤더 조각 (골드 럭셔리 테마 최종본)
+    =========================================================
+    포함 기능
+    - topbar     : 운영 안내 + 권한별 로그인/로그아웃 메뉴
+    - GNB        : 가로 방향 드롭다운 주 메뉴
+    - 검색창     : 미용실 빠른 검색
+    - 예약하기   : 골드 포인트 버튼
+    - 모바일 메뉴: 서랍(drawer) 방식 슬라이드 메뉴
+
+    권한별 분기
+    - 비로그인   : 로그인 / 회원가입
+    - USER       : 마이페이지 / 로그아웃
+    - DESIGNER   : 마이페이지 / 예약 관리 / 로그아웃
+    - ADMIN      : 관리자 / 로그아웃
+
+    사용법
+    <header th:replace="~{layout/header :: header}"></header>
+-->
+<header th:fragment="header" class="site-header">
+
+    <!-- ==============================================
+         TOPBAR — 최상단 안내줄
+         ============================================== -->
+    <div class="topbar">
+        <div class="topbar__inner">
+
+            <!-- 왼쪽: 플랫폼 소개 + 운영시간 -->
+            <div class="topbar__left">
+                <span>프리미엄 헤어 예약 플랫폼</span>
+                <span class="topbar__divider">|</span>
+                <span>운영시간 09:00 ~ 21:00</span>
+            </div>
+
+            <!-- 오른쪽: 로그인 상태별 분기 메뉴 -->
+            <div class="topbar__right">
+
+                <!--
+                    비로그인 상태
+                    isAnonymous() → 로그인 안 한 사람에게만 보임
+                -->
+                <a th:href="@{/members/login}"
+                   sec:authorize="isAnonymous()">로그인</a>
+                <span class="topbar__sep"
+                      sec:authorize="isAnonymous()"></span>
+                <a th:href="@{/members/signup}"
+                   sec:authorize="isAnonymous()">회원가입</a>
+
+                <!--
+                    로그인 상태 공통
+                    isAuthenticated() → 로그인한 사람에게만 보임
+                -->
+                <a th:href="@{/members/me}"
+                   sec:authorize="isAuthenticated()">마이페이지</a>
+
+                <!--
+                    디자이너 전용
+                    hasRole('DESIGNER') → DESIGNER 권한만 보임
+                -->
+                <span class="topbar__sep"
+                      sec:authorize="hasRole('DESIGNER')"></span>
+                <a th:href="@{/designers/me/reservations}"
+                   sec:authorize="hasRole('DESIGNER')">예약 관리</a>
+
+                <!--
+                    관리자 전용
+                    hasRole('ADMIN') → ADMIN 권한만 보임
+                -->
+                <span class="topbar__sep"
+                      sec:authorize="hasRole('ADMIN')"></span>
+                <a th:href="@{/admin}"
+                   sec:authorize="hasRole('ADMIN')">관리자</a>
+
+                <!--
+                    로그아웃 버튼
+                    Spring Security 는 로그아웃을 반드시 POST 방식으로 처리
+                    GET 으로 하면 CSRF 보안 오류 발생
+                    th:name + th:value → CSRF 토큰 자동 삽입
+                -->
+                <span class="topbar__sep"
+                      sec:authorize="isAuthenticated()"></span>
+                <form th:action="@{/members/logout}"
+                      method="post"
+                      sec:authorize="isAuthenticated()"
+                      style="display:inline;margin:0;padding:0">
+                    <input type="hidden"
+                           th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}">
+                    <button type="submit" class="topbar__logout-btn">
+                        로그아웃
+                    </button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         HEADER MAIN — 로고 + GNB + 검색 + 예약
+         ============================================== -->
+    <div class="header-main">
+        <div class="header-main__inner">
+
+            <!-- ── 로고 영역 ──
+                 나중에 로고 이미지 완성되면 아래 주석 해제하고
+                 .brand-logo__mark 와 .brand-logo__text 블록 삭제
+            -->
+            <div class="brand-area">
+                <a th:href="@{/}" class="brand-logo">
+
+                    <!--
+                        로고 이미지 자리 (완성 후 주석 해제)
+                        <img th:src="@{/images/logo.png}"
+                             alt="HairSalon"
+                             class="brand-logo__img">
+                    -->
+
+                    <!-- 임시 텍스트 로고 — 이미지 완성 전까지 사용 -->
+                    <span class="brand-logo__mark">HS</span>
+                    <span class="brand-logo__text">
+                        <strong>HairSalon</strong>
+                        <small>Premium Booking</small>
+                    </span>
+
+                </a>
+            </div>
+
+            <!-- ── GNB (Global Navigation Bar) — 가로 주 메뉴 ──
+                 flex-direction: row 로 가로 배치
+                 드롭다운은 CSS hover 로 동작
+                 aria-label: 스크린 리더 접근성용
+            -->
+            <nav class="gnb" aria-label="주 메뉴">
+                <ul class="gnb__menu">
+
+                    <!-- 홈 -->
+                    <li class="gnb__item">
+                        <a th:href="@{/}" class="gnb__link">홈</a>
+                    </li>
+
+                    <!-- 미용실 드롭다운 — 3개 그룹 -->
+                    <li class="gnb__item has-dropdown">
+                        <a href="#" class="gnb__link">
+                            미용실 <span class="gnb__arrow">▾</span>
+                        </a>
+                        <div class="dropdown-panel">
+                            <div class="dropdown-panel__group">
+                                <h4>탐색</h4>
+                                <a th:href="@{/salons}">미용실 전체 보기</a>
+                                <a th:href="@{/salons/nearby}">가까운 미용실 찾기</a>
+                                <a th:href="@{/salons/search}">미용실 검색</a>
+                                <a th:href="@{/salons/branches}">지점 안내</a>
+                            </div>
+                            <div class="dropdown-panel__group">
+                                <h4>비교 / 추천</h4>
+                                <a th:href="@{/salons/price-compare}">가격 비교</a>
+                                <a th:href="@{/salons/recommend-by-service}">시술별 추천 미용실</a>
+                                <a th:href="@{/salons/top-rated}">평점 4점↑ 미용실</a>
+                            </div>
+                            <div class="dropdown-panel__group">
+                                <h4>외부 검색</h4>
+                                <a th:href="@{/salons/kakao-search}">카카오 미용실 검색</a>
+                                <a th:href="@{/salons/map}">지도에서 보기</a>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- 디자이너 드롭다운 -->
+                    <li class="gnb__item has-dropdown">
+                        <a href="#" class="gnb__link">
+                            디자이너 <span class="gnb__arrow">▾</span>
+                        </a>
+                        <div class="dropdown-panel dropdown-panel--small">
+                            <div class="dropdown-panel__group">
+                                <h4>디자이너</h4>
+                                <a th:href="@{/designers}">디자이너 전체 보기</a>
+                                <a th:href="@{/designers/ranking}">인기 디자이너</a>
+                                <a th:href="@{/designers/new}">신규 디자이너</a>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- 시술 드롭다운 -->
+                    <li class="gnb__item has-dropdown">
+                        <a href="#" class="gnb__link">
+                            시술 <span class="gnb__arrow">▾</span>
+                        </a>
+                        <div class="dropdown-panel dropdown-panel--small">
+                            <div class="dropdown-panel__group">
+                                <h4>시술 안내</h4>
+                                <a th:href="@{/salon-services}">시술 안내</a>
+                                <a th:href="@{/salon-services/popular}">인기 시술</a>
+                                <a th:href="@{/salon-services/trend}">요즘 많이 찾는 시술</a>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- 리뷰 -->
+                    <li class="gnb__item">
+                        <a th:href="@{/reviews}" class="gnb__link">리뷰</a>
+                    </li>
+
+                    <!-- 고객센터 드롭다운 -->
+                    <li class="gnb__item has-dropdown">
+                        <a href="#" class="gnb__link">
+                            고객센터 <span class="gnb__arrow">▾</span>
+                        </a>
+                        <div class="dropdown-panel dropdown-panel--small">
+                            <div class="dropdown-panel__group">
+                                <h4>게시판</h4>
+                                <a th:href="@{/boards/notices}">공지사항</a>
+                                <a th:href="@{/boards/qna}">문의게시판</a>
+                                <a th:href="@{/boards/qna/new}"
+                                   sec:authorize="isAuthenticated()">문의 작성</a>
+                            </div>
+                        </div>
+                    </li>
+
+                </ul>
+            </nav>
+
+            <!-- ── 오른쪽 기능 영역 ── -->
+            <div class="header-actions">
+
+                <!--
+                    빠른 검색폼
+                    GET 방식 — keyword 파라미터로 검색어 전송
+                    for + sr-only: 접근성용 숨김 라벨
+                -->
+                <form th:action="@{/salons/search}"
+                      method="get"
+                      class="quick-search">
+                    <label for="globalKeyword" class="sr-only">미용실 검색</label>
+                    <input type="text"
+                           id="globalKeyword"
+                           name="keyword"
+                           class="quick-search__input"
+                           placeholder="미용실명, 지역, 시술명 검색">
+                    <button type="submit" class="quick-search__button">
+                        검색
+                    </button>
+                </form>
+
+                <!--
+                    예약하기 버튼 — 골드 포인트
+                    로그인 여부 상관없이 클릭 가능
+                    (미로그인이면 Security 가 로그인 페이지로 리다이렉트)
+                -->
+                <a th:href="@{/reservations/new}" class="reserve-button">
+                    예약하기
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         모바일 헤더 (1024px 이하에서만 보임)
+         ============================================== -->
+    <div class="mobile-header">
+        <a th:href="@{/}" class="mobile-header__logo">HairSalon</a>
+        <button type="button"
+                class="mobile-menu-button"
+                id="mobileMenuButton"
+                aria-label="모바일 메뉴 열기">☰</button>
+    </div>
+
+    <!-- ==============================================
+         모바일 서랍 메뉴
+         common.js 에서 is-open 클래스를 붙였다 뗐다 함
+         ============================================== -->
+    <div class="mobile-drawer" id="mobileDrawer">
+        <div class="mobile-drawer__header">
+            <strong>메뉴</strong>
+            <button type="button"
+                    class="mobile-drawer__close"
+                    id="mobileMenuCloseButton"
+                    aria-label="모바일 메뉴 닫기">✕</button>
+        </div>
+        <nav class="mobile-nav">
+            <a th:href="@{/}">홈</a>
+            <a th:href="@{/salons}">미용실 전체</a>
+            <a th:href="@{/salons/nearby}">가까운 미용실 찾기</a>
+            <a th:href="@{/salons/price-compare}">가격 비교</a>
+            <a th:href="@{/salons/top-rated}">평점 4점↑ 미용실</a>
+            <a th:href="@{/salons/kakao-search}">카카오 미용실 검색</a>
+            <a th:href="@{/designers}">디자이너</a>
+            <a th:href="@{/salon-services}">시술 안내</a>
+            <a th:href="@{/reviews}">리뷰</a>
+            <a th:href="@{/boards/notices}">공지사항</a>
+            <a th:href="@{/boards/qna}">문의게시판</a>
+            <a th:href="@{/reservations/new}" class="mobile-reserve-btn">
+                예약하기
+            </a>
+        </nav>
+    </div>
+
+    <!-- 모바일 메뉴 열릴 때 배경 어둡게 처리 -->
+    <div class="mobile-backdrop" id="mobileBackdrop"></div>
+
+</header>
+
+</body>
+</html>
