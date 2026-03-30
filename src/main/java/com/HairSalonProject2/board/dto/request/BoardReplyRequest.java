@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * BoardReplyRequest — 답글 작성 요청 DTO
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
  * POST /boards/qna/{boardId}/reply
  */
 @Getter
+@Setter
 @NoArgsConstructor
 public class BoardReplyRequest {
 

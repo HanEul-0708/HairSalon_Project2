@@ -162,8 +162,24 @@ public class BoardDetailResponse {
         /** 첨부파일 번호 */
         private Long fileId;
 
-        /** 원본 파일명 (화면에 표시) */
+        /**
+         * 원본 파일명 (화면에 표시)
+         * th:text="${file.originalName}" 으로 사용
+         */
         private String originalName;
+
+        /**
+         * HTML에서 file.originalFilename 으로 접근하는 용도
+         * notice-detail.html / qna-detail.html 에서 사용
+         */
+        private String originalFilename;
+
+        /**
+         * 저장된 파일명 (UUID)
+         * 다운로드 URL 생성에 사용
+         * th:href 에서 file.storedFilename 으로 접근
+         */
+        private String storedFilename;
 
         /** 파일 크기 (예: "1.2 MB") */
         private String fileSize;
@@ -173,13 +189,18 @@ public class BoardDetailResponse {
 
         /**
          * BoardFile Entity → FileInfo 변환
+         *
+         * @param file BoardFile Entity
+         * @return FileInfo
          */
         public static FileInfo from(BoardFile file) {
             FileInfo info = new FileInfo();
-            info.fileId        = file.getFileId();
-            info.originalName  = file.getOriginalName();
-            info.fileSize      = file.getFileSizeFormatted();
-            info.fileExtension = file.getFileExtension();
+            info.fileId           = file.getFileId();
+            info.originalName     = file.getOriginalName();
+            info.originalFilename = file.getOriginalName();  // HTML 접근용
+            info.storedFilename   = file.getSavedName();     // 다운로드 URL용
+            info.fileSize         = file.getFileSizeFormatted();
+            info.fileExtension    = file.getFileExtension();
             return info;
         }
     }

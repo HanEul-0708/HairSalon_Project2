@@ -1,6 +1,7 @@
 package com.HairSalonProject2.board.controller;
 
 import com.HairSalonProject2.board.dto.request.BoardCreateRequest;
+import com.HairSalonProject2.board.dto.request.BoardReplyRequest;
 import com.HairSalonProject2.board.dto.request.BoardSearchRequest;
 import com.HairSalonProject2.board.dto.request.BoardUpdateRequest;
 import com.HairSalonProject2.board.dto.response.BoardDetailResponse;
@@ -59,25 +60,13 @@ public class BoardController {
      */
     @GetMapping("/notices")
     public String noticeList(BoardSearchRequest request, Model model) {
-        /* 타입 강제 설정 */
-        List<BoardResponse> boardList;
-
-        if (request.hasKeyword()) {
-            /* 검색어 있으면 검색 */
-            boardList = boardService.search(
-                    new BoardSearchRequest() {{
-                        // type 은 inner class 에서 직접 설정 불가
-                        // → Service 에서 처리하도록 별도 메서드 사용
-                    }}
-            );
-        } else {
-            boardList = boardService.getNoticeList();
-        }
-
+        // type 을 명시하여 서비스에 전달 (공지사항)
+        String keyword = request.getKeyword();
+        List<BoardResponse> boardList = boardService.searchBoards("NOTICE", keyword);
         model.addAttribute("boardList", boardList);
-        model.addAttribute("keyword", request.getKeyword());
+        model.addAttribute("keyword", keyword);
         model.addAttribute("boardType", "NOTICE");
-        return "board/notice-list"; /* templates/board/notice-list.html */
+        return "board/notice-list";
     }
 
     /**
@@ -106,9 +95,11 @@ public class BoardController {
      */
     @GetMapping("/qna")
     public String qnaList(BoardSearchRequest request, Model model) {
-        List<BoardResponse> boardList = boardService.getQnaList();
+        // QnA 목록 검색 처리
+        String keyword = request.getKeyword();
+        List<BoardResponse> boardList = boardService.searchBoards("QNA", keyword);
         model.addAttribute("boardList", boardList);
-        model.addAttribute("keyword", request.getKeyword());
+        model.addAttribute("keyword", keyword);
         model.addAttribute("boardType", "QNA");
         return "board/qna-list";
     }
@@ -164,6 +155,50 @@ public class BoardController {
 
         /* 게시글 저장 후 상세 페이지로 이동 */
         Long boardId = boardService.create(request, memberId);
+        return "redirect:/boards/qna/" + boardId;
+    }
+
+    /**
+     * QnA 답글 저장 처리
+     * POST /boards/qna/{boardId}/reply
+     *
+     * 관리자가 QnA 게시글에 답글을 달 때 사용한다. 원글의 boardId는 URL 경로로
+     * 전달되며, BoardReplyRequest의 parentId에도 동일한 값이 설정되어야 한다.
+     * 제목이 비어 있으면 Service에서 자동으로 "Re: 원글 제목" 형태로 생성한다.
+     *
+     * @param boardId 원글 게시글 번호
+     * @param request 답글 작성 요청 DTO
+     * @param bindingResult 유효성 검사 결과
+     * @param userDetails 로그인 사용자 정보
+     * @param model Thymeleaf 모델
+     * @return 작성 후 원글 상세 페이지로 리다이렉트
+     */
+    @PostMapping("/qna/{boardId}/reply")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String replyQna(@PathVariable Long boardId,
+                           @Valid BoardReplyRequest request,
+                           BindingResult bindingResult,
+                           @AuthenticationPrincipal UserDetails userDetails,
+                           Model model) {
+
+        // parentId가 URL과 일치하는지 확인 (안 맞으면 강제로 맞춤)
+        if (!boardId.equals(request.getParentId())) {
+            // BindingResult에 에러 추가 가능하지만 간단히 상위 페이지로 이동
+            return "redirect:/boards/qna/" + boardId;
+        }
+
+        // 유효성 검사 실패 시 원글 상세 페이지로 이동 (에러 처리 단순화)
+        if (bindingResult.hasErrors()) {
+            return "redirect:/boards/qna/" + boardId + "?error=validation";
+        }
+
+        // 로그인 사용자 ID (관리자)
+        String memberId = userDetails.getUsername();
+
+        // 답글 저장
+        boardService.createReply(request, memberId);
+
+        // 저장 후 원글 상세 페이지로 이동
         return "redirect:/boards/qna/" + boardId;
     }
 

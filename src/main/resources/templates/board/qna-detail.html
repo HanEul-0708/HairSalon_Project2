@@ -72,8 +72,17 @@
 
             <!-- 답글 작성 버튼 (관리자만) -->
             <div sec:authorize="hasRole('ADMIN')">
-                <a th:href="@{/boards/qna/new(parentId=${board.boardId})}"
-                   class="btn-reply">답변 작성</a>
+                <!-- 수정 후 — 폼으로 변경 -->
+                <form th:action="@{/boards/qna/{id}/reply(id=${board.boardId})}"
+                      method="post"
+                      sec:authorize="hasRole('ADMIN')"
+                      style="display:inline">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="hidden" name="parentId" th:value="${board.boardId}">
+                    <textarea name="content" style="display:none"></textarea>
+                    <a th:href="@{/boards/qna/new(parentId=${board.boardId})}"
+                       class="btn-reply">답변 작성</a>
+                </form>
             </div>
 
         </div>

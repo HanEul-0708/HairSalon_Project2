@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * BoardCreateRequest — 게시글 작성 요청 DTO
@@ -16,6 +17,7 @@ import lombok.NoArgsConstructor;
  * POST /boards/notices  → 공지사항 작성 (ADMIN 전용)
  */
 @Getter
+@Setter
 @NoArgsConstructor
 public class BoardCreateRequest {
 
@@ -48,6 +50,7 @@ public class BoardCreateRequest {
      * 부모 게시글 ID (답글인 경우)
      * 원글 작성 시 null
      * 답글 작성 시 원글의 boardId
+     * @Setter 가 있어야 폼 hidden 값이 바인딩됨
      */
     private Long parentId;
 }
