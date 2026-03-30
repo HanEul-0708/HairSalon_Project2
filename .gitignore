@@ -59,3 +59,6 @@ uploads/
 
 ### Generated files ###
 *.class
+
+# 파일 업로드 폴더 (각자 로컬에서 생성, GitHub 제외)
+/upload/

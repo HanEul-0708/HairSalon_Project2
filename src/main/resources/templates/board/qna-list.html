@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/layout}">
+
+<!--
+  qna-list.html — 문의게시판 목록 페이지
+  =====================================================
+  boardList → List<BoardResponse> 게시글 목록
+  keyword   → 검색어 (없으면 null)
+-->
+
+<head>
+    <th:block layout:fragment="pageTitle">
+        <title>문의게시판 | HairSalon</title>
+    </th:block>
+    <th:block layout:fragment="pageCss">
+        <link rel="stylesheet" th:href="@{/css/board.css}">
+    </th:block>
+</head>
+
+<body>
+<div layout:fragment="content">
+
+    <div class="board-wrap">
+
+        <!-- 페이지 타이틀 -->
+        <div class="board-header">
+            <h2 class="board-title">문의게시판</h2>
+            <p class="board-subtitle">궁금한 점을 남겨주시면 빠르게 답변드리겠습니다.</p>
+        </div>
+
+        <!-- 검색 영역 -->
+        <form class="board-search-form" th:action="@{/boards/qna}" method="get">
+            <input type="text"
+                   class="board-search-input"
+                   name="keyword"
+                   th:value="${keyword}"
+                   placeholder="검색어를 입력하세요">
+            <button type="submit" class="board-search-btn">검색</button>
+        </form>
+
+        <!-- 게시글 목록 테이블 -->
+        <table class="board-table">
+            <thead>
+            <tr>
+                <th class="col-num">번호</th>
+                <th class="col-title">제목</th>
+                <th class="col-writer">작성자</th>
+                <th class="col-date">작성일</th>
+                <th class="col-view">조회수</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- 게시글이 없을 때 -->
+            <tr th:if="${#lists.isEmpty(boardList)}">
+                <td colspan="5" class="board-empty">등록된 문의글이 없습니다.</td>
+            </tr>
+
+            <!-- 게시글 목록 반복 출력 -->
+            <tr th:each="board : ${boardList}"
+                th:onclick="|location.href='@{/boards/qna/{id}(id=${board.boardId})}'|"
+                class="board-row">
+                <td th:text="${board.boardId}"></td>
+                <td class="board-row-title">
+                    <span th:text="${board.title}"></span>
+                    <!-- 답글 개수 표시 -->
+                    <span class="board-reply-count"
+                          th:if="${board.replyCount > 0}"
+                          th:text="'[' + ${board.replyCount} + ']'">
+                        </span>
+                </td>
+                <td th:text="${board.memberId}"></td>
+                <td th:text="${#temporals.format(board.createdAt, 'yyyy.MM.dd')}"></td>
+                <td th:text="${board.viewCount}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <!-- 로그인한 사용자만 작성 버튼 표시 -->
+        <div class="board-btn-wrap">
+            <a th:href="@{/boards/qna/new}"
+               sec:authorize="isAuthenticated()"
+               class="btn-write">문의 작성</a>
+        </div>
+
+    </div>
+
+</div>
+
+<th:block layout:fragment="pageJs">
+    <script th:src="@{/js/board.js}"></script>
+</th:block>
+
+</body>
+</html>

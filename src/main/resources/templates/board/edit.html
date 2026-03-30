@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/layout}">
+
+<!--
+  edit.html — 게시글 수정 페이지
+  =====================================================
+  board → BoardDetailResponse 객체 (기존 내용 채우기용)
+  공지사항 / QnA 둘 다 이 파일 하나로 처리
+-->
+
+<head>
+    <th:block layout:fragment="pageTitle">
+        <title>글 수정 | HairSalon</title>
+    </th:block>
+    <th:block layout:fragment="pageCss">
+        <link rel="stylesheet" th:href="@{/css/board.css}">
+        <!-- 썸머노트 CSS (CDN) -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.css">
+    </th:block>
+</head>
+
+<body>
+<div layout:fragment="content">
+
+    <div class="board-wrap">
+
+        <!-- 페이지 타이틀 -->
+        <div class="board-header">
+            <h2 class="board-title"
+                th:text="${board.type == 'NOTICE'} ? '공지사항 수정' : '문의 수정'"></h2>
+        </div>
+
+        <!-- 수정 폼 -->
+        <form class="board-write-form"
+              th:action="'/boards/' + ${board.boardId} + '/edit'"
+              method="post"
+              enctype="multipart/form-data">
+
+            <!-- CSRF 토큰 (Spring Security 필수) -->
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <!-- 제목 입력 (기존 제목 미리 채워짐) -->
+            <div class="form-group">
+                <label for="title" class="form-label">제목</label>
+                <input type="text"
+                       id="title"
+                       name="title"
+                       class="form-control board-input-title"
+                       th:value="${board.title}"
+                       placeholder="제목을 입력하세요"
+                       maxlength="200"
+                       required>
+            </div>
+
+            <!-- 본문 입력 (썸머노트 에디터 — 기존 내용 미리 채워짐) -->
+            <div class="form-group">
+                <label for="content" class="form-label">내용</label>
+                <!-- th:utext → 기존 HTML 내용을 에디터 안에 그대로 표시 -->
+                <textarea id="content"
+                          name="content"
+                          class="form-control"
+                          rows="10"
+                          th:utext="${board.content}">
+                </textarea>
+            </div>
+
+            <!-- 기존 첨부파일 목록 -->
+            <div class="form-group" th:if="${not #lists.isEmpty(board.files)}">
+                <label class="form-label">기존 첨부파일</label>
+                <ul class="board-existing-files">
+                    <li th:each="file : ${board.files}">
+                        <span th:text="${file.originalFilename}"></span>
+                        <!-- 개별 파일 삭제 체크박스 -->
+                        <label>
+                            <input type="checkbox"
+                                   name="deleteFileIds"
+                                   th:value="${file.fileId}">
+                            삭제
+                        </label>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 새 첨부파일 추가 -->
+            <div class="form-group">
+                <label class="form-label">첨부파일 추가</label>
+                <input type="file"
+                       name="files"
+                       class="form-control"
+                       multiple>
+                <small class="form-text">파일은 최대 10MB, 여러 개 선택 가능합니다.</small>
+            </div>
+
+            <!-- 버튼 영역 -->
+            <div class="board-btn-wrap">
+                <button type="button"
+                        class="btn-cancel"
+                        onclick="history.back()">취소</button>
+                <button type="submit"
+                        class="btn-submit"
+                        id="submitBtn">수정 완료</button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<th:block layout:fragment="pageJs">
+    <!-- 썸머노트 JS (CDN) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/lang/summernote-ko-KR.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            // 썸머노트 에디터 초기화
+            // th:utext 로 채워진 기존 내용이 에디터 안에 자동으로 표시됨
+            $('#content').summernote({
+                lang: 'ko-KR',
+                height: 400,
+                minHeight: 200,
+                maxHeight: 600,
+                placeholder: '내용을 입력하세요.',
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                    ['font', ['fontsize', 'color', 'highlight']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['picture', 'link']],
+                    ['view', ['codeview']]
+                ],
+                callbacks: {
+                    onImageUpload: function (files) {
+                        uploadEditorImage(files[0]);
+                    }
+                }
+            });
+
+            // 수정 완료 버튼 클릭 시 유효성 검사
+            $('#submitBtn').on('click', function () {
+                const content = $('#content').summernote('code');
+                if ($('#title').val().trim() === '') {
+                    alert('제목을 입력해주세요.');
+                    return false;
+                }
+                if (content.trim() === '' || content === '<p><br></p>') {
+                    alert('내용을 입력해주세요.');
+                    return false;
+                }
+            });
+        });
+
+        // 썸머노트 이미지 업로드 함수 (write.html 과 동일)
+        function uploadEditorImage(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const csrfToken = document.querySelector('input[name="_csrf"]').value;
+
+            fetch('/files/images', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    $('#content').summernote('insertImage', data.url);
+                })
+                .catch(error => {
+                    alert('이미지 업로드에 실패했습니다.');
+                    console.error('이미지 업로드 오류:', error);
+                });
+        }
+    </script>
+
+    <script th:src="@{/js/board.js}"></script>
+</th:block>
+
+</body>
+</html>
