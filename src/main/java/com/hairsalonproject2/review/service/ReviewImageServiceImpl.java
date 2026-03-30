@@ -1,0 +1,97 @@
+package com.hairsalonproject2.review.service;
+
+import com.hairsalonproject2.review.dto.ReviewImageResponse;
+import com.hairsalonproject2.review.entity.Review;
+import com.hairsalonproject2.review.entity.ReviewImage;
+import com.hairsalonproject2.review.repository.ReviewImageRepository;
+import com.hairsalonproject2.review.repository.ReviewRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+/**
+ * ReviewImageServiceImpl
+ *
+ * 리뷰 이미지 서비스 구현체
+ */
+@Service
+@RequiredArgsConstructor
+public class ReviewImageServiceImpl implements ReviewImageService {
+
+    /**
+     * 리뷰 조회용 Repository
+     */
+    private final ReviewRepository reviewRepository;
+
+    /**
+     * 리뷰 이미지 DB 접근 Repository
+     */
+    private final ReviewImageRepository reviewImageRepository;
+
+    /**
+     * 파일 저장 서비스
+     */
+    private final FileStorageService fileStorageService;
+
+    /**
+     * 리뷰 이미지 업로드
+     */
+    @Override
+    public ReviewImageResponse uploadReviewImage(Integer reviewId, MultipartFile file, Integer sortOrder) {
+
+        // 1. 리뷰 존재 여부 확인
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("리뷰가 존재하지 않습니다."));
+
+        // 2. 파일 저장
+        String imageUrl = fileStorageService.storeFile(file);
+
+        // 3. ReviewImage 엔티티 생성
+        ReviewImage reviewImage = ReviewImage.builder()
+                .review(review)
+                .imageUrl(imageUrl)
+                .sortOrder(sortOrder)
+                .build();
+
+        // 4. 양방향 연관관계 유지
+        review.addReviewImage(reviewImage);
+
+        // 5. DB 저장
+        ReviewImage savedImage = reviewImageRepository.save(reviewImage);
+
+        // 6. DTO 반환
+        return new ReviewImageResponse(
+                savedImage.getImageId(),
+                savedImage.getImageUrl(),
+                savedImage.getSortOrder()
+        );
+    }
+
+    /**
+     * 특정 리뷰의 이미지 목록 조회
+     */
+    @Override
+    public List<ReviewImageResponse> getImagesByReview(Integer reviewId) {
+        return reviewImageRepository.findByReview_ReviewId(reviewId).stream()
+                .map(image -> new ReviewImageResponse(
+                        image.getImageId(),
+                        image.getImageUrl(),
+                        image.getSortOrder()
+                ))
+                .toList();
+    }
+
+    /**
+     * 리뷰 이미지 삭제
+     */
+    @Override
+    public void deleteImage(Integer imageId) {
+
+        ReviewImage reviewImage = reviewImageRepository.findById(imageId)
+                .orElseThrow(() -> new IllegalArgumentException("삭제할 이미지가 없습니다."));
+
+        reviewImageRepository.delete(reviewImage);
+    }
+}

@@ -1,0 +1,52 @@
+package com.hairsalonproject2.review.dto;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * ReviewCreateRequest
+ *
+ * 리뷰 작성 요청 DTO
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+public class ReviewCreateRequest {
+
+    /**
+     * 예약 ID
+     */
+    @NotNull(message = "예약 ID는 필수입니다.")
+    private Integer reservationId;
+
+    /**
+     * 회원 ID
+     */
+    @NotBlank(message = "회원 ID는 필수입니다.")
+    private String memberId;
+
+    /**
+     * 디자이너 ID
+     */
+    @NotNull(message = "디자이너 ID는 필수입니다.")
+    private Integer designerId;
+
+    /**
+     * 평점
+     */
+    @NotNull(message = "평점은 필수입니다.")
+    @Min(value = 1, message = "평점은 1 이상이어야 합니다.")
+    @Max(value = 5, message = "평점은 5 이하여야 합니다.")
+    private Byte rating;
+
+    /**
+     * 리뷰 내용
+     */
+    @NotBlank(message = "리뷰 내용은 필수입니다.")
+    private String content;
+}
