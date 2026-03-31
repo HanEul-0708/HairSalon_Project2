@@ -44,13 +44,15 @@
 
 <h3>권한 변경</h3>
 <form th:action="@{/admin/members/{memberId}/role(memberId=${member.memberId})}" method="post">
-    <select name="role">
-        <option th:each="role : ${roles}"
-                th:value="${role}"
-                th:text="${role}"
-                th:selected="${role == member.role}">
-        </option>
-    </select>
+    <label>
+        <select name="role">
+            <option th:each="role : ${roles}"
+                    th:value="${role}"
+                    th:text="${role}"
+                    th:selected="${role == member.role}">
+            </option>
+        </select>
+    </label>
     <button type="submit">권한 변경</button>
 </form>
 

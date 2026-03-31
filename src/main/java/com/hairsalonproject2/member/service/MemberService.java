@@ -17,15 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * 회원 서비스
- *
- * 담당 범위
- * 1. 회원가입
- * 2. 내 정보 조회
- * 3. 내 정보 수정
- * 4. 비밀번호 변경
- * 5. 관리자 회원 목록/삭제/권한 변경
+/*
+    회원 서비스
+
+    담당 범위
+    1. 회원가입
+    2. 내 정보 조회
+    3. 내 정보 수정
+    4. 비밀번호 변경
+    5. 관리자 회원 목록/삭제/권한 변경
  */
 @Service
 @RequiredArgsConstructor
