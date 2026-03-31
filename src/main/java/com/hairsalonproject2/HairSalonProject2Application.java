@@ -9,5 +9,4 @@ public class HairSalonProject2Application {
 	public static void main(String[] args) {
 		SpringApplication.run(HairSalonProject2Application.class, args);
 	}
-
 }
