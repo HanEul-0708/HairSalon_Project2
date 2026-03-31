@@ -2,6 +2,7 @@ package com.hairsalonproject2.reservation.service;
 
 import com.hairsalonproject2.reservation.dto.ReservationCreateRequest;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
+import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
 
 import java.util.List;
 
@@ -52,4 +53,12 @@ public interface ReservationService {
      * 예약 취소
      */
     void cancelReservation(Integer reservationId);
+
+    /**
+     * 예약 상태 변경
+     *
+     * reservationId로 예약을 찾은 뒤
+     * 요청으로 받은 상태값으로 변경한다.
+     */
+    ReservationResponse updateReservationStatus(Integer reservationId, ReservationStatusUpdateRequest request);
 }

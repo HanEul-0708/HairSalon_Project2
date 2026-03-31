@@ -7,6 +7,7 @@ import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.dto.ReviewUpdateRequest;
 import com.hairsalonproject2.review.dto.SalonRankingResponse;
 import com.hairsalonproject2.review.service.ReviewService;
+import com.hairsalonproject2.review.dto.ReviewDetailResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -116,5 +117,15 @@ public class ReviewController {
     @GetMapping("/salon/top3")
     public List<SalonRankingResponse> getTopSalons() {
         return reviewService.getTopSalons();
+    }
+
+    /**
+     * 리뷰 상세 조회
+     *
+     * 리뷰 기본 정보 + 이미지 목록 함께 반환
+     */
+    @GetMapping("/{reviewId}/detail")
+    public ReviewDetailResponse getReviewDetail(@PathVariable Integer reviewId) {
+        return reviewService.getReviewDetail(reviewId);
     }
 }

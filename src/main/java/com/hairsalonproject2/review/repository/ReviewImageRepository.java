@@ -16,4 +16,5 @@ public interface ReviewImageRepository extends JpaRepository<ReviewImage, Intege
      * 특정 리뷰에 연결된 이미지 목록 조회
      */
     List<ReviewImage> findByReview_ReviewId(Integer reviewId);
+    void deleteByReview_ReviewId(Integer reviewId);
 }

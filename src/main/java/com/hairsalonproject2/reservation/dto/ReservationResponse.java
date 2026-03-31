@@ -49,9 +49,19 @@ public class ReservationResponse {
     private Integer designerId;
 
     /**
+     * 디자이너 이름
+     */
+    private String designerName;
+
+    /**
      * 시술 ID
      */
     private Integer salonServiceId;
+
+    /**
+     * 시술 이름
+     */
+    private String serviceName;
 
     /**
      * 예약 날짜

@@ -6,6 +6,7 @@ import com.hairsalonproject2.review.dto.ReviewCreateRequest;
 import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.dto.ReviewUpdateRequest;
 import com.hairsalonproject2.review.dto.SalonRankingResponse;
+import com.hairsalonproject2.review.dto.ReviewDetailResponse;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -33,4 +34,6 @@ public interface ReviewService {
     List<MonthlyReviewStatResponse> getMonthlyReviewStatsByPeriod(LocalDate startDate, LocalDate endDate);
 
     List<SalonRankingResponse> getTopSalons();
+
+    ReviewDetailResponse getReviewDetail(Integer reviewId);
 }

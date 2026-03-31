@@ -13,13 +13,17 @@ import com.hairsalonproject2.reservation.repository.ReservationRepository;
 import com.hairsalonproject2.reservation.repository.ReservationSlotRepository;
 import com.hairsalonproject2.salonservice.entity.SalonService;
 import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
+import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ReservationServiceImpl implements ReservationService {
 
     /**
@@ -67,6 +71,7 @@ public class ReservationServiceImpl implements ReservationService {
      * 3. 리뷰 쪽 DTO 구조와 통일하기 위해
      */
     @Override
+    @Transactional
     public ReservationResponse createReservation(ReservationCreateRequest request) {
 
         /**
@@ -212,12 +217,22 @@ public class ReservationServiceImpl implements ReservationService {
      * - 또는 중복 예약 체크에서 CANCELLED는 제외할지
      */
     @Override
+    @Transactional
     public void cancelReservation(Integer reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 예약이 존재하지 않습니다."));
 
+        // 이미 취소된 예약이면 다시 취소하지 않도록 막기
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            throw new IllegalArgumentException("이미 취소된 예약입니다.");
+        }
+
+        // 1. 예약 상태를 취소로 변경
         reservation.changeStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
+
+        // 2. 예약에 연결된 슬롯 삭제
+        reservationSlotRepository.deleteByReservation_ReservationId(reservationId);
     }
 
     /**
@@ -229,17 +244,66 @@ public class ReservationServiceImpl implements ReservationService {
      * - API 응답 구조를 깔끔하게 유지하기 위해
      */
     private ReservationResponse toResponse(Reservation reservation) {
+
         return ReservationResponse.builder()
                 .reservationId(reservation.getReservationId())
                 .memberId(reservation.getMember().getMemberId())
                 .designerId(reservation.getDesigner().getDesignerId())
+                .designerName(reservation.getDesigner().getName())
                 .salonServiceId(reservation.getSalonService().getServiceId())
+                .serviceName(reservation.getSalonService().getName())
                 .reservationDate(reservation.getReservationDate())
                 .reservationTime(reservation.getReservationTime())
                 .status(reservation.getStatus())
                 .totalPrice(reservation.getTotalPrice())
                 .createdAt(reservation.getCreatedAt())
                 .updatedAt(reservation.getUpdatedAt())
+
                 .build();
+    }
+
+    /**
+     * 예약 상태 변경
+     *
+     * 예:
+     * RESERVED -> COMPLETED
+     * RESERVED -> CANCELLED
+     *
+     * 처리 순서
+     * 1. reservationId로 예약 조회
+     * 2. 요청 DTO에서 변경할 상태값 확인
+     * 3. 예약 상태 변경
+     * 4. 저장 후 응답 DTO 반환
+     */
+    @Override
+    @Transactional
+    public ReservationResponse updateReservationStatus(
+            Integer reservationId,
+            ReservationStatusUpdateRequest request
+    ) {
+        /**
+         * 예약 조회
+         * 없으면 예외 발생
+         */
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 예약이 존재하지 않습니다."));
+
+        /**
+         * 상태 변경
+         *
+         * Reservation 엔티티 안에 있는
+         * changeStatus() 메서드를 사용한다.
+         */
+        reservation.changeStatus(request.getStatus());
+
+        /**
+         * 변경된 예약 저장
+         */
+        Reservation updatedReservation = reservationRepository.save(reservation);
+
+        /**
+         * 응답 DTO로 변환해서 반환
+         */
+        return toResponse(updatedReservation);
     }
 }

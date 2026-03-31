@@ -27,6 +27,10 @@ public class ReviewImageController {
      * 리뷰 이미지 업로드
      *
      * POST /reviews/{reviewId}/images
+     *
+     * form-data 예시
+     * - file: 업로드할 이미지 파일
+     * - sortOrder: 출력 순서(선택)
      */
     @PostMapping
     public ReviewImageResponse uploadImage(@PathVariable Integer reviewId,
@@ -44,5 +48,16 @@ public class ReviewImageController {
     @GetMapping
     public List<ReviewImageResponse> getImages(@PathVariable Integer reviewId) {
         return reviewImageService.getImagesByReview(reviewId);
+    }
+
+    /**
+     * 리뷰 이미지 삭제
+     */
+    @DeleteMapping("/{imageId}")
+    public String deleteImage(@PathVariable Integer imageId) {
+
+        reviewImageService.deleteImage(imageId);
+
+        return "이미지가 삭제되었습니다.";
     }
 }

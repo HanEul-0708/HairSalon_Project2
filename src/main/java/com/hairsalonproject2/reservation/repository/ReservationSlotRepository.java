@@ -20,4 +20,7 @@ public interface ReservationSlotRepository extends JpaRepository<ReservationSlot
             Integer designerId,
             LocalDate reservationDate
     );
+
+     // 특정 예약에 연결된 슬롯 삭제
+    void deleteByReservation_ReservationId(Integer reservationId);
 }

@@ -3,6 +3,8 @@ package com.hairsalonproject2.reservation.controller;
 import com.hairsalonproject2.reservation.dto.ReservationCreateRequest;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.service.ReservationService;
+import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +38,7 @@ public class ReservationController {
      */
     @PostMapping
     public ReservationResponse createReservation(
-            @RequestBody ReservationCreateRequest request
+            @Valid @RequestBody ReservationCreateRequest request
     ) {
         return reservationService.createReservation(request);
     }
@@ -74,5 +76,24 @@ public class ReservationController {
         reservationService.cancelReservation(id);
 
         return "예약이 취소되었습니다.";
+    }
+
+    /**
+     * 예약 상태 변경 API
+     *
+     * 예시:
+     * PATCH /reservations/1/status
+     *
+     * 요청 body:
+     * {
+     *   "status": "COMPLETED"
+     * }
+     */
+    @PatchMapping("/{id}/status")
+    public ReservationResponse updateReservationStatus(
+            @PathVariable Integer id,
+            @Valid @RequestBody ReservationStatusUpdateRequest request
+    ) {
+        return reservationService.updateReservationStatus(id, request);
     }
 }
