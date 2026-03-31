@@ -4,112 +4,137 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title>마이페이지</title>
+    <title>관리자 - 회원 목록</title>
 </head>
 <body>
 
-<h2>마이페이지</h2>
+<h2>관리자 - 회원 목록</h2>
 
-<!-- 현재 로그인 정보 -->
+<!-- 현재 로그인 관리자 표시 -->
 <div sec:authorize="isAuthenticated()">
-    현재 로그인 사용자: <span sec:authentication="name"></span>
-</div>
-
-<!-- 관리자만 보이는 링크 -->
-<div sec:authorize="hasRole('ADMIN')">
-    <a th:href="@{/admin/members}">관리자 회원 관리</a>
+    현재 로그인 관리자: <strong sec:authentication="name"></strong>
 </div>
 
 <hr>
 
 <!-- 성공 메시지 -->
-<div th:if="${param.updated}">
-    회원정보가 수정되었습니다.
+<div th:if="${param.deleted}">
+    회원이 삭제되었습니다.
 </div>
 
-<div th:if="${param.passwordChanged}">
-    비밀번호가 변경되었습니다.
+<!-- 검색 영역 -->
+<h3>회원 검색</h3>
+
+<form th:action="@{/admin/members}" method="get">
+
+    <!-- 아이디 / 이메일 / 이름 검색 -->
+    <input type="text"
+           name="keyword"
+           placeholder="아이디 / 이메일 / 이름 검색"
+           th:value="${keyword}">
+
+    <!-- 권한 필터 -->
+    <select name="role">
+        <option value="">전체 권한</option>
+        <option th:each="r : ${roles}"
+                th:value="${r}"
+                th:text="${r.description}"
+                th:selected="${r == selectedRole}">
+        </option>
+    </select>
+
+    <select name="sort">
+        <option value="latest" th:selected="${selectedSort == 'latest'}">최신순</option>
+        <option value="name" th:selected="${selectedSort == 'name'}">이름순</option>
+        <option value="role" th:selected="${selectedSort == 'role'}">권한순</option>
+    </select>
+
+    <button type="submit">검색</button>
+
+    <!-- 검색 조건 초기화 -->
+    <a th:href="@{/admin/members}">초기화</a>
+</form>
+
+<hr>
+
+<!-- 회원 목록이 없는 경우 -->
+<div th:if="${#lists.isEmpty(members)}">
+    검색 결과가 없습니다.
 </div>
 
-<h3>내 정보</h3>
-<table border="1">
+<!-- 회원 목록 테이블 -->
+<table border="1" th:if="${not #lists.isEmpty(members)}">
+    <thead>
     <tr>
         <th>아이디</th>
-        <td th:text="${member.memberId}"></td>
-    </tr>
-    <tr>
         <th>이름</th>
-        <td th:text="${member.name}"></td>
-    </tr>
-    <tr>
-        <th>전화번호</th>
-        <td th:text="${member.phone}"></td>
-    </tr>
-    <tr>
         <th>이메일</th>
-        <td th:text="${member.email}"></td>
-    </tr>
-    <tr>
+        <th>전화번호</th>
         <th>권한</th>
-        <td th:text="${member.role}"></td>
-    </tr>
-    <tr>
         <th>가입일</th>
-        <td th:text="${member.createdAt}"></td>
+        <th>상세보기</th>
     </tr>
+    </thead>
+
+    <tbody>
+    <!-- 회원 목록 반복 출력 -->
+    <tr th:each="member : ${members}">
+        <td th:text="${member.memberId}">member01</td>
+        <td th:text="${member.name}">홍길동</td>
+        <td th:text="${member.email}">test@example.com</td>
+        <td th:text="${member.phone}">010-1234-5678</td>
+        <td th:text="${member.role.description}">USER</td>
+
+        <!-- 가입일 표시
+             createdAt 이 LocalDateTime 이면 아래처럼 format 가능
+             타입 문제 있으면 다시 원래처럼 th:text="${member.createdAt}" 로 바꾸면 됨
+        -->
+        <td th:text="${#temporals.format(member.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-31 10:30</td>
+
+        <td>
+            <a th:href="@{/admin/members/{memberId}(memberId=${member.memberId})}">
+                상세보기
+            </a>
+        </td>
+    </tr>
+    </tbody>
 </table>
 
-<hr>
+<!-- 페이지가 1개 이상일 때만 페이징 표시 -->
+<div th:if="${totalPages > 0}">
 
-<h3>회원정보 수정</h3>
-<form th:action="@{/members/me/edit}" th:object="${memberUpdateRequest}" method="post">
+    <!-- 이전 페이지 -->
+    <a th:if="${currentPage > 0}"
+       th:href="@{/admin/members(page=${currentPage - 1}, keyword=${keyword}, role=${selectedRole})}">
+        이전
+    </a>
 
-    <div>
-        <label for="updateName">이름</label>
-        <input type="text" id="updateName" th:field="*{name}">
-        <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-    </div>
+    <!-- 페이지 번호 -->
+    <span th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}">
+        <a th:if="${pageNumber != currentPage}"
+           th:href="@{/admin/members(page=${pageNumber}, keyword=${keyword}, role=${selectedRole})}"
+           th:text="${pageNumber + 1}">
+            1
+        </a>
 
-    <div>
-        <label for="updatePhone">전화번호</label>
-        <input type="text" id="updatePhone" th:field="*{phone}">
-        <div th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
-    </div>
+        <strong th:if="${pageNumber == currentPage}"
+                th:text="${pageNumber + 1}">
+            1
+        </strong>
+    </span>
 
-    <div>
-        <label for="updateEmail">이메일</label>
-        <input type="text" id="updateEmail" th:field="*{email}">
-        <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
-    </div>
-
-    <button type="submit">회원정보 수정</button>
-</form>
-
-<hr>
-
-<h3>비밀번호 변경</h3>
-<form th:action="@{/members/me/password}" th:object="${memberPasswordChangeRequest}" method="post">
-
-    <div>
-        <label for="currentPassword">현재 비밀번호</label>
-        <input type="password" id="currentPassword" th:field="*{currentPassword}">
-        <div th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></div>
-    </div>
-
-    <div>
-        <label for="newPassword">새 비밀번호</label>
-        <input type="password" id="newPassword" th:field="*{newPassword}">
-        <div th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></div>
-    </div>
-
-    <button type="submit">비밀번호 변경</button>
-</form>
+    <!-- 다음 페이지 -->
+    <a th:if="${currentPage < totalPages - 1}"
+       th:href="@{/admin/members(page=${currentPage + 1}, keyword=${keyword}, role=${selectedRole})}">
+        다음
+    </a>
+</div>
 
 <hr>
 
-<form th:action="@{/members/logout}" method="post">
-    <button type="submit">로그아웃</button>
-</form>
+<div>
+    <a th:href="@{/}">홈으로</a>
+</div>
 
 </body>
 </html>

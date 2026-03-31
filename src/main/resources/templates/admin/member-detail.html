@@ -13,6 +13,9 @@
     권한이 변경되었습니다.
 </div>
 
+<div th:if="${roleErrorMessage}" th:text="${roleErrorMessage}"></div>
+<div th:if="${deleteErrorMessage}" th:text="${deleteErrorMessage}"></div>
+
 <table border="1">
     <tr>
         <th>아이디</th>
@@ -32,7 +35,7 @@
     </tr>
     <tr>
         <th>권한</th>
-        <td th:text="${member.role}"></td>
+        <td th:text="${member.role.description}"></td>
     </tr>
     <tr>
         <th>가입일</th>
@@ -44,11 +47,13 @@
 
 <h3>권한 변경</h3>
 <form th:action="@{/admin/members/{memberId}/role(memberId=${member.memberId})}" method="post">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
     <label>
         <select name="role">
             <option th:each="role : ${roles}"
                     th:value="${role}"
-                    th:text="${role}"
+                    th:text="${role.description}"
                     th:selected="${role == member.role}">
             </option>
         </select>
@@ -60,7 +65,12 @@
 
 <h3>회원 삭제</h3>
 <form th:action="@{/admin/members/{memberId}/delete(memberId=${member.memberId})}" method="post">
-    <button type="submit">회원 삭제</button>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+    <button type="submit"
+            onclick="return confirm('정말 이 회원을 삭제하시겠습니까?');">
+        회원 삭제
+    </button>
 </form>
 
 <hr>

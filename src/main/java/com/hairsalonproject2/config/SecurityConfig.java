@@ -1,5 +1,6 @@
 package com.hairsalonproject2.config;
 
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import com.hairsalonproject2.member.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -50,6 +51,9 @@ public class SecurityConfig {
         http
                 .authenticationProvider(authenticationProvider())
                 .csrf(Customizer.withDefaults())
+
+                // 브라우저 기본 로그인 팝업 비활성화
+                .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/",
@@ -57,11 +61,25 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**",
                                 "/upload/**",
+                                "/error/**",
+
+                                // 회원
                                 "/members/signup",
                                 "/members/login",
-                                "/error/**"
+
+                                // 메인/살롱/디자이너/리뷰/게시판 테스트용 공개
+                                "/salons",
+                                "/salons/**",
+                                "/designers",
+                                "/designers/**",
+                                "/salon-services",
+                                "/salon-services/**",
+                                "/reviews",
+                                "/reviews/**",
+                                "/boards/**"
                         ).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/designers/**").hasRole("DESIGNER")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

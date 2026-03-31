@@ -10,6 +10,10 @@
 <h2>회원가입</h2>
 
 <form th:action="@{/members/signup}" th:object="${memberSignupRequest}" method="post">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+    <!-- 회원가입 공통 에러 메시지 -->
+    <div th:if="${signupErrorMessage}" th:text="${signupErrorMessage}"></div>
 
     <div>
         <label for="memberId">아이디</label>
@@ -21,6 +25,12 @@
         <label for="password">비밀번호</label>
         <input type="password" id="password" th:field="*{password}">
         <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+    </div>
+
+    <div>
+        <label for="passwordConfirm">비밀번호 확인</label>
+        <input type="password" id="passwordConfirm" th:field="*{passwordConfirm}">
+        <div th:if="${#fields.hasErrors('passwordConfirm')}" th:errors="*{passwordConfirm}"></div>
     </div>
 
     <div>

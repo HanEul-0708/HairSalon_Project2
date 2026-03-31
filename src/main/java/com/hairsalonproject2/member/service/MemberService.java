@@ -14,7 +14,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import com.hairsalonproject2.designer.repository.DesignerRepository;
 import java.util.List;
 
 /*
@@ -32,6 +36,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class MemberService {
 
+    private final DesignerRepository designerRepository;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -39,20 +44,27 @@ public class MemberService {
      * 회원가입
      *
      * 처리 순서
-     * 1. 아이디 중복 체크
-     * 2. 이메일 중복 체크
-     * 3. 비밀번호 암호화
-     * 4. USER 권한으로 저장
+     * 1. 비밀번호 / 비밀번호 확인 일치 여부 검사
+     * 2. 아이디 중복 체크
+     * 3. 이메일 중복 체크
+     * 4. 비밀번호 암호화
+     * 5. USER 권한으로 저장
      */
     @Transactional
     public void signup(MemberSignupRequest request) {
 
+        // 비밀번호와 비밀번호 확인 일치 여부 검사
+        if (!request.getPassword().equals(request.getPasswordConfirm())) {
+            throw new BusinessException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
+        }
+
+        // 아이디 중복 검사
         if (memberRepository.existsByMemberId(request.getMemberId())) {
             throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_ID);
         }
 
-        if (request.getEmail() != null && !request.getEmail().isBlank()
-                && memberRepository.existsByEmail(request.getEmail())) {
+        // 이메일 중복 검사
+        if (memberRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_EMAIL);
         }
 
@@ -132,19 +144,91 @@ public class MemberService {
     }
 
     /**
+     * 관리자용 회원 검색 + 페이징
+     *
+     * @param keyword 검색어
+     * @param role 권한
+     * @param page 페이지 번호(0부터 시작)
+     * @return 회원 목록 페이지
+     */
+    public Page<MemberSummaryResponse> searchMembers(String keyword, MemberRole role, int page) {
+
+        // createdAt 내림차순 정렬
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        String trimmedKeyword = (keyword == null) ? null : keyword.trim();
+
+        Page<Member> memberPage;
+
+        // 1. 검색 조건이 모두 없으면 전체 조회
+        if ((trimmedKeyword == null || trimmedKeyword.isBlank()) && role == null) {
+            memberPage = memberRepository.findAll(pageable);
+        }
+        // 2. 권한만 선택한 경우
+        else if ((trimmedKeyword == null || trimmedKeyword.isBlank()) && role != null) {
+            memberPage = memberRepository.findByRole(role, pageable);
+        }
+        // 3. 검색어만 입력한 경우
+        else if (role == null) {
+            memberPage = memberRepository
+                    .findByMemberIdContainingIgnoreCaseOrNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+                            trimmedKeyword, trimmedKeyword, trimmedKeyword, pageable
+                    );
+        }
+        // 4. 검색어 + 권한 둘 다 있는 경우
+        else {
+            memberPage = memberRepository.searchByKeywordAndRole(trimmedKeyword, role, pageable);
+        }
+
+        return memberPage.map(MemberSummaryResponse::from);
+    }
+
+    /**
      * 관리자용 회원 삭제
+     *
+     * @param adminMemberId 현재 로그인한 관리자 아이디
+     * @param targetMemberId 삭제 대상 회원 아이디
      */
     @Transactional
-    public void deleteMemberByAdmin(String memberId) {
-        memberRepository.delete(getMember(memberId));
+    public void deleteMemberByAdmin(String adminMemberId, String targetMemberId) {
+
+        // 관리자가 자기 자신을 삭제하려는 경우 차단
+        if (adminMemberId.equals(targetMemberId)) {
+            throw new BusinessException(ErrorCode.CANNOT_DELETE_MYSELF);
+        }
+
+        memberRepository.delete(getMember(targetMemberId));
     }
 
     /**
      * 관리자용 회원 권한 변경
+     *
+     * 규칙
+     * 1. 관리자는 자기 자신의 권한을 변경할 수 없다.
+     * 2. 디자이너에 연결된 계정은 DESIGNER 권한만 유지할 수 있다.
      */
     @Transactional
-    public void changeMemberRoleByAdmin(String memberId, MemberRole role) {
-        Member member = getMember(memberId);
+    public void changeMemberRoleByAdmin(String adminMemberId,
+                                        String targetMemberId,
+                                        MemberRole role) {
+
+        // 1. 자기 자신의 권한 변경 금지
+        if (adminMemberId.equals(targetMemberId)) {
+            throw new BusinessException(ErrorCode.CANNOT_CHANGE_MY_ROLE);
+        }
+
+        // 2. 대상 회원 조회
+        Member member = getMember(targetMemberId);
+
+        // 3. 디자이너 연결 여부 확인
+        boolean isLinkedDesigner = designerRepository.existsByMember_MemberId(targetMemberId);
+
+        // 4. 디자이너에 연결된 계정은 DESIGNER 권한만 허용
+        if (isLinkedDesigner && role != MemberRole.DESIGNER) {
+            throw new BusinessException(ErrorCode.CONNECTED_DESIGNER_ACCOUNT_ROLE_CHANGE_NOT_ALLOWED);
+        }
+
+        // 5. 권한 변경
         member.changeRole(role);
     }
 

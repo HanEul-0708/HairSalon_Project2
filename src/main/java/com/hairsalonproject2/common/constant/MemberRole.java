@@ -1,27 +1,24 @@
 package com.hairsalonproject2.common.constant;
 
-/*
- * MemberRole
+import lombok.Getter;
+
+/**
+ * 회원 권한
  *
- * member 테이블의 role 컬럼 ENUM과 매핑
- *
- * DB:
- * ENUM('USER', 'DESIGNER', 'ADMIN')
+ * - USER: 일반 회원
+ * - DESIGNER: 디자이너
+ * - ADMIN: 관리자
  */
+@Getter
 public enum MemberRole {
 
-    /*
-     * 일반 사용자
-     */
-    USER,
+    USER("일반회원"),
+    DESIGNER("디자이너"),
+    ADMIN("관리자");
 
-    /*
-     * 디자이너 계정
-     */
-    DESIGNER,
+    private final String description;
 
-    /*
-     * 관리자
-     */
-    ADMIN
+    MemberRole(String description) {
+        this.description = description;
+    }
 }
