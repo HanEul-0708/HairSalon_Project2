@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인</title>
+</head>
+<body>
+
+<h2>로그인</h2>
+
+<!-- 회원가입 완료 후 메시지 -->
+<div th:if="${param.signup}">
+    회원가입이 완료되었습니다. 로그인해주세요.
+</div>
+
+<!-- 로그아웃 후 메시지 -->
+<div th:if="${param.logout}">
+    로그아웃되었습니다.
+</div>
+
+<!-- 로그인 실패 메시지 -->
+<div th:if="${param.error}">
+    아이디 또는 비밀번호가 올바르지 않습니다.
+</div>
+
+<form th:action="@{/members/login}" method="post">
+    <div>
+        <label for="memberId">아이디</label>
+        <input type="text" id="memberId" name="memberId">
+    </div>
+
+    <div>
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" name="password">
+    </div>
+
+    <button type="submit">로그인</button>
+</form>
+
+<div>
+    <a th:href="@{/members/signup}">회원가입</a>
+</div>
+
+</body>
+</html>

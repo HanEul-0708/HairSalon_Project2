@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>회원 상세</title>
+</head>
+<body>
+
+<h2>관리자 - 회원 상세</h2>
+
+<div th:if="${param.roleChanged}">
+    권한이 변경되었습니다.
+</div>
+
+<table border="1">
+    <tr>
+        <th>아이디</th>
+        <td th:text="${member.memberId}"></td>
+    </tr>
+    <tr>
+        <th>이름</th>
+        <td th:text="${member.name}"></td>
+    </tr>
+    <tr>
+        <th>전화번호</th>
+        <td th:text="${member.phone}"></td>
+    </tr>
+    <tr>
+        <th>이메일</th>
+        <td th:text="${member.email}"></td>
+    </tr>
+    <tr>
+        <th>권한</th>
+        <td th:text="${member.role}"></td>
+    </tr>
+    <tr>
+        <th>가입일</th>
+        <td th:text="${member.createdAt}"></td>
+    </tr>
+</table>
+
+<hr>
+
+<h3>권한 변경</h3>
+<form th:action="@{/admin/members/{memberId}/role(memberId=${member.memberId})}" method="post">
+    <select name="role">
+        <option th:each="role : ${roles}"
+                th:value="${role}"
+                th:text="${role}"
+                th:selected="${role == member.role}">
+        </option>
+    </select>
+    <button type="submit">권한 변경</button>
+</form>
+
+<hr>
+
+<h3>회원 삭제</h3>
+<form th:action="@{/admin/members/{memberId}/delete(memberId=${member.memberId})}" method="post">
+    <button type="submit">회원 삭제</button>
+</form>
+
+<hr>
+
+<div>
+    <a th:href="@{/admin/members}">목록으로</a>
+</div>
+
+</body>
+</html>

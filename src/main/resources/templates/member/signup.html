@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입</title>
+</head>
+<body>
+
+<h2>회원가입</h2>
+
+<form th:action="@{/members/signup}" th:object="${memberSignupRequest}" method="post">
+
+    <div>
+        <label for="memberId">아이디</label>
+        <input type="text" id="memberId" th:field="*{memberId}">
+        <div th:if="${#fields.hasErrors('memberId')}" th:errors="*{memberId}"></div>
+    </div>
+
+    <div>
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" th:field="*{password}">
+        <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+    </div>
+
+    <div>
+        <label for="name">이름</label>
+        <input type="text" id="name" th:field="*{name}">
+        <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+    </div>
+
+    <div>
+        <label for="phone">전화번호</label>
+        <input type="text" id="phone" th:field="*{phone}">
+        <div th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+    </div>
+
+    <div>
+        <label for="email">이메일</label>
+        <input type="text" id="email" th:field="*{email}">
+        <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+    </div>
+
+    <button type="submit">회원가입</button>
+</form>
+
+<div>
+    <a th:href="@{/members/login}">로그인 페이지로 이동</a>
+</div>
+
+</body>
+</html>
