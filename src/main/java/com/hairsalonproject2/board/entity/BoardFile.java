@@ -1,7 +1,15 @@
 package com.hairsalonproject2.board.entity;
 
 import com.hairsalonproject2.common.entity.BaseCreatedEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,7 +17,6 @@ import lombok.NoArgsConstructor;
 
 /**
  * BoardFile
- *
  * 게시글 첨부파일 테이블
  */
 @Getter
@@ -24,7 +31,7 @@ public class BoardFile extends BaseCreatedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "file_id")
-    private Integer fileId;
+    private Long fileId;
 
     /**
      * 소속 게시글
@@ -34,45 +41,48 @@ public class BoardFile extends BaseCreatedEntity {
     private Board board;
 
     /**
-     * 파일 URL
-     */
-    @Column(name = "file_url", nullable = false, length = 255)
-    private String fileUrl;
-
-    /**
      * 원본 파일명
      */
-    @Column(name = "original_name", length = 255)
+    @Column(name = "original_name", nullable = false, length = 255)
     private String originalName;
 
     /**
      * 저장 파일명
      */
-    @Column(name = "saved_name", length = 255)
+    @Column(name = "saved_name", nullable = false, length = 255)
     private String savedName;
 
     /**
-     * 파일 크기 (BIGINT)
+     * 저장 경로
      */
-    @Column(name = "file_size")
+    @Column(name = "file_path", nullable = false, length = 255)
+    private String filePath;
+
+    /**
+     * 파일 크기
+     */
+    @Column(name = "file_size", nullable = false)
     private Long fileSize;
 
     /**
-     * MIME 타입
+     * 파일 확장자
      */
-    @Column(name = "content_type", length = 100)
-    private String contentType;
+    @Column(name = "file_extension", length = 20)
+    private String fileExtension;
 
     @Builder
-    public BoardFile(Board board, String fileUrl,
-                     String originalName, String savedName,
-                     Long fileSize, String contentType) {
+    public BoardFile(Board board,
+                     String originalName,
+                     String savedName,
+                     String filePath,
+                     Long fileSize,
+                     String fileExtension) {
         this.board = board;
-        this.fileUrl = fileUrl;
         this.originalName = originalName;
         this.savedName = savedName;
+        this.filePath = filePath;
         this.fileSize = fileSize;
-        this.contentType = contentType;
+        this.fileExtension = fileExtension;
     }
 
     public void changeBoard(Board board) {

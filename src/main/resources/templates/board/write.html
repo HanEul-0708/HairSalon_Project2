@@ -1,30 +1,24 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      layout:decorate="~{layout/layout}">
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
 
 <!--
   write.html — 게시글 작성 페이지
   =====================================================
-  공지사항 / QnA 둘 다 이 파일 하나로 처리
   boardType → "NOTICE" 또는 "QNA" (Controller에서 전달)
-  parentId  → 답글 작성 시 원글 번호 (없으면 null)
+  공지사항 / QnA 둘 다 이 파일 하나로 처리
 -->
 
 <head>
-    <th:block layout:fragment="pageTitle">
-        <title>글 작성 | HairSalon</title>
-    </th:block>
-    <th:block layout:fragment="pageCss">
-        <link rel="stylesheet" th:href="@{/css/board.css}">
-        <!-- 썸머노트 CSS (CDN) -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.css">
-    </th:block>
+    <title>글 작성 | HairSalon</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}">
+    <!-- 썸머노트 CSS (CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.css">
 </head>
 
 <body>
-<div layout:fragment="content">
+<main>
 
     <div class="board-wrap">
 
@@ -40,14 +34,8 @@
               method="post"
               enctype="multipart/form-data">
 
-            <!-- CSRF 토큰 (Spring Security 필수) -->
+            <!-- CSRF 토큰 -->
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-
-            <!-- 게시글 타입 (hidden) -->
-            <input type="hidden" name="type" th:value="${boardType}">
-
-            <!-- 답글인 경우 원글 번호 (hidden) -->
-            <input type="hidden" name="parentId" th:value="${param.parentId}">
 
             <!-- 제목 입력 -->
             <div class="form-group">
@@ -64,7 +52,6 @@
             <!-- 본문 입력 (썸머노트 에디터) -->
             <div class="form-group">
                 <label for="content" class="form-label">내용</label>
-                <!-- 썸머노트가 이 textarea를 에디터로 변환해줌 -->
                 <textarea id="content"
                           name="content"
                           class="form-control"
@@ -75,10 +62,14 @@
             <!-- 첨부파일 업로드 -->
             <div class="form-group">
                 <label class="form-label">첨부파일</label>
-                <input type="file"
-                       name="files"
-                       class="form-control"
-                       multiple>
+                <div class="board-file-dropzone" data-file-dropzone>
+                    <p class="board-file-dropzone-text">파일을 여기로 끌어 놓거나 아래에서 선택하세요.</p>
+                    <input type="file"
+                           name="files"
+                           class="form-control"
+                           multiple>
+                </div>
+                <div class="board-file-preview" data-file-preview></div>
                 <small class="form-text">파일은 최대 10MB, 여러 개 선택 가능합니다.</small>
             </div>
 
@@ -96,22 +87,18 @@
 
     </div>
 
-</div>
-
-<th:block layout:fragment="pageJs">
-    <!-- 썸머노트 JS (CDN) — jQuery 먼저, 그 다음 썸머노트 -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 썸머노트 JS (CDN) — jQuery는 layout.html에서 이미 로드됨 -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.js"></script>
-    <!-- 썸머노트 한국어 패키지 -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/lang/summernote-ko-KR.min.js"></script>
+    <script th:src="@{/js/board.js}"></script>
 
     <script>
         $(document).ready(function () {
 
             // 썸머노트 에디터 초기화
             $('#content').summernote({
-                lang: 'ko-KR',          // 한국어 UI
-                height: 400,            // 에디터 높이
+                lang: 'ko-KR',
+                height: 400,
                 minHeight: 200,
                 maxHeight: 600,
                 placeholder: '내용을 입력하세요.',
@@ -122,9 +109,6 @@
                     ['insert', ['picture', 'link']],
                     ['view', ['codeview']]
                 ],
-
-                // 이미지 업로드 핸들러
-                // 썸머노트가 이미지 첨부 시 자동으로 서버에 전송
                 callbacks: {
                     onImageUpload: function (files) {
                         uploadEditorImage(files[0]);
@@ -132,7 +116,7 @@
                 }
             });
 
-            // 등록 버튼 클릭 시 에디터 내용 유효성 검사
+            // 등록 버튼 유효성 검사
             $('#submitBtn').on('click', function () {
                 const content = $('#content').summernote('code');
                 if ($('#title').val().trim() === '') {
@@ -147,26 +131,25 @@
         });
 
         // 썸머노트 이미지 업로드 함수
-        // FileController의 POST /files/images 로 전송
         function uploadEditorImage(file) {
             const formData = new FormData();
             formData.append('file', file);
 
-            // CSRF 토큰 가져오기
             const csrfToken = document.querySelector('input[name="_csrf"]').value;
-            const csrfHeader = 'X-CSRF-TOKEN';
 
             fetch('/files/images', {
                 method: 'POST',
-                headers: {
-                    [csrfHeader]: csrfToken
-                },
+                headers: { 'X-CSRF-TOKEN': csrfToken },
                 body: formData
             })
                 .then(response => response.json())
                 .then(data => {
-                    // 업로드 성공 시 에디터에 이미지 삽입
-                    $('#content').summernote('insertImage', data.url);
+                    $('#content').summernote('insertImage', data.url, function ($image) {
+                        if (data.originalFilename) {
+                            $image.attr('data-original-name', data.originalFilename);
+                            $image.attr('alt', data.originalFilename);
+                        }
+                    });
                 })
                 .catch(error => {
                     alert('이미지 업로드에 실패했습니다.');
@@ -175,8 +158,6 @@
         }
     </script>
 
-    <script th:src="@{/js/board.js}"></script>
-</th:block>
-
+</main>
 </body>
 </html>

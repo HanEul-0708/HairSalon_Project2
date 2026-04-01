@@ -1,27 +1,21 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      layout:decorate="~{layout/layout}">
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
 
 <!--
   notice-detail.html — 공지사항 상세 페이지
   =====================================================
-  board       → BoardDetailResponse 객체
-  board.replies → 답글 목록 (관리자 답변)
+  board → BoardDetailResponse 객체
 -->
 
 <head>
-    <th:block layout:fragment="pageTitle">
-        <title th:text="${board.title} + ' | HairSalon'"></title>
-    </th:block>
-    <th:block layout:fragment="pageCss">
-        <link rel="stylesheet" th:href="@{/css/board.css}">
-    </th:block>
+    <title th:text="${board.title} + ' | HairSalon'">공지사항 상세 | HairSalon</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}">
 </head>
 
 <body>
-<div layout:fragment="content">
+<main>
 
     <div class="board-wrap">
 
@@ -35,9 +29,11 @@
             </div>
         </div>
 
-        <!-- 게시글 본문 -->
-        <!-- th:utext → HTML 태그 그대로 렌더링 (썸머노트 에디터 내용 표시용) -->
-        <!-- th:text 쓰면 <b>굵게</b> 이런 게 글자 그대로 보여버림 -->
+        <!--
+            게시글 본문
+            th:utext → 썸머노트 HTML 내용을 태그로 렌더링
+            th:text 쓰면 태그가 문자 그대로 보여버림
+        -->
         <div class="board-detail-content" th:utext="${board.content}"></div>
 
         <!-- 첨부파일 목록 -->
@@ -52,30 +48,36 @@
             </ul>
         </div>
 
-        <!-- 수정 / 삭제 버튼 (관리자만) -->
+        <!-- 버튼 영역 -->
         <div class="board-detail-btn-wrap">
             <a th:href="@{/boards/notices}" class="btn-list">목록으로</a>
 
+            <!-- 수정 / 삭제 버튼 (관리자만) -->
             <div sec:authorize="hasRole('ADMIN')">
                 <a th:href="@{/boards/{id}/edit(id=${board.boardId})}"
                    class="btn-edit">수정</a>
 
-                <form th:action="@{/boards/{id}/delete(id=${board.boardId})}"
+                <form th:action="@{/boards/{id}(id=${board.boardId})}"
                       method="post"
                       onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                    <input type="hidden" name="_method" value="delete">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                     <button type="submit" class="btn-delete">삭제</button>
                 </form>
             </div>
         </div>
 
-        <!-- 답글 목록 (관리자 답변) -->
+        <!-- 답글 목록 -->
         <div class="board-reply-wrap" th:if="${not #lists.isEmpty(board.replies)}">
-            <h4>답변</h4>
+            <h4 class="board-reply-title">
+                답변 <span th:text="${#lists.size(board.replies)}"></span>개
+            </h4>
             <div class="board-reply" th:each="reply : ${board.replies}">
                 <div class="board-reply-info">
-                    <span th:text="${reply.memberId}"></span>
-                    <span th:text="${#temporals.format(reply.createdAt, 'yyyy.MM.dd HH:mm')}"></span>
+                    <span class="board-reply-writer">관리자</span>
+                    <span class="board-reply-date"
+                          th:text="${#temporals.format(reply.createdAt, 'yyyy.MM.dd HH:mm')}">
+                    </span>
                 </div>
                 <div class="board-reply-content" th:utext="${reply.content}"></div>
             </div>
@@ -83,11 +85,7 @@
 
     </div>
 
-</div>
-
-<th:block layout:fragment="pageJs">
     <script th:src="@{/js/board.js}"></script>
-</th:block>
-
+</main>
 </body>
 </html>

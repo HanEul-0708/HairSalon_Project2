@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      layout:decorate="~{layout/layout}">
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
 
 <!--
   qna-list.html — 문의게시판 목록 페이지
@@ -12,16 +11,12 @@
 -->
 
 <head>
-    <th:block layout:fragment="pageTitle">
-        <title>문의게시판 | HairSalon</title>
-    </th:block>
-    <th:block layout:fragment="pageCss">
-        <link rel="stylesheet" th:href="@{/css/board.css}">
-    </th:block>
+    <title>문의게시판 | HairSalon</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}">
 </head>
 
 <body>
-<div layout:fragment="content">
+<main>
 
     <div class="board-wrap">
 
@@ -53,7 +48,7 @@
             </tr>
             </thead>
             <tbody>
-            <!-- 게시글이 없을 때 -->
+            <!-- 게시글 없을 때 -->
             <tr th:if="${#lists.isEmpty(boardList)}">
                 <td colspan="5" class="board-empty">등록된 문의글이 없습니다.</td>
             </tr>
@@ -66,7 +61,9 @@
                 <td class="board-row-title">
                     <span th:text="${board.title}"></span>
                     <!-- 답글 개수 표시 -->
-                    <span class="board-reply-count"
+                    <span th:if="${board.answered}" class="board-status-chip board-status-answered">답변 완료</span>
+                            <span th:if="${board.reportCount > 0}" class="board-status-chip board-status-report" th:text="'신고 ' + ${board.reportCount}">신고 0</span>
+                            <span class="board-reply-count"
                           th:if="${board.replyCount > 0}"
                           th:text="'[' + ${board.replyCount} + ']'">
                         </span>
@@ -79,6 +76,23 @@
         </table>
 
         <!-- 로그인한 사용자만 작성 버튼 표시 -->
+
+        <div class="board-pagination" th:if="${boardPage != null and boardPage.totalPages > 1}">
+            <a th:href="@{/boards/qna(page=${boardPage.number - 1}, size=${size}, keyword=${keyword})}"
+               th:if="${boardPage.hasPrevious()}"
+               class="board-page-link">이전</a>
+
+            <a th:each="pageNumber : ${pageNumbers}"
+               th:href="@{/boards/qna(page=${pageNumber}, size=${size}, keyword=${keyword})}"
+               th:text="${pageNumber + 1}"
+               th:classappend="${pageNumber == boardPage.number} ? ' active'"
+               class="board-page-link">1</a>
+
+            <a th:href="@{/boards/qna(page=${boardPage.number + 1}, size=${size}, keyword=${keyword})}"
+               th:if="${boardPage.hasNext()}"
+               class="board-page-link">다음</a>
+        </div>
+
         <div class="board-btn-wrap">
             <a th:href="@{/boards/qna/new}"
                sec:authorize="isAuthenticated()"
@@ -87,11 +101,7 @@
 
     </div>
 
-</div>
-
-<th:block layout:fragment="pageJs">
     <script th:src="@{/js/board.js}"></script>
-</th:block>
-
+</main>
 </body>
 </html>

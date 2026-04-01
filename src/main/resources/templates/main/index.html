@@ -24,7 +24,7 @@
     ~{::title}  → 아래 <title> 태그가 삽입됨
     ~{::main}   → 아래 <main> 태그가 삽입됨
 -->
-<html th:replace="~{layout/layout :: layout(~{::title}, ~{::main})}"
+<html th:replace="~{fragments/layout :: layout(~{::title}, ~{::main})}"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 

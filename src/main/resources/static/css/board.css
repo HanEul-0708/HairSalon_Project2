@@ -529,3 +529,113 @@
 .note-editor:focus-within {
     border-color: #c9a84c !important;
 }
+
+.board-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 24px 0;
+}
+
+.board-page-link {
+    display: inline-block;
+    min-width: 36px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+    text-decoration: none;
+    color: #333;
+    background: #fff;
+}
+
+.board-page-link.active {
+    font-weight: 700;
+    border-color: #111;
+}
+
+
+.board-file-dropzone {
+    border: 1px dashed #c9a84c;
+    border-radius: 8px;
+    padding: 16px;
+    background: #1f1f22;
+}
+
+.board-file-dropzone.is-dragover {
+    background: #2d2617;
+    border-color: #e8c96d;
+}
+
+.board-file-dropzone-text {
+    color: #9f9f9f;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.board-file-preview {
+    display: none;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.board-file-preview-item {
+    padding: 10px 12px;
+    border: 1px solid #3a3a3d;
+    border-radius: 6px;
+    background: #232326;
+}
+
+.board-file-preview-name {
+    color: #fff;
+    font-size: 0.9rem;
+    word-break: break-all;
+}
+
+.board-file-preview-meta {
+    color: #c9a84c;
+    font-size: 0.82rem;
+    margin-top: 6px;
+}
+
+.board-existing-files li.is-delete-checked {
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+
+.board-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    border: 1px solid transparent;
+}
+
+.board-status-answered {
+    color: #73d49b;
+    border-color: #2f6c47;
+    background: rgba(58, 124, 83, 0.15);
+}
+
+.board-status-report {
+    color: #ffb36a;
+    border-color: #8a5520;
+    background: rgba(138, 85, 32, 0.15);
+}
+
+.btn-report {
+    margin-right: 8px;
+}
+
+.badge-hidden, .badge-answer, .badge-wait {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+}
+.badge-hidden { background: #5e2a2a; color: #ffd6d6; }
+.badge-answer { background: #214b37; color: #caf5de; }
+.badge-wait { background: #2d2d2d; color: #ddd; }

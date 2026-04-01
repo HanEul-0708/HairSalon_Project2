@@ -1,4 +1,4 @@
-package com.HairSalonProject2;
+package com.hairsalonproject2;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
