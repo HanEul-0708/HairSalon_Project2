@@ -10,6 +10,8 @@
 
 <h2>마이페이지</h2>
 
+<div th:replace="~{fragments/message :: flashMessage}"></div>
+
 <!-- 현재 로그인 정보 -->
 <div sec:authorize="isAuthenticated()">
     현재 로그인 사용자: <span sec:authentication="name"></span>
@@ -21,15 +23,6 @@
 </div>
 
 <hr>
-
-<!-- 성공 메시지 -->
-<div th:if="${param.updated}">
-    회원정보가 수정되었습니다.
-</div>
-
-<div th:if="${param.passwordChanged}">
-    비밀번호가 변경되었습니다.
-</div>
 
 <h3>내 정보</h3>
 <table border="1">
@@ -65,8 +58,6 @@
 <form th:action="@{/members/me/edit}" th:object="${memberUpdateRequest}" method="post">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
-    <div th:if="${profileErrorMessage}" th:text="${profileErrorMessage}"></div>
-
     <div>
         <label for="updateName">이름</label>
         <input type="text" id="updateName" th:field="*{name}">
@@ -93,8 +84,6 @@
 <h3>비밀번호 변경</h3>
 <form th:action="@{/members/me/password}" th:object="${memberPasswordChangeRequest}" method="post">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-
-    <div th:if="${passwordErrorMessage}" th:text="${passwordErrorMessage}"></div>
 
     <div>
         <label for="currentPassword">현재 비밀번호</label>

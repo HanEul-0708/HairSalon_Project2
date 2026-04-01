@@ -9,9 +9,7 @@
 
 <h2>관리자 - 회원 상세</h2>
 
-<div th:if="${param.roleChanged}">
-    권한이 변경되었습니다.
-</div>
+<div th:replace="~{fragments/message :: flashMessage}"></div>
 
 <div th:if="${roleErrorMessage}" th:text="${roleErrorMessage}"></div>
 <div th:if="${deleteErrorMessage}" th:text="${deleteErrorMessage}"></div>

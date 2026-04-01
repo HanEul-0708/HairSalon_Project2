@@ -18,13 +18,27 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * 우리가 직접 정의한 비즈니스 예외 처리
-     */
     @ExceptionHandler(BusinessException.class)
-    public String handleBusinessException(BusinessException e, Model model, HttpServletRequest request) {
+    public String handleBusinessException(BusinessException e,
+                                          HttpServletRequest request,
+                                          Model model) {
+
+        // 🔥 Ajax / API 대응 (추후 확장 가능)
+        if (request.getHeader("X-Requested-With") != null) {
+            return "error/common-error";
+        }
+
+        // 🔥 referer로 이전 페이지로 돌려보내기
+        String referer = request.getHeader("Referer");
+
+        if (referer != null) {
+            return "redirect:" + referer;
+        }
+
+        // fallback
         model.addAttribute("errorMessage", e.getErrorCode().getMessage());
         model.addAttribute("requestUri", request.getRequestURI());
+
         return "error/common-error";
     }
 

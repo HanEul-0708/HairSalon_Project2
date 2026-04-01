@@ -7,12 +7,12 @@ import com.hairsalonproject2.member.dto.response.MemberSummaryResponse;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.data.domain.Page;
 
 /**
  * 관리자 회원 관리 컨트롤러
@@ -38,7 +38,6 @@ public class AdminMemberController {
 
         model.addAttribute("memberPage", memberPage);
         model.addAttribute("members", memberPage.getContent());
-
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedRole", role);
         model.addAttribute("roles", MemberRole.values());
@@ -61,9 +60,6 @@ public class AdminMemberController {
 
     /**
      * 회원 삭제
-     *
-     * 주의
-     * - 관리자가 자기 자신의 계정을 삭제하지 못하도록 서비스에서 방지
      */
     @PostMapping("/{memberId}/delete")
     public String deleteMember(@PathVariable String memberId,
@@ -71,22 +67,21 @@ public class AdminMemberController {
                                RedirectAttributes redirectAttributes) {
 
         try {
-            // 로그인한 관리자 아이디와 삭제 대상 아이디를 함께 전달
             memberService.deleteMemberByAdmin(userDetails.getUsername(), memberId);
-            return "redirect:/admin/members?deleted=true";
+
+            // 삭제 성공 메시지는 목록 화면에서 보여준다.
+            redirectAttributes.addFlashAttribute("successMessage", "회원이 삭제되었습니다.");
+            return "redirect:/admin/members";
 
         } catch (BusinessException e) {
-            // 실패 시 상세 화면으로 되돌리고 에러 메시지 표시
-            redirectAttributes.addFlashAttribute("deleteErrorMessage", e.getErrorCode().getMessage());
+            // 삭제 실패 메시지는 상세 화면에서 보여준다.
+            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
             return "redirect:/admin/members/" + memberId;
         }
     }
 
     /**
      * 회원 권한 변경
-     *
-     * 주의
-     * - 관리자가 자기 자신의 권한을 변경하지 못하도록 서비스에서 방지
      */
     @PostMapping("/{memberId}/role")
     public String changeRole(@PathVariable String memberId,
@@ -95,13 +90,15 @@ public class AdminMemberController {
                              RedirectAttributes redirectAttributes) {
 
         try {
-            // 로그인한 관리자 아이디와 대상 회원 아이디를 함께 전달
             memberService.changeMemberRoleByAdmin(userDetails.getUsername(), memberId, role);
-            return "redirect:/admin/members/" + memberId + "?roleChanged=true";
+
+            // 권한 변경 성공 메시지는 상세 화면에서 보여준다.
+            redirectAttributes.addFlashAttribute("successMessage", "권한이 변경되었습니다.");
+            return "redirect:/admin/members/" + memberId;
 
         } catch (BusinessException e) {
-            // 실패 시 상세 화면으로 되돌리고 에러 메시지 표시
-            redirectAttributes.addFlashAttribute("roleErrorMessage", e.getErrorCode().getMessage());
+            // 권한 변경 실패 메시지도 상세 화면에서 보여준다.
+            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
             return "redirect:/admin/members/" + memberId;
         }
     }

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    공통 메시지 fragment
+
+    사용 목적
+    - 성공 메시지 표시
+    - 에러 메시지 표시
+    - 경고 메시지 표시
+
+    사용 방법
+    <div th:replace="~{fragments/message :: flashMessage}"></div>
+-->
+<th:block th:fragment="flashMessage">
+
+  <!-- 성공 메시지 -->
+  <div th:if="${successMessage}"
+       style="margin: 12px 0; padding: 12px; border: 1px solid #b7e4c7; background-color: #f0fff4; color: #1b4332; border-radius: 6px;">
+    <span th:text="${successMessage}">성공 메시지</span>
+  </div>
+
+  <!-- 에러 메시지 -->
+  <div th:if="${errorMessage}"
+       style="margin: 12px 0; padding: 12px; border: 1px solid #f5c2c7; background-color: #fff5f5; color: #842029; border-radius: 6px;">
+    <span th:text="${errorMessage}">에러 메시지</span>
+  </div>
+
+  <!-- 경고 메시지 -->
+  <div th:if="${warningMessage}"
+       style="margin: 12px 0; padding: 12px; border: 1px solid #ffe69c; background-color: #fff8e1; color: #664d03; border-radius: 6px;">
+    <span th:text="${warningMessage}">경고 메시지</span>
+  </div>
+
+</th:block>
+
+</body>
+</html>

@@ -10,17 +10,14 @@
 
 <h2>관리자 - 회원 목록</h2>
 
+<div th:replace="~{fragments/message :: flashMessage}"></div>
+
 <!-- 현재 로그인 관리자 표시 -->
 <div sec:authorize="isAuthenticated()">
     현재 로그인 관리자: <strong sec:authentication="name"></strong>
 </div>
 
 <hr>
-
-<!-- 성공 메시지 -->
-<div th:if="${param.deleted}">
-    회원이 삭제되었습니다.
-</div>
 
 <!-- 검색 영역 -->
 <h3>회원 검색</h3>

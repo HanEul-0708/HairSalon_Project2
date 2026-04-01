@@ -10,6 +10,7 @@ import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -107,7 +108,8 @@ public class MemberController {
     public String updateMyProfile(@AuthenticationPrincipal CustomUserDetails userDetails,
                                   @Valid @ModelAttribute MemberUpdateRequest memberUpdateRequest,
                                   BindingResult bindingResult,
-                                  Model model) {
+                                  Model model,
+                                  RedirectAttributes redirectAttributes) {
 
         // 1. Bean Validation 오류가 있으면 다시 마이페이지로
         if (bindingResult.hasErrors()) {
@@ -128,24 +130,27 @@ public class MemberController {
             model.addAttribute("member", member);
             model.addAttribute("memberUpdateRequest", memberUpdateRequest);
             model.addAttribute("memberPasswordChangeRequest", new MemberPasswordChangeRequest());
-            model.addAttribute("profileErrorMessage", e.getErrorCode().getMessage());
+
+            // 공통 메시지 fragment 와 이름 통일
+            model.addAttribute("errorMessage", e.getErrorCode().getMessage());
             return "member/mypage";
         }
 
-        return "redirect:/members/me?updated=true";
+        redirectAttributes.addFlashAttribute("successMessage", "회원정보가 수정되었습니다.");
+        return "redirect:/members/me";
     }
 
     @PostMapping("/me/password")
     public String changePassword(@AuthenticationPrincipal CustomUserDetails userDetails,
                                  @Valid @ModelAttribute MemberPasswordChangeRequest memberPasswordChangeRequest,
                                  BindingResult bindingResult,
-                                 Model model) {
+                                 Model model,
+                                 RedirectAttributes redirectAttributes) {
 
         // 1. Bean Validation 오류가 있으면 다시 마이페이지로
         if (bindingResult.hasErrors()) {
             MemberDetailResponse member = memberService.getMyDetail(userDetails.getUsername());
 
-            // 회원정보 수정 폼도 기존 값이 보이도록 다시 세팅
             MemberUpdateRequest memberUpdateRequest = new MemberUpdateRequest();
             memberUpdateRequest.setName(member.getName());
             memberUpdateRequest.setPhone(member.getPhone());
@@ -172,10 +177,13 @@ public class MemberController {
             model.addAttribute("member", member);
             model.addAttribute("memberUpdateRequest", memberUpdateRequest);
             model.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest);
-            model.addAttribute("passwordErrorMessage", e.getErrorCode().getMessage());
+
+            // 공통 메시지 fragment 와 이름 통일
+            model.addAttribute("errorMessage", e.getErrorCode().getMessage());
             return "member/mypage";
         }
 
-        return "redirect:/members/me?passwordChanged=true";
+        redirectAttributes.addFlashAttribute("successMessage", "비밀번호가 변경되었습니다.");
+        return "redirect:/members/me";
     }
 }
