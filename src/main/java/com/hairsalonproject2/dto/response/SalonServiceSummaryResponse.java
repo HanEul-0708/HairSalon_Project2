@@ -1,0 +1,15 @@
+package com.hairsalonproject2.dto.response;
+
+import lombok.Builder;
+import lombok.Getter;
+
+@Getter
+@Builder
+public class SalonServiceSummaryResponse {
+    private Integer serviceId;
+    private Integer salonId;
+    private String salonName;
+    private String name;
+    private Integer price;
+    private Integer duration;
+}

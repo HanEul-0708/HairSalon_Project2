@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>관리자 - 디자이너</title></head>
+<body>
+<h1>관리자 - 디자이너 관리</h1>
+<table border="1">
+    <thead><tr><th>ID</th><th>이름</th><th>살롱</th><th>평점</th><th>리뷰</th></tr></thead>
+    <tbody>
+    <tr th:each="designer : ${designers}">
+        <td th:text="${designer.designerId}">1</td>
+        <td><a th:href="@{/designers/{id}(id=${designer.designerId})}" th:text="${designer.name}">디자이너</a></td>
+        <td th:text="${designer.salonName}">살롱</td>
+        <td th:text="${designer.averageRating}">0</td>
+        <td th:text="${designer.reviewCount}">0</td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
