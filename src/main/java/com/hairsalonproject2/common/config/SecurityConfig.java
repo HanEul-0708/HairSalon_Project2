@@ -1,4 +1,4 @@
-package com.hairsalonproject2.config;
+package com.hairsalonproject2.common.config;
 
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import com.hairsalonproject2.member.service.CustomUserDetailsService;

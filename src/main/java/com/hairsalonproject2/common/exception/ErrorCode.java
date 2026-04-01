@@ -1,4 +1,4 @@
-package com.hairsalonproject2.exception;
+package com.hairsalonproject2.common.exception;
 
 import lombok.Getter;
 

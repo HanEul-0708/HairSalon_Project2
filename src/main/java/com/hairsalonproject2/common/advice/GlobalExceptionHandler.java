@@ -1,7 +1,7 @@
-package com.hairsalonproject2.global.advice;
+package com.hairsalonproject2.common.advice;
 
-import com.hairsalonproject2.exception.BusinessException;
-import com.hairsalonproject2.exception.ErrorCode;
+import com.hairsalonproject2.common.exception.BusinessException;
+import com.hairsalonproject2.common.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;

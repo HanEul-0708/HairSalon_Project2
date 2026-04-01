@@ -1,7 +1,7 @@
 package com.hairsalonproject2.admin.controller;
 
 import com.hairsalonproject2.common.constant.MemberRole;
-import com.hairsalonproject2.exception.BusinessException;
+import com.hairsalonproject2.common.exception.BusinessException;
 import com.hairsalonproject2.member.dto.response.MemberDetailResponse;
 import com.hairsalonproject2.member.dto.response.MemberSummaryResponse;
 import com.hairsalonproject2.member.service.CustomUserDetails;

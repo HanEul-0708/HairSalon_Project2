@@ -1,6 +1,6 @@
 package com.hairsalonproject2.member.controller;
 
-import com.hairsalonproject2.exception.BusinessException;
+import com.hairsalonproject2.common.exception.BusinessException;
 import com.hairsalonproject2.member.dto.request.MemberLoginRequest;
 import com.hairsalonproject2.member.dto.request.MemberPasswordChangeRequest;
 import com.hairsalonproject2.member.dto.request.MemberSignupRequest;

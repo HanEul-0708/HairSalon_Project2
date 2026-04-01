@@ -2,8 +2,8 @@ package com.hairsalonproject2.member.service;
 
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
-import com.hairsalonproject2.exception.BusinessException;
-import com.hairsalonproject2.exception.ErrorCode;
+import com.hairsalonproject2.common.exception.BusinessException;
+import com.hairsalonproject2.common.exception.ErrorCode;
 import com.hairsalonproject2.member.dto.request.MemberPasswordChangeRequest;
 import com.hairsalonproject2.member.dto.request.MemberSignupRequest;
 import com.hairsalonproject2.member.dto.request.MemberUpdateRequest;
