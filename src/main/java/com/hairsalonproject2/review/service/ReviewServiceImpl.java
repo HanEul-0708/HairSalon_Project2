@@ -224,7 +224,8 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     public List<DesignerRankingResponse> getTop3Designers() {
-        return reviewRepository.findTopDesignersByAverageRatingAndReviewCount(2L).stream()
+        return reviewRepository.findTopDesignersByAverageRatingAndReviewCount(2L)
+                .stream()
                 .limit(3)
                 .toList();
     }
@@ -234,7 +235,9 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     public List<MonthlyReviewStatResponse> getMonthlyReviewStats() {
-        return reviewRepository.findMonthlyReviewStats();
+        return reviewRepository.findMonthlyReviewStats()
+                .stream()
+                .toList();
     }
 
     /**
@@ -246,7 +249,9 @@ public class ReviewServiceImpl implements ReviewService {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 
-        return reviewRepository.findMonthlyReviewStatsByPeriod(startDateTime, endDateTime);
+        return reviewRepository.findMonthlyReviewStatsByPeriod(startDateTime, endDateTime)
+                .stream()
+                .toList();
     }
 
     /**
@@ -254,7 +259,8 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     public List<SalonRankingResponse> getTopSalons() {
-        return reviewRepository.findTopSalonsByAverageRating(2L).stream()
+        return reviewRepository.findTopSalonsByAverageRating(2L)
+                .stream()
                 .limit(3)
                 .toList();
     }
@@ -307,5 +313,21 @@ public class ReviewServiceImpl implements ReviewService {
                 // 리뷰 작성일
                 review.getCreatedAt()
         );
+    }
+
+    /**
+     * 소수점 1자리 반올림 공통 메서드
+     *
+     * 예:
+     * 4.3333 -> 4.3
+     * 3.6666 -> 3.7
+     *
+     * null이면 0.0 반환
+     */
+    private Double roundToOneDecimal(Double value) {
+        if (value == null) {
+            return 0.0;
+        }
+        return Math.round(value * 10) / 10.0;
     }
 }

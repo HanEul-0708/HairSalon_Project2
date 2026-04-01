@@ -61,4 +61,12 @@ public interface ReservationService {
      * 요청으로 받은 상태값으로 변경한다.
      */
     ReservationResponse updateReservationStatus(Integer reservationId, ReservationStatusUpdateRequest request);
+
+    /**
+     * 내 예약 목록 조회
+     *
+     * 현재 로그인한 회원의 예약 목록을 조회한다.
+     * 지금은 로그인 기능 연동 전이므로 memberId를 파라미터로 받아 사용
+     */
+    List<ReservationResponse> getMyReservations(String memberId);
 }

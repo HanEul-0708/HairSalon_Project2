@@ -48,13 +48,13 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             select new com.hairsalonproject2.review.dto.DesignerRankingResponse(
                 r.designer.designerId,
                 r.designer.name,
-                round(avg(r.rating), 1),
+                avg(r.rating),
                 count(r)
             )
             from Review r
             group by r.designer.designerId, r.designer.name
             having count(r) >= :minReviewCount
-            order by round(avg(r.rating), 1) desc, count(r) desc
+            order by avg(r.rating) desc, count(r) desc
             """)
     List<DesignerRankingResponse> findTopDesignersByAverageRatingAndReviewCount(Long minReviewCount);
 
@@ -66,7 +66,7 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
                 year(r.createdAt),
                 month(r.createdAt),
                 count(r),
-                round(avg(r.rating), 1)
+               avg(r.rating)
             )
             from Review r
             group by year(r.createdAt), month(r.createdAt)
@@ -103,13 +103,13 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             select new com.hairsalonproject2.review.dto.SalonRankingResponse(
                 r.designer.salon.salonId,
                 r.designer.salon.name,
-                round(avg(r.rating), 1),
+                avg(r.rating),
                 count(r)
             )
             from Review r
             group by r.designer.salon.salonId, r.designer.salon.name
             having count(r) >= :minReviewCount
-            order by round(avg(r.rating), 1) desc, count(r) desc
+            order by avg(r.rating) desc, count(r) desc
             """)
     List<SalonRankingResponse> findTopSalonsByAverageRating(Long minReviewCount);
 }

@@ -68,6 +68,20 @@ public class ReservationController {
     }
 
     /**
+     * 내 예약 목록 조회
+     *
+     * 현재는 로그인 기능이 완전히 연결되지 않았으므로
+     * 요청 파라미터로 memberId를 받아서 사용한다.
+     *
+     * 예:
+     * GET /reservations/my?memberId=user1
+     */
+    @GetMapping("/my")
+    public List<ReservationResponse> getMyReservations(@RequestParam String memberId) {
+        return reservationService.getMyReservations(memberId);
+    }
+
+    /**
      * 예약 취소
      */
     @DeleteMapping("/{id}")

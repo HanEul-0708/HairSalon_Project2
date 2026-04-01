@@ -16,12 +16,12 @@ GET http://localhost:8080/reviews
 ###
 
 ### 리뷰 단건 조회 테스트
-GET http://localhost:8080/reviews/1
+GET http://localhost:8080/reviews/2
 
 ###
 
 ### 리뷰 수정 테스트
-PUT http://localhost:8080/reviews/1
+PUT http://localhost:8080/reviews/2
 Content-Type: application/json
 
 {
@@ -29,10 +29,14 @@ Content-Type: application/json
   "content": "커트 괜찮았습니다."
 }
 
-###
+### 리뷰 수정 확인
+GET http://localhost:8080/reviews/2
 
 ### 리뷰 삭제 테스트
-DELETE http://localhost:8080/reviews/1
+DELETE http://localhost:8080/reviews/2
 
 ### 리뷰 상세 조회 테스트
-GET http://localhost:8080/reviews/1/detail
+GET http://localhost:8080/reviews/2/detail
+
+### 디자이너 TOP3 랭킹 실행
+GET http://localhost:8080/reviews/rankings/designers

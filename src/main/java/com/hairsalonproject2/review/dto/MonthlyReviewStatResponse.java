@@ -2,6 +2,7 @@ package com.hairsalonproject2.review.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * MonthlyReviewStatResponse
@@ -9,6 +10,7 @@ import lombok.Getter;
  * 월별 리뷰 수 / 평균 평점 집계 응답 DTO
  */
 @Getter
+@Setter
 @AllArgsConstructor
 public class MonthlyReviewStatResponse {
 

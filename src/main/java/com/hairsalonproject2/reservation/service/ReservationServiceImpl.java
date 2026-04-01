@@ -208,6 +208,23 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     /**
+     * 내 예약 목록 조회
+     *
+     * 현재는 로그인 연동 전이라
+     * memberId를 받아서 해당 회원의 예약 목록을 조회한다.
+     *
+     * 나중에 Spring Security / 세션 로그인 붙으면
+     * 로그인한 사용자 ID를 꺼내서 자동 조회하도록 바꾸면 된다.
+     */
+    @Override
+    public List<ReservationResponse> getMyReservations(String memberId) {
+        return reservationRepository.findByMember_MemberId(memberId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /**
      * 예약 취소
      *
      * 현재는 예약 상태만 CANCELLED로 변경
