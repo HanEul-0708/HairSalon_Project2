@@ -7,7 +7,6 @@ import com.hairsalonproject2.board.entity.Board;
 import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.reservation.entity.Reservation;
 import com.hairsalonproject2.review.entity.Review;
-import com.hairsalonproject2.salon.entity.SalonLike;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -113,8 +112,6 @@ public class Member extends BaseCreatedEntity {
     /**
      * 회원이 누른 좋아요 목록
      */
-    @OneToMany(mappedBy = "member")
-    private List<SalonLike> salonLikes = new ArrayList<>();
 
     // ==============================
     // 생성자 (Builder)
