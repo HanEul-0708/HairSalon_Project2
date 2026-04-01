@@ -70,6 +70,7 @@
         <th>권한</th>
         <th>가입일</th>
         <th>상세보기</th>
+        <th>상태</th>
     </tr>
     </thead>
 
@@ -81,6 +82,7 @@
         <td th:text="${member.email}">test@example.com</td>
         <td th:text="${member.phone}">010-1234-5678</td>
         <td th:text="${member.role.description}">USER</td>
+        <td th:text="${member.status.description}"></td>
 
         <!-- 가입일 표시
              createdAt 이 LocalDateTime 이면 아래처럼 format 가능

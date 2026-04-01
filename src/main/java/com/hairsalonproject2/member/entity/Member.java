@@ -2,6 +2,7 @@ package com.hairsalonproject2.member.entity;
 
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.entity.BaseCreatedEntity;
+import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.board.entity.Board;
 import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.reservation.entity.Reservation;
@@ -71,6 +72,13 @@ public class Member extends BaseCreatedEntity {
     @Column(name = "role")
     private MemberRole role;
 
+    /**
+     * 회원 상태
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private MemberStatus status;
+
     // ==============================
     // 연관관계
     // ==============================
@@ -114,13 +122,14 @@ public class Member extends BaseCreatedEntity {
 
     @Builder
     public Member(String memberId, String password, String name,
-                  String phone, String email, MemberRole role) {
+                  String phone, String email, MemberRole role, MemberStatus status) {
         this.memberId = memberId;
         this.password = password;
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.role = role;
+        this.status = status;
     }
 
     // ==============================
@@ -148,5 +157,12 @@ public class Member extends BaseCreatedEntity {
      */
     public void changeRole(MemberRole role) {
         this.role = role;
+    }
+
+    /**
+     * 회원 상태 변경
+     */
+    public void changeStatus(MemberStatus status) {
+        this.status = status;
     }
 }

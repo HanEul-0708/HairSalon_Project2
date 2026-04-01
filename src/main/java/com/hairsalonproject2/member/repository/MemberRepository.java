@@ -18,6 +18,8 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 
     boolean existsByEmail(String email);
 
+    long countByRole(MemberRole role);
+
     /**
      * 권한별 회원 조회
      */

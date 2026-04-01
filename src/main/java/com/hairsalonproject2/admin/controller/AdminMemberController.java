@@ -6,6 +6,7 @@ import com.hairsalonproject2.member.dto.response.MemberDetailResponse;
 import com.hairsalonproject2.member.dto.response.MemberSummaryResponse;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.member.service.MemberService;
+import com.hairsalonproject2.common.constant.MemberStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -55,6 +56,7 @@ public class AdminMemberController {
         MemberDetailResponse member = memberService.getMemberDetailByAdmin(memberId);
         model.addAttribute("member", member);
         model.addAttribute("roles", MemberRole.values());
+        model.addAttribute("statuses", MemberStatus.values());
         return "admin/member-detail";
     }
 
@@ -98,6 +100,26 @@ public class AdminMemberController {
 
         } catch (BusinessException e) {
             // 권한 변경 실패 메시지도 상세 화면에서 보여준다.
+            redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
+            return "redirect:/admin/members/" + memberId;
+        }
+    }
+
+    /**
+     * 회원 상태 변경
+     */
+    @PostMapping("/{memberId}/status")
+    public String changeStatus(@PathVariable String memberId,
+                               @RequestParam MemberStatus status,
+                               @AuthenticationPrincipal CustomUserDetails userDetails,
+                               RedirectAttributes redirectAttributes) {
+
+        try {
+            memberService.changeMemberStatusByAdmin(userDetails.getUsername(), memberId, status);
+            redirectAttributes.addFlashAttribute("successMessage", "회원 상태가 변경되었습니다.");
+            return "redirect:/admin/members/" + memberId;
+
+        } catch (BusinessException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getErrorCode().getMessage());
             return "redirect:/admin/members/" + memberId;
         }

@@ -1,6 +1,7 @@
 package com.hairsalonproject2.member.dto.response;
 
 import com.hairsalonproject2.common.constant.MemberRole;
+import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.member.entity.Member;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +21,7 @@ public class MemberDetailResponse {
     private String email;
     private MemberRole role;
     private LocalDateTime createdAt;
+    private MemberStatus status;
 
     public static MemberDetailResponse from(Member member) {
         return MemberDetailResponse.builder()
@@ -29,6 +31,7 @@ public class MemberDetailResponse {
                 .email(member.getEmail())
                 .role(member.getRole())
                 .createdAt(member.getCreatedAt())
+                .status(member.getStatus())
                 .build();
     }
 }

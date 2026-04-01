@@ -1,6 +1,7 @@
 package com.hairsalonproject2.member.service;
 
 import com.hairsalonproject2.common.constant.MemberRole;
+import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.exception.BusinessException;
 import com.hairsalonproject2.exception.ErrorCode;
 import com.hairsalonproject2.member.dto.request.MemberPasswordChangeRequest;
@@ -75,6 +76,7 @@ public class MemberService {
                 .phone(request.getPhone())
                 .email(request.getEmail())
                 .role(MemberRole.USER)
+                .status(MemberStatus.ACTIVE)
                 .build();
 
         memberRepository.save(member);
@@ -192,12 +194,25 @@ public class MemberService {
     @Transactional
     public void deleteMemberByAdmin(String adminMemberId, String targetMemberId) {
 
-        // 관리자가 자기 자신을 삭제하려는 경우 차단
+        // 1. 관리자가 자기 자신을 삭제하려는 경우 차단
         if (adminMemberId.equals(targetMemberId)) {
             throw new BusinessException(ErrorCode.CANNOT_DELETE_MYSELF);
         }
 
-        memberRepository.delete(getMember(targetMemberId));
+        // 2. 삭제 대상 회원 조회
+        Member targetMember = getMember(targetMemberId);
+
+        // 3. 마지막 관리자 삭제 방지
+        if (targetMember.getRole() == MemberRole.ADMIN) {
+            long adminCount = memberRepository.countByRole(MemberRole.ADMIN);
+
+            if (adminCount <= 1) {
+                throw new BusinessException(ErrorCode.LAST_ADMIN_CANNOT_BE_DELETED);
+            }
+        }
+
+        // 4. 실제 삭제 대신 상태 변경
+        targetMember.changeStatus(MemberStatus.DELETED);
     }
 
     /**
@@ -220,15 +235,24 @@ public class MemberService {
         // 2. 대상 회원 조회
         Member member = getMember(targetMemberId);
 
-        // 3. 디자이너 연결 여부 확인
+        // 3. 마지막 관리자 권한 변경 방지
+        if (member.getRole() == MemberRole.ADMIN && role != MemberRole.ADMIN) {
+            long adminCount = memberRepository.countByRole(MemberRole.ADMIN);
+
+            if (adminCount <= 1) {
+                throw new BusinessException(ErrorCode.LAST_ADMIN_ROLE_CANNOT_BE_CHANGED);
+            }
+        }
+
+        // 4. 디자이너 연결 여부 확인
         boolean isLinkedDesigner = designerRepository.existsByMember_MemberId(targetMemberId);
 
-        // 4. 디자이너에 연결된 계정은 DESIGNER 권한만 허용
+        // 5. 디자이너에 연결된 계정은 DESIGNER 권한만 허용
         if (isLinkedDesigner && role != MemberRole.DESIGNER) {
             throw new BusinessException(ErrorCode.CONNECTED_DESIGNER_ACCOUNT_ROLE_CHANGE_NOT_ALLOWED);
         }
 
-        // 5. 권한 변경
+        // 6. 권한 변경
         member.changeRole(role);
     }
 
@@ -238,5 +262,33 @@ public class MemberService {
     private Member getMember(String memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    /**
+     * 관리자용 회원 상태 변경
+     *
+     * 규칙
+     * 1. 관리자는 자기 자신의 상태를 변경할 수 없다.
+     * 2. 대상 회원 상태를 ACTIVE / INACTIVE / DELETED 로 변경한다.
+     *
+     * @param adminMemberId 현재 로그인한 관리자 아이디
+     * @param targetMemberId 상태 변경 대상 회원 아이디
+     * @param status 변경할 상태
+     */
+    @Transactional
+    public void changeMemberStatusByAdmin(String adminMemberId,
+                                          String targetMemberId,
+                                          MemberStatus status) {
+
+        // 1. 자기 자신의 상태 변경 금지
+        if (adminMemberId.equals(targetMemberId)) {
+            throw new BusinessException(ErrorCode.CANNOT_CHANGE_MY_STATUS);
+        }
+
+        // 2. 대상 회원 조회
+        Member member = getMember(targetMemberId);
+
+        // 3. 상태 변경
+        member.changeStatus(status);
     }
 }

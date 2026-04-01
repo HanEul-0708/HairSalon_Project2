@@ -42,13 +42,9 @@
                 <span>운영시간 09:00 ~ 21:00</span>
             </div>
 
-            <!-- 오른쪽: 로그인 상태별 분기 메뉴 -->
             <div class="topbar__right">
 
-                <!--
-                    비로그인 상태
-                    isAnonymous() → 로그인 안 한 사람에게만 보임
-                -->
+                <!-- 비로그인 -->
                 <a th:href="@{/members/login}"
                    sec:authorize="isAnonymous()">로그인</a>
                 <span class="topbar__sep"
@@ -56,46 +52,27 @@
                 <a th:href="@{/members/signup}"
                    sec:authorize="isAnonymous()">회원가입</a>
 
-                <!--
-                    로그인 상태 공통
-                    isAuthenticated() → 로그인한 사람에게만 보임
-                -->
+                <!-- 로그인 사용자 -->
                 <span sec:authorize="isAuthenticated()" class="topbar__user">
                     <strong sec:authentication="name"></strong> 님
                 </span>
 
-                <!-- 일반 사용자 -->
                 <a th:href="@{/members/me}"
-                   sec:authorize="hasRole('USER')">마이페이지</a>
+                   sec:authorize="isAuthenticated()">마이페이지</a>
 
                 <!-- 디자이너 -->
-                <a th:href="@{/members/me}"
-                   sec:authorize="hasRole('DESIGNER')">마이페이지</a>
-
-                <!--
-                    디자이너 전용
-                    hasRole('DESIGNER') → DESIGNER 권한만 보임
-                -->
                 <span class="topbar__sep"
                       sec:authorize="hasRole('DESIGNER')"></span>
                 <a th:href="@{/designers/me/reservations}"
                    sec:authorize="hasRole('DESIGNER')">예약 관리</a>
 
-                <!--
-                    관리자 전용
-                    hasRole('ADMIN') → ADMIN 권한만 보임
-                -->
+                <!-- 관리자 -->
                 <span class="topbar__sep"
                       sec:authorize="hasRole('ADMIN')"></span>
-                <a th:href="@{/admin}"
+                <a th:href="@{/admin/members}"
                    sec:authorize="hasRole('ADMIN')">관리자 메뉴</a>
 
-                <!--
-                    로그아웃 버튼
-                    Spring Security 는 로그아웃을 반드시 POST 방식으로 처리
-                    GET 으로 하면 CSRF 보안 오류 발생
-                    th:name + th:value → CSRF 토큰 자동 삽입
-                -->
+                <!-- 로그아웃 -->
                 <span class="topbar__sep"
                       sec:authorize="isAuthenticated()"></span>
                 <form th:action="@{/members/logout}"
@@ -313,13 +290,21 @@
 
                 <!-- 관리자 -->
                 <span sec:authorize="hasRole('ADMIN')">
-                    <a th:href="@{/admin}">관리자</a>
+                    <a th:href="@{/admin/members}">관리자</a>
                 </span>
 
                 <!-- 디자이너 -->
                 <span sec:authorize="hasRole('DESIGNER')">
                     <a th:href="@{/designers/me/reservations}">예약 관리</a>
                 </span>
+
+                <!-- 로그아웃 -->
+                <form th:action="@{/members/logout}" method="post">
+                    <input type="hidden"
+                           th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}">
+                    <button type="submit">로그아웃</button>
+                </form>
             </div>
 
             <a th:href="@{/}">홈</a>
