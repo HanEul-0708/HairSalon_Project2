@@ -12,7 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/salons")
@@ -79,9 +79,9 @@ public class SalonController {
 
     @PostMapping("/{salonId}/likes")
     public String like(@PathVariable Integer salonId, Authentication authentication, RedirectAttributes redirectAttributes) {
-        if (authentication == null) {
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             redirectAttributes.addFlashAttribute("message", "로그인이 필요합니다.");
-            return "redirect:/members/login";
+            return "redirect:/login";
         }
         boolean created = salonQueryService.like(salonId, authentication.getName());
         redirectAttributes.addFlashAttribute("message", created ? "찜 완료" : "이미 찜한 살롱입니다.");
@@ -90,9 +90,9 @@ public class SalonController {
 
     @DeleteMapping("/{salonId}/likes")
     public String unlike(@PathVariable Integer salonId, Authentication authentication, RedirectAttributes redirectAttributes) {
-        if (authentication == null) {
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             redirectAttributes.addFlashAttribute("message", "로그인이 필요합니다.");
-            return "redirect:/members/login";
+            return "redirect:/login";
         }
         boolean deleted = salonQueryService.unlike(salonId, authentication.getName());
         redirectAttributes.addFlashAttribute("message", deleted ? "찜 취소 완료" : "찜 정보가 없습니다.");
