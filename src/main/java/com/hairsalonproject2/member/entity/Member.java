@@ -71,6 +71,15 @@ public class Member extends BaseCreatedEntity {
     @Column(name = "role")
     private MemberRole role;
 
+    /**
+     * 회원 상태
+     * 기본값 ACTIVE
+     * @Builder.Default → Builder 사용 시에도 기본값 보장
+     */
+    @Builder.Default
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "ACTIVE";
+
     // ==============================
     // 연관관계
     // ==============================

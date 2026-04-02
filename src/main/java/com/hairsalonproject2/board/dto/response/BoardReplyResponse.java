@@ -1,6 +1,7 @@
 package com.hairsalonproject2.board.dto.response;
 
 import com.hairsalonproject2.board.entity.Board;
+import com.hairsalonproject2.common.constant.BoardType;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -8,11 +9,6 @@ import java.time.LocalDateTime;
 /**
  * BoardReplyResponse
  * 답글 목록 표시 전용 DTO
- *
- * 이유:
- * 기존 BoardResponse 는 목록 화면용이라
- * 답글 본문(content)이 없다.
- * 그래서 상세 화면의 답글 영역에는 전용 DTO를 쓰는 것이 안전하다.
  */
 @Getter
 public class BoardReplyResponse {
@@ -56,6 +52,30 @@ public class BoardReplyResponse {
      * 수정일시
      */
     private LocalDateTime updatedAt;
+
+    public BoardReplyResponse() {
+    }
+
+    /**
+     * JPQL DTO 조회용 생성자
+     */
+    public BoardReplyResponse(Integer boardId,
+                              Integer parentBoardId,
+                              BoardType type,
+                              String title,
+                              String content,
+                              String memberId,
+                              LocalDateTime createdAt,
+                              LocalDateTime updatedAt) {
+        this.boardId = boardId;
+        this.parentBoardId = parentBoardId;
+        this.type = type != null ? type.name() : null;
+        this.title = title;
+        this.content = content;
+        this.memberId = memberId;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
 
     /**
      * 정적 생성 메서드

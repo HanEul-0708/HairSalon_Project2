@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -39,8 +40,13 @@ public class BoardImage {
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
 
-    /** 생성 시간 */
-    @Column(name = "created_at")
+    /**
+     * 생성 시간
+     * 저장 시 자동으로 현재 시간이 들어감
+     * updatable = false → 한 번 저장되면 수정 불가
+     */
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Builder
