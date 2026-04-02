@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>예약 내역</title>
-    <link rel="stylesheet" href="../../static/css/common.css">
-    <link rel="stylesheet" href="../../static/css/reservation.css">
-    <script src="../../static/js/reservation.js"></script>
+
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/reservation.css">
 </head>
 <body>
-<div class="page-container">
+<div class="container">
     <div class="page-header">
         <h1 class="page-title">예약 내역</h1>
-        <p class="page-desc">사용자가 예약한 내역을 확인할 수 있는 화면입니다.</p>
+        <p class="page-desc">사용자의 예약 내역을 확인할 수 있는 화면입니다.</p>
     </div>
 
     <div class="reservation-list">
@@ -24,8 +24,8 @@
                 <p><strong>상태</strong> <span class="status confirmed">예약완료</span></p>
             </div>
             <div class="reservation-actions">
-                <button type="button" class="btn btn-outline">상세보기</button>
-                <button type="button" class="btn btn-danger">예약취소</button>
+                <a href="/reservation/create" class="btn btn-primary">예약하기</a>
+                <a href="/review/write" class="btn btn-outline">리뷰작성</a>
             </div>
         </div>
 
@@ -37,7 +37,7 @@
                 <p><strong>상태</strong> <span class="status done">방문완료</span></p>
             </div>
             <div class="reservation-actions">
-                <button type="button" class="btn btn-outline">상세보기</button>
+                <a href="/review/write" class="btn btn-primary">리뷰작성</a>
             </div>
         </div>
 
@@ -49,27 +49,7 @@
                 <p><strong>상태</strong> <span class="status canceled">예약취소</span></p>
             </div>
             <div class="reservation-actions">
-                <button type="button" class="btn btn-outline">상세보기</button>
-            </div>
-            <div class="page-header">
-                <h1 class="page-title">예약 내역</h1>
-
-                <a href="/reservation/create" class="btn btn-primary">
-                    예약하기
-                </a>
-            </div>
-            <div class="reservation-actions">
-
-                <button class="btn btn-outline">
-                    상세보기
-                </button>
-
-                <button class="btn btn-primary">
-                    리뷰작성
-                </button>
-                <a href="/review/write" class="btn btn-primary">
-                    리뷰작성
-                </a>
+                <a href="/reservation/create" class="btn btn-outline">다시예약</a>
             </div>
         </div>
     </div>
