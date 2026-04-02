@@ -10,12 +10,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 
 /**
- * GlobalExceptionHandler
- *
- * 프로젝트 전체 예외를 공통 처리하는 클래스
+ * 프로젝트 전체 API 예외를 공통 처리하는 클래스
  */
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalApiExceptionHandler {
 
     /**
      * 잘못된 요청값 검증 실패 처리

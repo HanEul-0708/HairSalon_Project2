@@ -96,6 +96,11 @@ public class SecurityConfig {
                         .logoutSuccessUrl("/members/login?logout=true")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
+                        .permitAll()
+                )
+                // ✅ 권한 없는 사용자가 접근했을 때 이동할 페이지
+                .exceptionHandling(exception -> exception
+                        .accessDeniedPage("/access-denied")
                 );
 
         return http.build();

@@ -173,4 +173,246 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    /* =============================================
+    6. simple-header (로그인/회원가입 전용)
+    푸터 기준 색상 통일 + JS 스타일 처리
+    ============================================= */
+    var simpleHeader = document.querySelector(".simple-header");
+
+    if (simpleHeader) {
+        var simpleHeaderInner = simpleHeader.querySelector(".simple-header__inner");
+        var simpleLogo = simpleHeader.querySelector(".simple-logo");
+        var simpleLogoMark = simpleHeader.querySelector(".simple-logo__mark");
+        var simpleLogoText = simpleHeader.querySelector(".simple-logo__text");
+        var simpleLogoStrong = simpleHeader.querySelector(".simple-logo__text strong");
+        var simpleLogoSmall = simpleHeader.querySelector(".simple-logo__text small");
+        var simpleNav = simpleHeader.querySelector(".simple-nav");
+        var simpleButtons = simpleHeader.querySelectorAll(".simple-btn");
+        var outlineButtons = simpleHeader.querySelectorAll(".simple-btn--outline");
+        var primaryButtons = simpleHeader.querySelectorAll(".simple-btn--primary");
+        var firstMain = document.querySelector("main");
+
+        function applySimpleHeaderBaseStyles() {
+            /* footer 기준 다크 톤으로 통일 */
+            Object.assign(simpleHeader.style, {
+                position: "fixed",
+                top: "0",
+                left: "0",
+                right: "0",
+                width: "100%",
+                zIndex: "999",
+                backgroundColor: "var(--primary)",
+                borderBottom: "1px solid rgba(255,255,255,0.08)",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.08)"
+            });
+
+            if (simpleHeaderInner) {
+                Object.assign(simpleHeaderInner.style, {
+                    maxWidth: "1200px",
+                    margin: "0 auto",
+                    padding: "14px 20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "16px"
+                });
+            }
+
+            if (simpleLogo) {
+                Object.assign(simpleLogo.style, {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    textDecoration: "none"
+                });
+            }
+
+            /* footer-brand__logo 톤에 맞춤 */
+            if (simpleLogoMark) {
+                Object.assign(simpleLogoMark.style, {
+                    width: "52px",
+                    height: "52px",
+                    borderRadius: "14px",
+                    backgroundColor: "var(--primary)",
+                    color: "var(--gold-light)",
+                    border: "1px solid rgba(201,168,76,0.3)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "800",
+                    fontSize: "14px",
+                    lineHeight: "1",
+                    flexShrink: "0"
+                });
+            }
+
+            if (simpleLogoText) {
+                Object.assign(simpleLogoText.style, {
+                    display: "flex",
+                    flexDirection: "column",
+                    lineHeight: "1.2"
+                });
+            }
+
+            if (simpleLogoStrong) {
+                Object.assign(simpleLogoStrong.style, {
+                    display: "block",
+                    color: "var(--white)",
+                    fontSize: "18px",
+                    fontFamily: "Georgia, serif",
+                    letterSpacing: ".04em",
+                    fontWeight: "700"
+                });
+            }
+
+            if (simpleLogoSmall) {
+                Object.assign(simpleLogoSmall.style, {
+                    color: "rgba(255,255,255,0.55)",
+                    fontSize: "11px",
+                    marginTop: "3px"
+                });
+            }
+
+            if (simpleNav) {
+                Object.assign(simpleNav.style, {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginLeft: "auto"
+                });
+            }
+
+            simpleButtons.forEach(function (button) {
+                Object.assign(button.style, {
+                    padding: "9px 16px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    textDecoration: "none",
+                    transition: "all 0.2s ease",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    whiteSpace: "nowrap",
+                    cursor: "pointer"
+                });
+            });
+
+            /* 홈 / 로그인 = footer 링크 느낌 */
+            outlineButtons.forEach(function (button) {
+                Object.assign(button.style, {
+                    backgroundColor: "transparent",
+                    color: "rgba(255,255,255,0.72)",
+                    border: "1px solid rgba(201,168,76,0.45)"
+                });
+            });
+
+            /* 회원가입 = footer의 골드 강조 느낌 */
+            primaryButtons.forEach(function (button) {
+                Object.assign(button.style, {
+                    backgroundColor: "var(--gold)",
+                    color: "var(--primary)",
+                    border: "1px solid var(--gold)",
+                    fontWeight: "700",
+                    boxShadow: "0 4px 16px rgba(201,168,76,0.32)"
+                });
+            });
+
+            document.body.style.paddingTop = "82px";
+
+            if (firstMain) {
+                firstMain.style.paddingTop = "12px";
+            }
+        }
+
+        function applySimpleHeaderResponsiveStyles() {
+            var isMobile = window.innerWidth <= 768;
+
+            if (!simpleHeaderInner || !simpleNav) return;
+
+            if (isMobile) {
+                simpleHeaderInner.style.flexDirection = "column";
+                simpleHeaderInner.style.alignItems = "stretch";
+                simpleHeaderInner.style.padding = "12px 16px";
+
+                simpleNav.style.width = "100%";
+                simpleNav.style.justifyContent = "center";
+                simpleNav.style.flexWrap = "wrap";
+                simpleNav.style.gap = "8px";
+
+                document.body.style.paddingTop = "118px";
+
+                if (firstMain) {
+                    firstMain.style.paddingTop = "18px";
+                }
+            } else {
+                simpleHeaderInner.style.flexDirection = "row";
+                simpleHeaderInner.style.alignItems = "center";
+                simpleHeaderInner.style.padding = "14px 20px";
+
+                simpleNav.style.width = "auto";
+                simpleNav.style.justifyContent = "flex-end";
+                simpleNav.style.flexWrap = "nowrap";
+                simpleNav.style.gap = "10px";
+
+                document.body.style.paddingTop = "82px";
+
+                if (firstMain) {
+                    firstMain.style.paddingTop = "12px";
+                }
+            }
+        }
+
+        /* hover도 JS로 처리 */
+        outlineButtons.forEach(function (button) {
+            button.addEventListener("mouseenter", function () {
+                button.style.color = "var(--gold-light)";
+                button.style.borderColor = "var(--gold)";
+                button.style.backgroundColor = "rgba(201,168,76,0.10)";
+            });
+
+            button.addEventListener("mouseleave", function () {
+                button.style.color = "rgba(255,255,255,0.72)";
+                button.style.borderColor = "rgba(201,168,76,0.45)";
+                button.style.backgroundColor = "transparent";
+            });
+        });
+
+        primaryButtons.forEach(function (button) {
+            button.addEventListener("mouseenter", function () {
+                button.style.backgroundColor = "var(--gold-light)";
+                button.style.borderColor = "var(--gold-light)";
+                button.style.boxShadow = "0 8px 22px rgba(201,168,76,0.42)";
+            });
+
+            button.addEventListener("mouseleave", function () {
+                button.style.backgroundColor = "var(--gold)";
+                button.style.borderColor = "var(--gold)";
+                button.style.boxShadow = "0 4px 16px rgba(201,168,76,0.32)";
+            });
+        });
+
+        /* 현재 페이지 약한 강조 */
+        var currentPathForSimple = window.location.pathname;
+        simpleButtons.forEach(function (button) {
+            var href = button.getAttribute("href");
+            if (!href) return;
+
+            if (currentPathForSimple === href) {
+                button.style.color = "var(--gold-light)";
+
+                if (button.classList.contains("simple-btn--outline")) {
+                    button.style.backgroundColor = "rgba(201,168,76,0.10)";
+                    button.style.borderColor = "var(--gold)";
+                }
+            }
+        });
+
+        applySimpleHeaderBaseStyles();
+        applySimpleHeaderResponsiveStyles();
+        window.addEventListener("resize", applySimpleHeaderResponsiveStyles);
+    }
+
+
+
 }); /* DOMContentLoaded 끝 */

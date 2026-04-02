@@ -1311,3 +1311,12 @@ textarea.form-control {
     .footer-links   { grid-template-columns: 1fr; }
     .footer__bottom { padding: 14px 20px 20px; }
 }
+
+/* =========================================
+   SIMPLE HEADER (로그인/회원가입 전용)
+   구조만 최소 유지, 스타일은 JS에서 처리
+========================================= */
+
+.simple-page {
+    padding-top: 80px;
+}

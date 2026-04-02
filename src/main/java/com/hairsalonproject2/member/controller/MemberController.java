@@ -63,8 +63,18 @@ public class MemberController {
     }
 
     @GetMapping("/login")
-    public String loginForm(Model model) {
-        model.addAttribute("memberLoginRequest", new MemberLoginRequest());
+    public String loginForm(Model model,
+                            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        // 이미 로그인된 상태면 로그인 페이지 못 들어오게 막기
+        if (userDetails != null) {
+            return "redirect:/members/me"; // 또는 "/" 가능
+        }
+
+        if (!model.containsAttribute("memberLoginRequest")) {
+            model.addAttribute("memberLoginRequest", new MemberLoginRequest());
+        }
+
         return "member/login";
     }
 

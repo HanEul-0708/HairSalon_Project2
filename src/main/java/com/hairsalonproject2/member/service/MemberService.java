@@ -245,12 +245,12 @@ public class MemberService {
         }
 
         // 4. 디자이너 연결 여부 확인
-        boolean isLinkedDesigner = designerRepository.existsByMember_MemberId(targetMemberId);
+//      boolean isLinkedDesigner = designerRepository.existsByMember_MemberId(targetMemberId);
 
         // 5. 디자이너에 연결된 계정은 DESIGNER 권한만 허용
-        if (isLinkedDesigner && role != MemberRole.DESIGNER) {
-            throw new BusinessException(ErrorCode.CONNECTED_DESIGNER_ACCOUNT_ROLE_CHANGE_NOT_ALLOWED);
-        }
+//      if (isLinkedDesigner && role != MemberRole.DESIGNER) {
+//          throw new BusinessException(ErrorCode.CONNECTED_DESIGNER_ACCOUNT_ROLE_CHANGE_NOT_ALLOWED);
+//      }
 
         // 6. 권한 변경
         member.changeRole(role);

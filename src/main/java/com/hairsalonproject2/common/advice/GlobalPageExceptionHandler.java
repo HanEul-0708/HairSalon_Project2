@@ -16,19 +16,21 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
  * 3. 에러 페이지로 메시지 전달
  */
 @ControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalPageExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public String handleBusinessException(BusinessException e,
                                           HttpServletRequest request,
                                           Model model) {
 
-        // 🔥 Ajax / API 대응 (추후 확장 가능)
+        // Ajax / API 대응 (추후 확장 가능)
         if (request.getHeader("X-Requested-With") != null) {
+            model.addAttribute("errorMessage", e.getErrorCode().getMessage());
+            model.addAttribute("requestUri", request.getRequestURI());
             return "error/common-error";
         }
 
-        // 🔥 referer로 이전 페이지로 돌려보내기
+        // referer로 이전 페이지로 돌려보내기
         String referer = request.getHeader("Referer");
 
         if (referer != null) {
