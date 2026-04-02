@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>리뷰 작성</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/review.css">
+</head>
+<body>
+
+<div class="page-container">
+
+    <h1 class="page-title">리뷰 작성</h1>
+
+    <form class="review-form">
+
+        <div class="form-group">
+            <label>별점</label>
+            <select>
+                <option>5점</option>
+                <option>4점</option>
+                <option>3점</option>
+                <option>2점</option>
+                <option>1점</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>리뷰 내용</label>
+            <textarea rows="5" placeholder="리뷰를 입력해주세요"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>이미지 업로드</label>
+            <input type="file">
+        </div>
+
+        <button type="submit" class="btn-submit">리뷰 등록</button>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                리뷰 등록
+            </button>
+
+            <a href="/review/list" class="btn btn-outline">
+                목록으로
+            </a>
+        </div>
+    </form>
+
+</div>
+
+<script src="/js/review.js"></script>
+
+</body>
+</html>

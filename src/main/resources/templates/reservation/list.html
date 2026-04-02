@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>예약 내역</title>
+    <link rel="stylesheet" href="../../static/css/common.css">
+    <link rel="stylesheet" href="../../static/css/reservation.css">
+    <script src="../../static/js/reservation.js"></script>
+</head>
+<body>
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">예약 내역</h1>
+        <p class="page-desc">사용자가 예약한 내역을 확인할 수 있는 화면입니다.</p>
+    </div>
+
+    <div class="reservation-list">
+        <div class="reservation-card">
+            <div class="reservation-info">
+                <p><strong>예약일시</strong> 2026-04-05 14:00</p>
+                <p><strong>디자이너</strong> 김디자이너</p>
+                <p><strong>시술명</strong> 남성 커트</p>
+                <p><strong>상태</strong> <span class="status confirmed">예약완료</span></p>
+            </div>
+            <div class="reservation-actions">
+                <button type="button" class="btn btn-outline">상세보기</button>
+                <button type="button" class="btn btn-danger">예약취소</button>
+            </div>
+        </div>
+
+        <div class="reservation-card">
+            <div class="reservation-info">
+                <p><strong>예약일시</strong> 2026-04-07 16:30</p>
+                <p><strong>디자이너</strong> 박디자이너</p>
+                <p><strong>시술명</strong> 여성 펌</p>
+                <p><strong>상태</strong> <span class="status done">방문완료</span></p>
+            </div>
+            <div class="reservation-actions">
+                <button type="button" class="btn btn-outline">상세보기</button>
+            </div>
+        </div>
+
+        <div class="reservation-card">
+            <div class="reservation-info">
+                <p><strong>예약일시</strong> 2026-04-10 11:00</p>
+                <p><strong>디자이너</strong> 이디자이너</p>
+                <p><strong>시술명</strong> 염색</p>
+                <p><strong>상태</strong> <span class="status canceled">예약취소</span></p>
+            </div>
+            <div class="reservation-actions">
+                <button type="button" class="btn btn-outline">상세보기</button>
+            </div>
+            <div class="page-header">
+                <h1 class="page-title">예약 내역</h1>
+
+                <a href="/reservation/create" class="btn btn-primary">
+                    예약하기
+                </a>
+            </div>
+            <div class="reservation-actions">
+
+                <button class="btn btn-outline">
+                    상세보기
+                </button>
+
+                <button class="btn btn-primary">
+                    리뷰작성
+                </button>
+                <a href="/review/write" class="btn btn-primary">
+                    리뷰작성
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/reservation.js"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>예약하기</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/reservation.css">
+</head>
+<body>
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title">예약하기</h1>
+        <p class="page-desc">디자이너와 시술, 날짜와 시간을 선택하여 예약할 수 있습니다.</p>
+    </div>
+
+    <form class="reservation-form">
+        <div class="form-group">
+            <label for="designer">디자이너</label>
+            <select id="designer" name="designer">
+                <option selected disabled>디자이너를 선택하세요</option>
+                <option>김디자이너</option>
+                <option>박디자이너</option>
+                <option>이디자이너</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="service">시술명</label>
+            <select id="service" name="service">
+                <option selected disabled>시술을 선택하세요</option>
+                <option>남성 커트</option>
+                <option>여성 펌</option>
+                <option>염색</option>
+                <option>클리닉</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="date">예약 날짜</label>
+                <input type="date" id="date" name="date">
+            </div>
+
+            <div class="form-group">
+                <label for="time">예약 시간</label>
+                <input type="time" id="time" name="time">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="request">요청사항</label>
+            <textarea id="request" name="request" rows="4" placeholder="원하는 스타일이나 요청사항을 입력해주세요."></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">예약하기</button>
+            <button type="reset" class="btn btn-outline">다시입력</button>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">예약하기</button>
+
+            <a href="/reservation/list" class="btn btn-outline">
+                목록으로
+            </a>
+        </div>
+    </form>
+</div>
+
+<script src="/js/reservation.js"></script>
+</body>
+</html>
