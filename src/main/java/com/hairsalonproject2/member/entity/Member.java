@@ -2,11 +2,11 @@ package com.hairsalonproject2.member.entity;
 
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.entity.BaseCreatedEntity;
-import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.board.entity.Board;
 import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.reservation.entity.Reservation;
 import com.hairsalonproject2.review.entity.Review;
+import com.hairsalonproject2.salon.entity.SalonLike;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -73,10 +73,12 @@ public class Member extends BaseCreatedEntity {
 
     /**
      * 회원 상태
+     * 기본값 ACTIVE
+     * @Builder.Default → Builder 사용 시에도 기본값 보장
      */
-    @Enumerated(EnumType.STRING)
+    @Builder.Default
     @Column(name = "status", nullable = false, length = 20)
-    private MemberStatus status;
+    private String status = "ACTIVE";
 
     // ==============================
     // 연관관계
@@ -112,6 +114,8 @@ public class Member extends BaseCreatedEntity {
     /**
      * 회원이 누른 좋아요 목록
      */
+    @OneToMany(mappedBy = "member")
+    private List<SalonLike> salonLikes = new ArrayList<>();
 
     // ==============================
     // 생성자 (Builder)
@@ -119,14 +123,13 @@ public class Member extends BaseCreatedEntity {
 
     @Builder
     public Member(String memberId, String password, String name,
-                  String phone, String email, MemberRole role, MemberStatus status) {
+                  String phone, String email, MemberRole role) {
         this.memberId = memberId;
         this.password = password;
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.role = role;
-        this.status = status;
     }
 
     // ==============================
@@ -154,12 +157,5 @@ public class Member extends BaseCreatedEntity {
      */
     public void changeRole(MemberRole role) {
         this.role = role;
-    }
-
-    /**
-     * 회원 상태 변경
-     */
-    public void changeStatus(MemberStatus status) {
-        this.status = status;
     }
 }

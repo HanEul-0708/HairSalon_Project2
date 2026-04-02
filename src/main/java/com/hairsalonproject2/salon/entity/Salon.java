@@ -177,6 +177,8 @@ public class Salon extends BaseTimeEntity {
     /**
      * 미용실 좋아요 목록
      */
+    @OneToMany(mappedBy = "salon")
+    private List<SalonLike> salonLikes = new ArrayList<>();
 
     // ==============================
     // 생성자

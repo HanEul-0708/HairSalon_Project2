@@ -14,7 +14,9 @@ import com.hairsalonproject2.board.dto.response.BoardSummaryResponse;
 import com.hairsalonproject2.board.entity.Board;
 import com.hairsalonproject2.board.entity.BoardFile;
 import com.hairsalonproject2.board.entity.BoardImage;
+import com.hairsalonproject2.board.entity.BoardReport;
 import com.hairsalonproject2.board.exception.BoardException;
+import com.hairsalonproject2.board.repository.BoardReportRepository;
 import com.hairsalonproject2.board.repository.BoardRepository;
 import com.hairsalonproject2.common.constant.BoardType;
 import com.hairsalonproject2.common.file.FileStore;
@@ -57,6 +59,7 @@ import java.util.stream.Collectors;
 public class BoardService {
 
     private final BoardRepository boardRepository;
+    private final BoardReportRepository boardReportRepository;
     private final MemberRepository memberRepository;
     private final BoardDeleteLogRepository boardDeleteLogRepository;
     private final FileStore fileStore;
@@ -88,10 +91,9 @@ public class BoardService {
 
     @Transactional(readOnly = true)
     public List<BoardSummaryResponse> getRecentNotices() {
-        return boardRepository.findByTypeAndParentIsNullOrderByBoardIdDesc(BoardType.NOTICE)
+        return boardRepository
+                .findTop5ByTypeAndParentIsNullAndHiddenFalseOrderByBoardIdDesc(BoardType.NOTICE)
                 .stream()
-                .filter(board -> !board.isHidden())
-                .limit(5)
                 .map(BoardSummaryResponse::from)
                 .collect(Collectors.toList());
     }
@@ -109,7 +111,9 @@ public class BoardService {
 
     @Transactional(readOnly = true)
     public long countTodayBoards() {
-        return boardRepository.countByParentIsNullAndCreatedAtGreaterThanEqual(LocalDateTime.now().toLocalDate().atStartOfDay());
+        return boardRepository.countByParentIsNullAndCreatedAtGreaterThanEqual(
+                LocalDateTime.now().toLocalDate().atStartOfDay()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -231,12 +235,33 @@ public class BoardService {
         syncBoardImages(board);
     }
 
-    public void reportBoard(Integer boardId, String reporterId) {
+    /**
+     * 게시글 신고
+     *
+     * @return true  = 이번에 새로 신고됨
+     *         false = 이미 신고한 이력이 있음
+     */
+    public boolean reportBoard(Integer boardId, String reporterId) {
         Board board = findBoard(boardId);
+        Member reporter = findMember(reporterId);
+
         if (board.getMember().getMemberId().equals(reporterId)) {
             throw new BoardException("본인 글은 신고할 수 없습니다.");
         }
+
+        boolean alreadyReported = boardReportRepository.existsByBoardBoardIdAndMemberMemberId(boardId, reporterId);
+        if (alreadyReported) {
+            return false;
+        }
+
+        BoardReport boardReport = BoardReport.builder()
+                .board(board)
+                .member(reporter)
+                .build();
+        boardReportRepository.save(boardReport);
+
         board.increaseReportCount();
+        return true;
     }
 
     public void hideBoard(Integer boardId, String reason) {
@@ -249,8 +274,19 @@ public class BoardService {
         board.unhide();
     }
 
+    /**
+     * 신고 수 초기화
+     * - 게시글의 신고 수를 0으로 만든다.
+     * - 게시글 신고 이력(board_report)도 함께 삭제한다.
+     *   => 이후 같은 회원도 다시 신고할 수 있게 된다.
+     */
     public void resetReportCount(Integer boardId) {
         Board board = findBoard(boardId);
+
+        // 1. 기존 신고 이력 전부 삭제
+        boardReportRepository.deleteByBoardBoardId(boardId);
+
+        // 2. 게시글의 신고 수 0으로 초기화
         board.resetReportCount();
     }
 
@@ -271,10 +307,7 @@ public class BoardService {
 
     @Transactional(readOnly = true)
     public List<BoardResponse> getMyBoards(String memberId) {
-        return boardRepository.findByMemberMemberIdOrderByBoardIdDesc(memberId)
-                .stream()
-                .map(BoardResponse::from)
-                .collect(Collectors.toList());
+        return boardRepository.findMyBoardResponses(memberId);
     }
 
     @Transactional(readOnly = true)
@@ -296,11 +329,7 @@ public class BoardService {
 
     private BoardDetailResponse buildDetailResponse(Board board) {
         BoardDetailResponse response = BoardDetailResponse.from(board);
-        List<BoardReplyResponse> replies = boardRepository.findByParentBoardIdOrderByBoardIdAsc(board.getBoardId())
-                .stream()
-                .filter(reply -> !reply.isHidden())
-                .map(BoardReplyResponse::from)
-                .collect(Collectors.toList());
+        List<BoardReplyResponse> replies = boardRepository.findReplyResponsesByParentBoardId(board.getBoardId());
         response.setReplies(replies);
         return response;
     }
@@ -373,7 +402,8 @@ public class BoardService {
                 String originalFilename = file.getOriginalFilename();
                 String fileExtension = "";
                 if (originalFilename != null && originalFilename.contains(".")) {
-                    fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
+                    fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.') + 1)
+                            .toLowerCase(Locale.ROOT);
                 }
 
                 BoardFile boardFile = BoardFile.builder()
@@ -435,7 +465,9 @@ public class BoardService {
             if (!src.contains("/files/images/")) {
                 continue;
             }
-            String originalName = image.hasAttr("data-original-name") ? image.attr("data-original-name").trim() : null;
+            String originalName = image.hasAttr("data-original-name")
+                    ? image.attr("data-original-name").trim()
+                    : null;
             result.add(new ImageMeta(src, originalName));
         }
         return result;
