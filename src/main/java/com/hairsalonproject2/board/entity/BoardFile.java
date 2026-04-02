@@ -1,7 +1,15 @@
 package com.hairsalonproject2.board.entity;
 
 import com.hairsalonproject2.common.entity.BaseCreatedEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,7 +17,6 @@ import lombok.NoArgsConstructor;
 
 /**
  * BoardFile
- *
  * 게시글 첨부파일 테이블
  */
 @Getter
@@ -52,7 +59,7 @@ public class BoardFile extends BaseCreatedEntity {
     private String filePath;
 
     /**
-     * 파일 크기 (byte)
+     * 파일 크기
      */
     @Column(name = "file_size", nullable = false)
     private Long fileSize;
@@ -64,8 +71,12 @@ public class BoardFile extends BaseCreatedEntity {
     private String fileExtension;
 
     @Builder
-    public BoardFile(Board board, String originalName, String savedName,
-                     String filePath, Long fileSize, String fileExtension) {
+    public BoardFile(Board board,
+                     String originalName,
+                     String savedName,
+                     String filePath,
+                     Long fileSize,
+                     String fileExtension) {
         this.board = board;
         this.originalName = originalName;
         this.savedName = savedName;

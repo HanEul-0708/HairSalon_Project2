@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
+
+<!--
+  qna-list.html — 문의게시판 목록 페이지
+  =====================================================
+  boardList → List<BoardResponse> 게시글 목록
+  keyword   → 검색어 (없으면 null)
+-->
+
+<head>
+    <title>문의게시판 | HairSalon</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}">
+</head>
+
+<body>
+<main>
+
+    <div class="board-wrap">
+
+        <!-- 페이지 타이틀 -->
+        <div class="board-header">
+            <h2 class="board-title">문의게시판</h2>
+            <p class="board-subtitle">궁금한 점을 남겨주시면 빠르게 답변드리겠습니다.</p>
+        </div>
+
+        <!-- 검색 영역 -->
+        <form class="board-search-form" th:action="@{/boards/qna}" method="get">
+            <input type="text"
+                   class="board-search-input"
+                   name="keyword"
+                   th:value="${keyword}"
+                   placeholder="검색어를 입력하세요">
+            <button type="submit" class="board-search-btn">검색</button>
+        </form>
+
+        <!-- 게시글 목록 테이블 -->
+        <table class="board-table">
+            <thead>
+            <tr>
+                <th class="col-num">번호</th>
+                <th class="col-title">제목</th>
+                <th class="col-writer">작성자</th>
+                <th class="col-date">작성일</th>
+                <th class="col-view">조회수</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- 게시글 없을 때 -->
+            <tr th:if="${#lists.isEmpty(boardList)}">
+                <td colspan="5" class="board-empty">등록된 문의글이 없습니다.</td>
+            </tr>
+
+            <!-- 게시글 목록 반복 출력 -->
+            <tr th:each="board : ${boardList}"
+                th:onclick="|location.href='@{/boards/qna/{id}(id=${board.boardId})}'|"
+                class="board-row">
+                <td th:text="${board.boardId}"></td>
+                <td class="board-row-title">
+                    <span th:text="${board.title}"></span>
+                    <!-- 답글 개수 표시 -->
+                    <span th:if="${board.answered}" class="board-status-chip board-status-answered">답변 완료</span>
+                            <span th:if="${board.reportCount > 0}" class="board-status-chip board-status-report" th:text="'신고 ' + ${board.reportCount}">신고 0</span>
+                            <span class="board-reply-count"
+                          th:if="${board.replyCount > 0}"
+                          th:text="'[' + ${board.replyCount} + ']'">
+                        </span>
+                </td>
+                <td th:text="${board.memberId}"></td>
+                <td th:text="${#temporals.format(board.createdAt, 'yyyy.MM.dd')}"></td>
+                <td th:text="${board.viewCount}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <!-- 로그인한 사용자만 작성 버튼 표시 -->
+
+        <div class="board-pagination" th:if="${boardPage != null and boardPage.totalPages > 1}">
+            <a th:href="@{/boards/qna(page=${boardPage.number - 1}, size=${size}, keyword=${keyword})}"
+               th:if="${boardPage.hasPrevious()}"
+               class="board-page-link">이전</a>
+
+            <a th:each="pageNumber : ${pageNumbers}"
+               th:href="@{/boards/qna(page=${pageNumber}, size=${size}, keyword=${keyword})}"
+               th:text="${pageNumber + 1}"
+               th:classappend="${pageNumber == boardPage.number} ? ' active'"
+               class="board-page-link">1</a>
+
+            <a th:href="@{/boards/qna(page=${boardPage.number + 1}, size=${size}, keyword=${keyword})}"
+               th:if="${boardPage.hasNext()}"
+               class="board-page-link">다음</a>
+        </div>
+
+        <div class="board-btn-wrap">
+            <a th:href="@{/boards/qna/new}"
+               sec:authorize="isAuthenticated()"
+               class="btn-write">문의 작성</a>
+        </div>
+
+    </div>
+
+    <script th:src="@{/js/board.js}"></script>
+</main>
+</body>
+</html>

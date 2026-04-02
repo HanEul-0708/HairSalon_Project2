@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{admin/layout}">
+
+<!--
+  admin/reservations.html — 예약 관리 페이지
+  =====================================================
+  reservationList  → 전체 예약 목록
+  totalCount       → 전체 예약 수
+  pendingCount     → 대기 중 예약 수
+  confirmedCount   → 확정 예약 수
+  cancelledCount   → 취소 예약 수
+  currentMenu      → 'reservations' (사이드바 활성화용)
+-->
+
+<head>
+    <th:block layout:fragment="pageCss"></th:block>
+</head>
+
+<body>
+
+<th:block layout:fragment="pageTitle">예약 관리</th:block>
+
+<div layout:fragment="content">
+
+    <!-- 통계 카드 -->
+    <div class="admin-stat-wrap">
+
+        <div class="admin-stat-card">
+            <span class="admin-stat-label">전체 예약</span>
+            <span class="admin-stat-value" th:text="${totalCount}">0</span>
+            <i class="bi bi-calendar-check admin-stat-icon"></i>
+        </div>
+
+        <div class="admin-stat-card">
+            <span class="admin-stat-label">대기 중</span>
+            <span class="admin-stat-value" th:text="${pendingCount}">0</span>
+            <i class="bi bi-hourglass-split admin-stat-icon"></i>
+        </div>
+
+        <div class="admin-stat-card">
+            <span class="admin-stat-label">확정</span>
+            <span class="admin-stat-value" th:text="${confirmedCount}">0</span>
+            <i class="bi bi-check-circle admin-stat-icon"></i>
+        </div>
+
+        <div class="admin-stat-card">
+            <span class="admin-stat-label">취소</span>
+            <span class="admin-stat-value" th:text="${cancelledCount}">0</span>
+            <i class="bi bi-x-circle admin-stat-icon"></i>
+        </div>
+
+    </div>
+
+    <!-- 예약 목록 카드 -->
+    <div class="admin-card">
+        <div class="admin-card-title">전체 예약 목록</div>
+
+        <!-- 검색 / 필터 -->
+        <form class="admin-filter-wrap" th:action="@{/admin/reservations}" method="get">
+            <select name="status" class="admin-select" onchange="this.form.submit()">
+                <option value="">전체</option>
+                <option value="PENDING"
+                        th:selected="${selectedStatus == 'PENDING'}">대기 중</option>
+                <option value="CONFIRMED"
+                        th:selected="${selectedStatus == 'CONFIRMED'}">확정</option>
+                <option value="CANCELLED"
+                        th:selected="${selectedStatus == 'CANCELLED'}">취소</option>
+            </select>
+            <input type="text"
+                   name="keyword"
+                   class="admin-search-input"
+                   th:value="${keyword}"
+                   placeholder="회원 ID 또는 미용실명으로 검색">
+            <button type="submit" class="admin-btn admin-btn-primary">
+                <i class="bi bi-search"></i> 검색
+            </button>
+        </form>
+
+        <!-- 예약 테이블 -->
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>번호</th>
+                    <th>회원 ID</th>
+                    <th>미용실</th>
+                    <th>시술 메뉴</th>
+                    <th>예약 일시</th>
+                    <th>상태</th>
+                    <th>신청일</th>
+                    <th>관리</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- 예약 없을 때 -->
+                <tr th:if="${#lists.isEmpty(reservationList)}">
+                    <td colspan="8"
+                        style="text-align:center; padding:40px; color:#555;">
+                        예약 내역이 없습니다.
+                    </td>
+                </tr>
+
+                <!-- 예약 목록 반복 -->
+                <tr th:each="reservation : ${reservationList}">
+                    <td th:text="${reservation.reservationId}"></td>
+                    <td th:text="${reservation.memberId}"></td>
+                    <td th:text="${reservation.salonName}"></td>
+                    <td th:text="${reservation.menuName}"></td>
+                    <td th:text="${#temporals.format(reservation.reservationAt, 'yyyy.MM.dd HH:mm')}"></td>
+                    <td>
+                            <span th:if="${reservation.status == 'PENDING'}"
+                                  class="badge-qna">대기</span>
+                        <span th:if="${reservation.status == 'CONFIRMED'}"
+                              class="badge-active">확정</span>
+                        <span th:if="${reservation.status == 'CANCELLED'}"
+                              class="badge-inactive">취소</span>
+                    </td>
+                    <td th:text="${#temporals.format(reservation.createdAt, 'yyyy.MM.dd')}"></td>
+                    <td>
+                        <!-- 확정 버튼 -->
+                        <form th:action="@{/admin/reservations/{id}/confirm(id=${reservation.reservationId})}"
+                              method="post"
+                              style="display:inline"
+                              th:if="${reservation.status == 'PENDING'}">
+                            <input type="hidden"
+                                   th:name="${_csrf.parameterName}"
+                                   th:value="${_csrf.token}">
+                            <button type="submit" class="admin-btn admin-btn-primary">
+                                <i class="bi bi-check"></i> 확정
+                            </button>
+                        </form>
+
+                        <!-- 취소 버튼 -->
+                        <form th:action="@{/admin/reservations/{id}/cancel(id=${reservation.reservationId})}"
+                              method="post"
+                              style="display:inline"
+                              th:if="${reservation.status != 'CANCELLED'}"
+                              onsubmit="return confirm('예약을 취소하시겠습니까?')">
+                            <input type="hidden"
+                                   th:name="${_csrf.parameterName}"
+                                   th:value="${_csrf.token}">
+                            <button type="submit" class="admin-btn admin-btn-danger">
+                                <i class="bi bi-x"></i> 취소
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</div>
+
+<th:block layout:fragment="pageJs">
+    <script th:src="@{/js/admin.js}"></script>
+</th:block>
+
+</body>
+</html>
