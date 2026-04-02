@@ -2,6 +2,7 @@ package com.hairsalonproject2.review.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * SalonRankingResponse
@@ -9,6 +10,7 @@ import lombok.Getter;
  * 미용실 랭킹 응답 DTO
  */
 @Getter
+@Setter
 @AllArgsConstructor
 public class SalonRankingResponse {
 

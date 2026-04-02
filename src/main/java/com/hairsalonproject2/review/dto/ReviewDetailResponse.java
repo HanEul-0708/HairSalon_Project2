@@ -4,17 +4,18 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * ReviewResponse
+ * ReviewDetailResponse
  *
- * 리뷰 응답 DTO
+ * 리뷰 상세 조회 응답 DTO
  *
- * 클라이언트에게 반환되는 리뷰 정보
+ * 기본 리뷰 정보 + 이미지 목록까지 함께 내려주는 DTO
  */
 @Getter
 @AllArgsConstructor
-public class ReviewResponse {
+public class ReviewDetailResponse {
 
     /**
      * 리뷰 ID
@@ -33,9 +34,6 @@ public class ReviewResponse {
 
     /**
      * 회원 이름
-     *
-     * 추가 이유:
-     * 프론트에서 회원 이름 표시를 위해 사용
      */
     private String memberName;
 
@@ -46,9 +44,6 @@ public class ReviewResponse {
 
     /**
      * 디자이너 이름
-     *
-     * 추가 이유:
-     * 리뷰 목록에서 디자이너 이름 표시
      */
     private String designerName;
 
@@ -76,4 +71,9 @@ public class ReviewResponse {
      * 리뷰 작성일시
      */
     private LocalDateTime createdAt;
+
+    /**
+     * 리뷰 이미지 목록
+     */
+    private List<ReviewImageResponse> images;
 }

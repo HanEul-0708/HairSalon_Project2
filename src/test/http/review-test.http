@@ -1,0 +1,42 @@
+### 리뷰 작성 테스트
+POST http://localhost:8080/reviews
+Content-Type: application/json
+
+{
+  "reservationId": 1,
+  "rating": 5,
+  "content": "커트 너무 만족합니다."
+}
+
+###
+
+### 전체 리뷰 조회 테스트
+GET http://localhost:8080/reviews
+
+###
+
+### 리뷰 단건 조회 테스트
+GET http://localhost:8080/reviews/2
+
+###
+
+### 리뷰 수정 테스트
+PUT http://localhost:8080/reviews/2
+Content-Type: application/json
+
+{
+  "rating": 4,
+  "content": "커트 괜찮았습니다."
+}
+
+### 리뷰 수정 확인
+GET http://localhost:8080/reviews/2
+
+### 리뷰 삭제 테스트
+DELETE http://localhost:8080/reviews/2
+
+### 리뷰 상세 조회 테스트
+GET http://localhost:8080/reviews/2/detail
+
+### 디자이너 TOP3 랭킹 실행
+GET http://localhost:8080/reviews/rankings/designers
