@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <title>관리자 메인</title>
+</head>
+<body>
+<main>
+    <section class="container py-5">
+        <h2 class="mb-3">관리자 메인 대시보드</h2>
+
+        <div class="mb-4" sec:authorize="isAuthenticated()">
+            현재 로그인 관리자: <strong sec:authentication="name"></strong>
+        </div>
+
+        <div class="list-group">
+            <a th:href="@{/admin/members}" class="list-group-item list-group-item-action">회원 관리</a>
+            <a th:href="@{/admin/reservations}" class="list-group-item list-group-item-action">예약 관리</a>
+            <a th:href="@{/admin/reviews}" class="list-group-item list-group-item-action">리뷰 관리</a>
+        </div>
+
+        <div class="mt-4">
+            <a th:href="@{/}" class="btn btn-outline-secondary">홈으로</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

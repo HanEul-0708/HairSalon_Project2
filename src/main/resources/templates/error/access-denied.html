@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>접근 거부</title>
+</head>
+<body>
+
+<h2>접근이 거부되었습니다.</h2>
+<p>이 페이지에 접근할 권한이 없습니다.</p>
+
+<div>
+    <a th:href="@{/}">홈으로</a>
+</div>
+
+</body>
+</html>

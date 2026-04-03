@@ -53,7 +53,7 @@ public class BoardFile extends BaseCreatedEntity {
     private String savedName;
 
     /**
-     * 저장 경로
+     * 서버 저장 경로
      */
     @Column(name = "file_path", nullable = false, length = 255)
     private String filePath;
