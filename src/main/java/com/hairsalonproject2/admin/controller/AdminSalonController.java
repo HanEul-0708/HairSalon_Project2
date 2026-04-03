@@ -19,11 +19,6 @@ public class AdminSalonController {
     private final DesignerQueryService designerQueryService;
     private final SalonServiceQueryService salonServiceQueryService;
 
-    @GetMapping
-    public String adminRoot() {
-        return "redirect:/admin/salons";
-    }
-
     @GetMapping("/salons")
     public String salons(Model model) {
         model.addAttribute("salons", salonQueryService.search(new SalonSearchRequest()));

@@ -1,5 +1,6 @@
 package com.hairsalonproject2.review.controller;
 
+import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.review.dto.DesignerRankingResponse;
 import com.hairsalonproject2.review.dto.MonthlyReviewStatResponse;
 import com.hairsalonproject2.review.dto.ReviewCreateRequest;
@@ -10,6 +11,7 @@ import com.hairsalonproject2.review.service.ReviewService;
 import com.hairsalonproject2.review.dto.ReviewDetailResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -31,8 +33,9 @@ public class ReviewController {
      * 리뷰 작성
      */
     @PostMapping
-    public ReviewResponse createReview(@Valid @RequestBody ReviewCreateRequest request) {
-        return reviewService.createReview(request);
+    public ReviewResponse createReview(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                       @Valid @RequestBody ReviewCreateRequest request) {
+        return reviewService.createReview(userDetails.getMember().getMemberId(), request);
     }
 
     /**
