@@ -1,4 +1,4 @@
-package com.hairsalonproject2.global.util;
+package com.hairsalonproject2.common.util;
 
 import org.springframework.web.multipart.MultipartFile;
 
