@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>시술 목록</title></head>
+<body>
+<h1>시술 목록</h1>
+<form method="get" th:action="@{/salon-services}">
+    <input type="text" name="keyword" placeholder="시술명" th:value="${keyword}">
+    <button type="submit">검색</button>
+</form>
+<p><a th:href="@{/salon-services/compare}">가격 비교 화면</a></p>
+<table border="1">
+    <thead><tr><th>ID</th><th>시술명</th><th>살롱</th><th>가격</th><th>시간</th></tr></thead>
+    <tbody>
+    <tr th:each="service : ${services}">
+        <td th:text="${service.serviceId}">1</td>
+        <td><a th:href="@{/salon-services/{id}(id=${service.serviceId})}" th:text="${service.name}">시술</a></td>
+        <td th:text="${service.salonName}">살롱</td>
+        <td th:text="${service.price}">0</td>
+        <td th:text="${service.duration}">0</td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

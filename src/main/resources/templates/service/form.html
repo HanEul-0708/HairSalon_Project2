@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>시술 폼</title></head>
+<body>
+<h1>시술 등록/수정</h1>
+<form method="post" th:action="${serviceId != null} ? @{/salon-services/{id}/edit(id=${serviceId})} : @{/salon-services}" th:object="${form}">
+    <div><input th:field="*{salonId}" placeholder="살롱 ID"></div>
+    <div><input th:field="*{name}" placeholder="시술명"></div>
+    <div><input th:field="*{price}" placeholder="가격"></div>
+    <div><input th:field="*{duration}" placeholder="소요시간(분)"></div>
+    <div><textarea th:field="*{description}" placeholder="설명"></textarea></div>
+    <button type="submit">저장</button>
+</form>
+</body>
+</html>

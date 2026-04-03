@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>디자이너 폼</title></head>
+<body>
+<h1>디자이너 등록/수정</h1>
+<form method="post" th:action="${designerId != null} ? @{/designers/{id}/edit(id=${designerId})} : @{/designers}" th:object="${form}">
+    <div><input th:field="*{salonId}" placeholder="살롱 ID"></div>
+    <div><input th:field="*{memberId}" placeholder="연결 회원 ID"></div>
+    <div><input th:field="*{name}" placeholder="이름"></div>
+    <div><input th:field="*{profileImage}" placeholder="프로필 이미지"></div>
+    <div><textarea th:field="*{introduction}" placeholder="소개"></textarea></div>
+    <div><input th:field="*{careerYears}" placeholder="경력 연수"></div>
+    <button type="submit">저장</button>
+</form>
+</body>
+</html>
