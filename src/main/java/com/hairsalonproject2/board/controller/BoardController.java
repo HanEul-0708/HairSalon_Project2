@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -38,8 +39,8 @@ import java.util.List;
 public class BoardController {
 
     private static final String VIEW_COOKIE_NAME = "board_view_history";
-    private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int VIEW_COOKIE_MAX_AGE = 60 * 60 * 24;
+    private static final int MAX_VIEW_HISTORY_COUNT = 50;
 
     private final BoardService boardService;
 
@@ -87,8 +88,11 @@ public class BoardController {
     @PreAuthorize("isAuthenticated()")
     public String reportQna(@PathVariable Integer boardId,
                             @AuthenticationPrincipal UserDetails userDetails) {
-        boardService.reportBoard(boardId, userDetails.getUsername());
-        return "redirect:/boards/qna/" + boardId + "?reported=true";
+        boolean reported = boardService.reportBoard(boardId, userDetails.getUsername());
+        if (reported) {
+            return "redirect:/boards/qna/" + boardId + "?reported=true";
+        }
+        return "redirect:/boards/qna/" + boardId + "?alreadyReported=true";
     }
 
     @GetMapping("/qna/new")
@@ -193,7 +197,8 @@ public class BoardController {
     @PreAuthorize("isAuthenticated()")
     public String delete(@PathVariable Integer boardId,
                          @AuthenticationPrincipal UserDetails userDetails) {
-        boolean isAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         BoardType type = boardService.getBoardType(boardId);
         boardService.delete(boardId, userDetails.getUsername(), isAdmin);
         return type == BoardType.NOTICE ? "redirect:/boards/notices" : "redirect:/boards/qna";
@@ -261,19 +266,29 @@ public class BoardController {
                                   HttpServletRequest request,
                                   HttpServletResponse response) {
         String target = makeBoardCookieToken(boardId, boardType);
-        StringBuilder newValue = new StringBuilder(target);
+        List<String> tokens = new ArrayList<>();
+        tokens.add(target);
+
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
                 if (VIEW_COOKIE_NAME.equals(cookie.getName()) && cookie.getValue() != null) {
                     String decodedValue = java.net.URLDecoder.decode(cookie.getValue(), StandardCharsets.UTF_8);
                     if (!decodedValue.isBlank()) {
-                        newValue.insert(0, decodedValue + "|");
+                        tokens.addAll(Arrays.stream(decodedValue.split("\\|"))
+                                .filter(token -> !token.isBlank())
+                                .filter(token -> !target.equals(token))
+                                .toList());
                     }
                 }
             }
         }
-        String encodedValue = URLEncoder.encode(newValue.toString(), StandardCharsets.UTF_8);
+
+        if (tokens.size() > MAX_VIEW_HISTORY_COUNT) {
+            tokens = new ArrayList<>(tokens.subList(0, MAX_VIEW_HISTORY_COUNT));
+        }
+
+        String encodedValue = URLEncoder.encode(String.join("|", tokens), StandardCharsets.UTF_8);
         Cookie cookie = new Cookie(VIEW_COOKIE_NAME, encodedValue);
         cookie.setHttpOnly(true);
         cookie.setPath("/");

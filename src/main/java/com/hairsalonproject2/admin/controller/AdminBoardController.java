@@ -34,7 +34,15 @@ public class AdminBoardController {
                             @RequestParam(defaultValue = "0") int page,
                             @RequestParam(defaultValue = "10") int size,
                             Model model) {
-        BoardType boardType = (type != null && !type.isBlank()) ? BoardType.valueOf(type) : null;
+        BoardType boardType = null;
+        if (type != null && !type.isBlank()) {
+            try {
+                boardType = BoardType.valueOf(type.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                boardType = null;
+            }
+        }
+
         Page<BoardResponse> boardPage = boardService.getAdminBoardPage(boardType, keyword, page, size);
         List<BoardDeleteLogResponse> deleteLogs = boardService.getRecentDeleteLogs();
 

@@ -40,7 +40,7 @@ public class ReviewImage extends BaseCreatedEntity {
     /**
      * 이미지 URL
      */
-    @Column(name = "image_url", nullable = false, length = 500)
+    @Column(name = "image_url", nullable = false, length = 255)
     private String imageUrl;
 
     /**

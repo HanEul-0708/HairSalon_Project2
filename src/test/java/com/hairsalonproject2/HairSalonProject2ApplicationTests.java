@@ -9,4 +9,5 @@ class HairSalonProject2ApplicationTests {
 	@Test
 	void contextLoads() {
 	}
+
 }
