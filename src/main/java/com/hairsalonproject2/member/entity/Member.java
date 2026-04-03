@@ -1,9 +1,9 @@
 package com.hairsalonproject2.member.entity;
 
-import com.hairsalonproject2.common.constant.MemberRole;
-import com.hairsalonproject2.common.entity.BaseCreatedEntity;
-import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.board.entity.Board;
+import com.hairsalonproject2.common.constant.MemberRole;
+import com.hairsalonproject2.common.constant.MemberStatus;
+import com.hairsalonproject2.common.entity.BaseCreatedEntity;
 import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.reservation.entity.Reservation;
 import com.hairsalonproject2.review.entity.Review;
@@ -65,7 +65,7 @@ public class Member extends BaseCreatedEntity {
     /**
      * 회원 권한 (ENUM)
      *
-     * EnumType.STRING 반드시 사용 (중요🔥)
+     * EnumType.STRING 반드시 사용
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
@@ -85,10 +85,15 @@ public class Member extends BaseCreatedEntity {
     /**
      * 디자이너와 1:1 관계
      *
-     * designer 테이블이 FK를 가지고 있으므로
-     * mappedBy 사용 (읽기 전용)
+     * designer 테이블의 member_id 가 FK를 가지고 있으므로
+     * mappedBy = "member" 로 읽기 전용 관계를 맺는다.
+     *
+     * 중요:
+     * Designer 엔티티에도 반드시
+     * private Member member;
+     * 가 있어야 정상 동작한다.
      */
-    @OneToOne(mappedBy = "member")
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
     private Designer designer;
 
     /**
@@ -108,10 +113,6 @@ public class Member extends BaseCreatedEntity {
      */
     @OneToMany(mappedBy = "member")
     private List<Board> boards = new ArrayList<>();
-
-    /**
-     * 회원이 누른 좋아요 목록
-     */
 
     // ==============================
     // 생성자 (Builder)
