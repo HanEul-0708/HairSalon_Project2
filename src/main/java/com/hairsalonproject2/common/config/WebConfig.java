@@ -30,9 +30,6 @@ public class WebConfig implements WebMvcConfigurer {
      *
      * /files/images/UUID.jpg 요청이 들어오면
      * → C:/upload/UUID.jpg 파일을 찾아서 응답
-     *
-     * /files/download/UUID.pdf 요청이 들어오면
-     * → C:/upload/UUID.pdf 파일을 찾아서 응답
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -40,12 +37,6 @@ public class WebConfig implements WebMvcConfigurer {
         // 이미지 URL 매핑
         // 썸머노트가 "/files/images/UUID.jpg" 로 이미지를 불러올 때 사용
         registry.addResourceHandler("/files/images/**")
-                .addResourceLocations("file:///" + uploadPath);
-
-        // 첨부파일 URL 매핑
-        // 다운로드 링크 클릭 시 FileController 가 직접 처리하므로
-        // 여기선 이미지만 매핑해도 충분함
-        registry.addResourceHandler("/files/download/**")
                 .addResourceLocations("file:///" + uploadPath);
     }
 }

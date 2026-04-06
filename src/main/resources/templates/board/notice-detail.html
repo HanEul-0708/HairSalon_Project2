@@ -48,12 +48,22 @@
             </ul>
         </div>
 
+        <div class="board-detail-images" th:if="${not #lists.isEmpty(board.files)}">
+            <div th:each="file : ${board.files}" th:if="${file.image}" class="board-detail-image-item">
+                <img th:src="@{/files/images/{stored}(stored=${file.storedFilename})}"
+                     th:alt="${file.originalFilename}"
+                     class="board-detail-image-preview">
+                <div class="board-detail-image-caption" th:text="${file.originalFilename}">image.jpg</div>
+            </div>
+        </div>
+
         <!-- 버튼 영역 -->
         <div class="board-detail-btn-wrap">
             <a th:href="@{/boards/notices}" class="btn-list">목록으로</a>
 
             <!-- 수정 / 삭제 버튼 (관리자만) -->
-            <div sec:authorize="hasRole('ADMIN')">
+            <div sec:authorize="hasRole('ADMIN')"
+                 th:if="${#authentication.name == board.memberId}">
                 <a th:href="@{/boards/{id}/edit(id=${board.boardId})}"
                    class="btn-edit">수정</a>
 

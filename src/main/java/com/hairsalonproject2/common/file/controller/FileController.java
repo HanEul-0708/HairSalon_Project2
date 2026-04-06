@@ -1,5 +1,7 @@
 package com.hairsalonproject2.common.file.controller;
 
+import com.hairsalonproject2.board.repository.BoardFileRepository;
+import com.hairsalonproject2.common.constant.BoardType;
 import com.hairsalonproject2.common.file.dto.FileResponse;
 import com.hairsalonproject2.common.file.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +33,7 @@ import java.nio.file.Paths;
 public class FileController {
 
     private final FileUploadService fileUploadService;
+    private final BoardFileRepository boardFileRepository;
 
     @Value("${file.upload.path}")
     private String uploadPath;
@@ -70,6 +74,10 @@ public class FileController {
     public ResponseEntity<Resource> downloadFile(@PathVariable String storedFilename,
                                                  @RequestParam String originalFilename) {
         try {
+            if (isQnaAttachment(storedFilename)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
             Resource resource = loadSafeResource(storedFilename);
             if (resource == null) {
                 return ResponseEntity.notFound().build();
@@ -86,6 +94,12 @@ public class FileController {
         } catch (MalformedURLException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    private boolean isQnaAttachment(String storedFilename) {
+        return boardFileRepository.findBySavedNameWithBoard(storedFilename)
+                .map(boardFile -> boardFile.getBoard().getType() == BoardType.QNA)
+                .orElse(false);
     }
 
     private Resource loadSafeResource(String storedFilename) throws MalformedURLException {

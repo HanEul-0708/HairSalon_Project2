@@ -11,7 +11,7 @@
 
     <!-- 썸머노트 꾸밈 -->
     <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.css">
+          href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.min.css">
 </head>
 
 <body>
@@ -116,8 +116,8 @@
     </div>
 
     <!-- 썸머노트 스크립트 -->
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/lang/summernote-ko-KR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/lang/summernote-ko-KR.min.js"></script>
 
     <!-- 게시판 공통 스크립트 -->
     <script th:src="@{/js/board.js}"></script>
@@ -131,34 +131,13 @@
 
             let isSubmitting = false;
 
-            // 썸머노트 시작
-            $('#content').summernote({
-                lang: 'ko-KR',
-                height: 400,
-                minHeight: 200,
-                maxHeight: 600,
-                placeholder: '내용을 입력하세요.',
-                toolbar: [
-                    ['style', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
-                    ['font', ['fontsize', 'color', 'highlight']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['picture', 'link']],
-                    ['view', ['codeview']]
-                ],
-                callbacks: {
-                    onImageUpload: function (files) {
-                        // 여러 장 업로드 지원
-                        for (let i = 0; i < files.length; i++) {
-                            uploadEditorImage(files[i], csrfTokenInput.value);
-                        }
-                    }
-                }
-            });
+            initializeEditorWhenReady(csrfTokenInput.value);
 
             // 폼 제출 기준으로 검사
             form.addEventListener('submit', function (event) {
                 const title = titleInput.value.trim();
                 const content = $('#content').summernote('code');
+                document.getElementById('content').value = content;
                 const plainTextContent = stripHtml(content).trim();
 
                 if (title === '') {
@@ -201,6 +180,63 @@
             });
         });
 
+        function initializeEditorWhenReady(csrfToken, attempt = 0) {
+            if (window.jQuery && $.fn && $.fn.summernote) {
+                const summernoteOptions = {
+                    height: 400,
+                    minHeight: 200,
+                    maxHeight: 600,
+                    placeholder: '내용을 입력하세요.',
+                    toolbar: [
+                        ['style', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                        ['para', ['ul', 'ol']],
+                        ['insert', ['picture', 'link']],
+                        ['view', ['codeview']]
+                    ],
+                    colors: [
+                        ['#111111', '#444444', '#7a6f5d', '#8b5e3c', '#c9a84c', '#d97706', '#dc2626', '#2563eb'],
+                        ['#ffffff', '#f8f5ee', '#efe1bb', '#fde68a', '#fecaca', '#bbf7d0', '#bfdbfe', '#ddd6fe']
+                    ],
+                    colorsName: [
+                        ['Black', 'Dark Gray', 'Warm Gray', 'Brown', 'Gold', 'Orange', 'Red', 'Blue'],
+                        ['White', 'Ivory', 'Beige', 'Yellow', 'Pink', 'Green', 'Sky', 'Purple']
+                    ],
+                    fontSizes: ['10', '12', '14', '16', '18', '24', '32', '48'],
+                    fontSizeUnits: ['px'],
+                    dialogsInBody: true,
+                    callbacks: {
+                        onImageUpload: function (files) {
+                            for (let i = 0; i < files.length; i++) {
+                                uploadEditorImage(files[i], csrfToken);
+                            }
+                        }
+                    }
+                };
+
+                if ($.summernote && $.summernote.lang && $.summernote.lang['ko-KR']) {
+                    summernoteOptions.lang = 'ko-KR';
+                } else {
+                    console.warn('Summernote ko-KR language pack was not loaded. Falling back to default locale.');
+                }
+
+                $('#content').summernote(summernoteOptions);
+                if (window.mountBoardEditorControls) {
+                    window.mountBoardEditorControls('#content');
+                }
+                return;
+            }
+
+            if (attempt < 20) {
+                window.setTimeout(function () {
+                    initializeEditorWhenReady(csrfToken, attempt + 1);
+                }, 250);
+                return;
+            }
+
+            console.error('Summernote failed to initialize.');
+            alert('에디터 스크립트를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+        }
+
         /**
          * HTML 태그를 걷어내고 실제 글자만 남김
          * 예: <p><br></p> 같은 빈 내용 검사에 사용
@@ -240,7 +276,8 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('서버 응답 오류');
+                    const message = await response.text();
+                    throw new Error(message || '서버 응답 오류');
                 }
 
                 const data = await response.json();
@@ -249,9 +286,14 @@
                     throw new Error('이미지 주소를 받지 못했습니다.');
                 }
 
-                $('#content').summernote('insertImage', data.url, function ($image) { if (data.originalFilename) { $image.attr('data-original-name', data.originalFilename); $image.attr('alt', data.originalFilename); } });
+                $('#content').summernote('insertImage', data.url, function ($image) {
+                    if (data.originalFilename) {
+                        $image.attr('data-original-name', data.originalFilename);
+                        $image.attr('alt', data.originalFilename);
+                    }
+                });
             } catch (error) {
-                alert('이미지 업로드에 실패했습니다.');
+                alert(error.message || '이미지 업로드에 실패했습니다.');
                 console.error('이미지 업로드 오류:', error);
             }
         }

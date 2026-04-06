@@ -162,8 +162,9 @@ public class BoardController {
     public String editForm(@PathVariable Integer boardId,
                            @AuthenticationPrincipal UserDetails userDetails,
                            Model model) {
+        BoardType boardType = boardService.getBoardType(boardId);
         if (!boardService.isMyBoard(boardId, userDetails.getUsername())) {
-            return "redirect:/boards/qna/" + boardId + "?error=forbidden";
+            return "redirect:" + buildDetailPath(boardId, boardType) + "?error=forbidden";
         }
         BoardDetailResponse board = boardService.getDetailOnly(boardId);
         BoardUpdateRequest request = new BoardUpdateRequest();
@@ -182,6 +183,7 @@ public class BoardController {
                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
                        @AuthenticationPrincipal UserDetails userDetails,
                        Model model) {
+        BoardType boardType = boardService.getBoardType(boardId);
         if (bindingResult.hasErrors()) {
             BoardDetailResponse board = boardService.getDetailOnly(boardId);
             model.addAttribute("board", board);
@@ -189,8 +191,7 @@ public class BoardController {
             return "board/edit";
         }
         boardService.update(boardId, request, userDetails.getUsername(), files);
-        BoardType type = boardService.getBoardType(boardId);
-        return type == BoardType.NOTICE ? "redirect:/boards/notices/" + boardId : "redirect:/boards/qna/" + boardId;
+        return "redirect:" + buildDetailPath(boardId, boardType);
     }
 
     @DeleteMapping("/{boardId}")
@@ -298,5 +299,11 @@ public class BoardController {
 
     private String makeBoardCookieToken(Integer boardId, BoardType boardType) {
         return boardType.name() + "_" + boardId;
+    }
+
+    private String buildDetailPath(Integer boardId, BoardType boardType) {
+        return boardType == BoardType.NOTICE
+                ? "/boards/notices/" + boardId
+                : "/boards/qna/" + boardId;
     }
 }

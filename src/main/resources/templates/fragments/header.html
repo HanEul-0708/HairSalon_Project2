@@ -210,7 +210,7 @@
                     <a th:href="@{/members/me}">마이페이지</a>
 
                     <span sec:authorize="hasRole('ADMIN')">
-                    <a th:href="@{/admin/members}">관리자</a>
+                    <a th:href="@{/admin}">관리자</a>
                 </span>
 
                     <span sec:authorize="hasRole('DESIGNER')">

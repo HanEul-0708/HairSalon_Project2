@@ -1,5 +1,6 @@
 package com.hairsalonproject2.common.advice;
 
+import com.hairsalonproject2.board.exception.BoardException;
 import com.hairsalonproject2.common.exception.BusinessException;
 import com.hairsalonproject2.common.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +18,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
  */
 @ControllerAdvice
 public class GlobalPageExceptionHandler {
+
+    @ExceptionHandler(BoardException.class)
+    public String handleBoardException(BoardException e,
+                                       HttpServletRequest request,
+                                       Model model) {
+        model.addAttribute("errorMessage", e.getMessage());
+        model.addAttribute("requestUri", request.getRequestURI());
+        return "error/board-error";
+    }
 
     @ExceptionHandler(BusinessException.class)
     public String handleBusinessException(BusinessException e,

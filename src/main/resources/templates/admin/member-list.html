@@ -1,140 +1,108 @@
 <!DOCTYPE html>
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/layout}">
 <head>
-    <meta charset="UTF-8">
     <title>관리자 - 회원 목록</title>
+    <th:block layout:fragment="pageCss"></th:block>
 </head>
 <body>
+<th:block layout:fragment="pageTitle">회원 관리</th:block>
+<div layout:fragment="content">
+    <div th:replace="~{fragments/message :: flashMessage}"></div>
 
-<h2>관리자 - 회원 목록</h2>
+    <div class="admin-card">
+        <div class="admin-card-title">회원 검색</div>
+        <form class="admin-filter-wrap" th:action="@{/admin/members}" method="get">
+            <input type="text"
+                   name="keyword"
+                   class="admin-search-input"
+                   placeholder="아이디, 이메일, 이름 검색"
+                   th:value="${keyword}">
 
-<div th:replace="~{fragments/message :: flashMessage}"></div>
+            <select name="role" class="admin-select">
+                <option value="">전체 권한</option>
+                <option th:each="role : ${roles}"
+                        th:value="${role}"
+                        th:text="${role.name()}"
+                        th:selected="${role == selectedRole}">
+                </option>
+            </select>
 
-<!-- 현재 로그인 관리자 표시 -->
-<div sec:authorize="isAuthenticated()">
-    현재 로그인 관리자: <strong sec:authentication="name"></strong>
-</div>
+            <button type="submit" class="admin-btn admin-btn-primary">
+                <i class="bi bi-search"></i>
+                검색
+            </button>
+            <a th:href="@{/admin/members}" class="admin-btn admin-btn-secondary">초기화</a>
+        </form>
 
-<hr>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>아이디</th>
+                    <th>이름</th>
+                    <th>이메일</th>
+                    <th>전화번호</th>
+                    <th>권한</th>
+                    <th>상태</th>
+                    <th>가입일</th>
+                    <th>관리</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(members)}">
+                    <td colspan="8" style="text-align:center; padding:40px; color:#555;">조회된 회원이 없습니다.</td>
+                </tr>
+                <tr th:each="member : ${members}">
+                    <td th:text="${member.memberId}">member01</td>
+                    <td th:text="${member.name}">홍길동</td>
+                    <td th:text="${member.email}">test@example.com</td>
+                    <td th:text="${member.phone}">010-1234-5678</td>
+                    <td>
+                        <span th:if="${member.role.name() == 'ADMIN'}" class="badge-notice">ADMIN</span>
+                        <span th:if="${member.role.name() == 'DESIGNER'}" class="badge-qna">DESIGNER</span>
+                        <span th:if="${member.role.name() == 'USER'}" class="badge-active">USER</span>
+                    </td>
+                    <td>
+                        <span th:if="${member.status.name() == 'ACTIVE'}" class="badge-active" th:text="${member.status.description}">활성</span>
+                        <span th:if="${member.status.name() != 'ACTIVE'}" class="badge-inactive" th:text="${member.status.description}">비활성</span>
+                    </td>
+                    <td th:text="${#temporals.format(member.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-31 10:30</td>
+                    <td>
+                        <a th:href="@{/admin/members/{memberId}(memberId=${member.memberId})}"
+                           class="admin-btn admin-btn-secondary">
+                            상세보기
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
 
-<!-- 검색 영역 -->
-<h3>회원 검색</h3>
-
-<form th:action="@{/admin/members}" method="get">
-
-    <!-- 아이디 / 이메일 / 이름 검색 -->
-    <input type="text"
-           name="keyword"
-           placeholder="아이디 / 이메일 / 이름 검색"
-           th:value="${keyword}">
-
-    <!-- 권한 필터 -->
-    <select name="role">
-        <option value="">전체 권한</option>
-        <option th:each="r : ${roles}"
-                th:value="${r}"
-                th:text="${r.description}"
-                th:selected="${r == selectedRole}">
-        </option>
-    </select>
-
-    <select name="sort">
-        <option value="latest" th:selected="${selectedSort == 'latest'}">최신순</option>
-        <option value="name" th:selected="${selectedSort == 'name'}">이름순</option>
-        <option value="role" th:selected="${selectedSort == 'role'}">권한순</option>
-    </select>
-
-    <button type="submit">검색</button>
-
-    <!-- 검색 조건 초기화 -->
-    <a th:href="@{/admin/members}">초기화</a>
-</form>
-
-<hr>
-
-<!-- 회원 목록이 없는 경우 -->
-<div th:if="${#lists.isEmpty(members)}">
-    검색 결과가 없습니다.
-</div>
-
-<!-- 회원 목록 테이블 -->
-<table border="1" th:if="${not #lists.isEmpty(members)}">
-    <thead>
-    <tr>
-        <th>아이디</th>
-        <th>이름</th>
-        <th>이메일</th>
-        <th>전화번호</th>
-        <th>권한</th>
-        <th>상태</th>
-        <th>가입일</th>
-        <th>상세보기</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    <!-- 회원 목록 반복 출력 -->
-    <tr th:each="member : ${members}">
-        <td th:text="${member.memberId}">member01</td>
-        <td th:text="${member.name}">홍길동</td>
-        <td th:text="${member.email}">test@example.com</td>
-        <td th:text="${member.phone}">010-1234-5678</td>
-        <td th:text="${member.role.description}">USER</td>
-        <td th:text="${member.status.description}"></td>
-
-        <!-- 가입일 표시
-             createdAt 이 LocalDateTime 이면 아래처럼 format 가능
-             타입 문제 있으면 다시 원래처럼 th:text="${member.createdAt}" 로 바꾸면 됨
-        -->
-        <td th:text="${#temporals.format(member.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-31 10:30</td>
-
-        <td>
-            <a th:href="@{/admin/members/{memberId}(memberId=${member.memberId})}">
-                상세보기
+        <div class="admin-pagination" th:if="${totalPages > 1}">
+            <a th:if="${currentPage > 0}"
+               th:href="@{/admin/members(page=${currentPage - 1}, keyword=${keyword}, role=${selectedRole})}"
+               class="admin-page-link">
+                이전
             </a>
-        </td>
-    </tr>
-    </tbody>
-</table>
 
-<!-- 페이지가 1개 이상일 때만 페이징 표시 -->
-<div th:if="${totalPages > 0}">
+            <a th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+               th:href="@{/admin/members(page=${pageNumber}, keyword=${keyword}, role=${selectedRole})}"
+               th:text="${pageNumber + 1}"
+               th:classappend="${pageNumber == currentPage} ? ' active'"
+               class="admin-page-link">
+                1
+            </a>
 
-    <!-- 이전 페이지 -->
-    <a th:if="${currentPage > 0}"
-       th:href="@{/admin/members(page=${currentPage - 1}, keyword=${keyword}, role=${selectedRole})}">
-        이전
-    </a>
-
-    <!-- 페이지 번호 -->
-    <span th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}">
-        <a th:if="${pageNumber != currentPage}"
-           th:href="@{/admin/members(page=${pageNumber}, keyword=${keyword}, role=${selectedRole})}"
-           th:text="${pageNumber + 1}">
-            1
-        </a>
-
-        <strong th:if="${pageNumber == currentPage}"
-                th:text="${pageNumber + 1}">
-            1
-        </strong>
-    </span>
-
-    <!-- 다음 페이지 -->
-    <a th:if="${currentPage < totalPages - 1}"
-       th:href="@{/admin/members(page=${currentPage + 1}, keyword=${keyword}, role=${selectedRole})}">
-        다음
-    </a>
+            <a th:if="${currentPage < totalPages - 1}"
+               th:href="@{/admin/members(page=${currentPage + 1}, keyword=${keyword}, role=${selectedRole})}"
+               class="admin-page-link">
+                다음
+            </a>
+        </div>
+    </div>
 </div>
-
-<hr>
-
-<div>
-    <a th:href="@{/}">홈으로</a>
-</div>
-
 </body>
 </html>

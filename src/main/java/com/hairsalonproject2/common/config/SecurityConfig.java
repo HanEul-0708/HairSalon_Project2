@@ -1,5 +1,6 @@
 package com.hairsalonproject2.common.config;
 
+import org.springframework.web.filter.HiddenHttpMethodFilter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import com.hairsalonproject2.member.service.CustomUserDetailsService;
@@ -55,6 +56,7 @@ public class SecurityConfig {
 
                 // 브라우저 기본 로그인 팝업 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable)
+                .httpBasic(httpBasic -> httpBasic.disable())   // 이 줄 추가
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/",
@@ -79,6 +81,7 @@ public class SecurityConfig {
                                 "/reviews/**",
                                 "/boards/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/files/images/**", "/files/download/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/reviews").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/members/me/delete").authenticated()
@@ -105,6 +108,17 @@ public class SecurityConfig {
                         .accessDeniedPage("/access-denied")
                 );
 
+
         return http.build();
     }
+
+    /**
+     * HTML form에서 _method=delete 사용 가능하게 하는 필터
+     * 게시글 삭제 버튼 동작에 필요
+     */
+    @Bean
+    public HiddenHttpMethodFilter hiddenHttpMethodFilter() {
+        return new HiddenHttpMethodFilter();
+    }
+
 }

@@ -5,6 +5,8 @@ import com.hairsalonproject2.board.entity.BoardFile;
 import com.hairsalonproject2.board.entity.BoardImage;
 import lombok.Getter;
 
+import java.util.Locale;
+import java.util.Set;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -132,6 +134,10 @@ public class BoardDetailResponse {
     @Getter
     public static class FileInfo {
 
+        private static final Set<String> IMAGE_EXTENSIONS = Set.of(
+                "jpg", "jpeg", "png", "gif", "webp", "bmp"
+        );
+
         /** board_file.file_id = BIGINT */
         private Long fileId;
 
@@ -162,6 +168,11 @@ public class BoardDetailResponse {
             info.fileSize = file.getFileSize();
             info.fileExtension = file.getFileExtension();
             return info;
+        }
+
+        public boolean isImage() {
+            return fileExtension != null
+                    && IMAGE_EXTENSIONS.contains(fileExtension.toLowerCase(Locale.ROOT));
         }
     }
 }
