@@ -1,19 +1,43 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>관리자 - 디자이너</title></head>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/layout}">
+<head>
+    <title>관리자 - 디자이너</title>
+    <th:block layout:fragment="pageCss"></th:block>
+</head>
 <body>
-<h1>관리자 - 디자이너 관리</h1>
-<table border="1">
-    <thead><tr><th>ID</th><th>이름</th><th>살롱</th><th>평점</th><th>리뷰</th></tr></thead>
-    <tbody>
-    <tr th:each="designer : ${designers}">
-        <td th:text="${designer.designerId}">1</td>
-        <td><a th:href="@{/designers/{id}(id=${designer.designerId})}" th:text="${designer.name}">디자이너</a></td>
-        <td th:text="${designer.salonName}">살롱</td>
-        <td th:text="${designer.averageRating}">0</td>
-        <td th:text="${designer.reviewCount}">0</td>
-    </tr>
-    </tbody>
-</table>
+<th:block layout:fragment="pageTitle">디자이너 관리</th:block>
+<div layout:fragment="content">
+    <div class="admin-card">
+        <div class="admin-card-title">디자이너 목록</div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>이름</th>
+                    <th>살롱</th>
+                    <th>평점</th>
+                    <th>리뷰</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(designers)}">
+                    <td colspan="5" style="text-align:center; padding:40px; color:#555;">조회된 디자이너가 없습니다.</td>
+                </tr>
+                <tr th:each="designer : ${designers}">
+                    <td th:text="${designer.designerId}">1</td>
+                    <td><a th:href="@{/designers/{id}(id=${designer.designerId})}" th:text="${designer.name}">디자이너</a></td>
+                    <td th:text="${designer.salonName}">살롱</td>
+                    <td th:text="${designer.averageRating}">0</td>
+                    <td th:text="${designer.reviewCount}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 </body>
 </html>

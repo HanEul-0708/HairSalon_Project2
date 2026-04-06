@@ -1,25 +1,60 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>가격 비교</title></head>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>시술 가격 비교</title>
+
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/service.css}">
+    <script th:src="@{/js/common.js}" defer></script>
+    <script th:src="@{/js/service.js}" defer></script>
+</head>
 <body>
-<h1>시술 가격 비교</h1>
-<form method="get" th:action="@{/salon-services/compare}">
-    <input type="text" name="serviceName" placeholder="시술명" th:value="${serviceName}">
-    <input type="text" name="region" placeholder="지역" th:value="${region}">
-    <button type="submit">비교</button>
-</form>
-<table border="1">
-    <thead><tr><th>살롱</th><th>지역</th><th>시술</th><th>가격</th><th>시간</th><th>평점</th></tr></thead>
-    <tbody>
-    <tr th:each="row : ${comparisons}">
-        <td><a th:href="@{/salons/{id}(id=${row.salonId})}" th:text="${row.salonName}">살롱</a></td>
-        <td th:text="${row.address}">주소</td>
-        <td th:text="${row.serviceName}">시술</td>
-        <td th:text="${row.price}">0</td>
-        <td th:text="${row.duration}">0</td>
-        <td th:text="${row.averageRating}">0</td>
-    </tr>
-    </tbody>
-</table>
+<main>
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">시술 가격 비교</h1>
+            <p class="page-desc">지역과 시술명을 기준으로 가격을 비교할 수 있습니다.</p>
+        </div>
+
+        <form method="get" th:action="@{/salon-services/compare}" class="search-form">
+            <input type="text" name="serviceName" placeholder="시술명" th:value="${serviceName}">
+            <input type="text" name="region" placeholder="지역" th:value="${region}">
+            <button type="submit" class="btn btn-primary">비교</button>
+        </form>
+
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>살롱</th>
+                <th>지역</th>
+                <th>시술</th>
+                <th>가격</th>
+                <th>시간</th>
+                <th>평점</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${comparisons}">
+                <td>
+                    <a th:href="@{/salons/{id}(id=${row.salonId})}"
+                       th:text="${row.salonName}">살롱</a>
+                </td>
+                <td th:text="${row.address}">주소</td>
+                <td th:text="${row.serviceName}">시술</td>
+                <td th:text="|${row.price}원|">0원</td>
+                <td th:text="|${row.duration}분|">0분</td>
+                <td th:text="${row.averageRating}">0</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(comparisons)}">
+                <td colspan="6">비교할 시술 정보가 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
 </body>
 </html>

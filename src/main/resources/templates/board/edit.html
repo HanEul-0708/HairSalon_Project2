@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
+
+<head>
+    <title>글 수정 | HairSalon</title>
+
+    <!-- 게시판 전용 꾸밈 -->
+    <link rel="stylesheet" th:href="@{/css/board.css}">
+
+    <!-- 썸머노트 꾸밈 -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.css">
+</head>
+
+<body>
+<main>
+
+    <div class="board-wrap">
+
+        <!-- 페이지 제목 -->
+        <div class="board-header">
+            <h2 class="board-title"
+                th:text="${board.type == 'NOTICE'} ? '공지사항 수정' : '문의 수정'">
+                글 수정
+            </h2>
+        </div>
+
+        <!-- 수정 폼 -->
+        <form id="boardEditForm"
+              class="board-write-form"
+              th:action="'/boards/' + ${board.boardId} + '/edit'"
+              method="post"
+              enctype="multipart/form-data">
+
+            <!-- CSRF 토큰 -->
+            <input type="hidden"
+                   th:name="${_csrf.parameterName}"
+                   th:value="${_csrf.token}">
+
+            <!-- 제목 -->
+            <div class="form-group">
+                <label for="title" class="form-label">제목</label>
+                <input type="text"
+                       id="title"
+                       name="title"
+                       class="form-control board-input-title"
+                       th:value="${board.title}"
+                       placeholder="제목을 입력하세요"
+                       maxlength="200"
+                       required>
+            </div>
+
+            <!-- 내용 -->
+            <div class="form-group">
+                <label for="content" class="form-label">내용</label>
+                <!-- 기존 HTML 내용을 그대로 에디터에 보여 주기 -->
+                <textarea id="content"
+                          name="content"
+                          class="form-control"
+                          rows="10"
+                          th:utext="${board.content}"></textarea>
+            </div>
+
+            <!-- 기존 첨부파일 -->
+            <div class="form-group" th:if="${not #lists.isEmpty(board.files)}">
+                <label class="form-label">기존 첨부파일</label>
+                <ul class="board-existing-files">
+                    <li th:each="file : ${board.files}">
+                        <span th:text="${file.originalName}"></span>
+                        <label>
+                            <input type="checkbox"
+                                   name="deleteFileIds"
+                                   th:value="${file.fileId}">
+                            삭제
+                        </label>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 새 첨부파일 -->
+            <div class="form-group">
+                <label class="form-label" for="files">첨부파일 추가</label>
+                <div class="board-file-dropzone" data-file-dropzone>
+                    <p class="board-file-dropzone-text">파일을 여기로 끌어 놓거나 아래에서 선택하세요.</p>
+                    <input type="file"
+                           id="files"
+                           name="files"
+                           class="form-control"
+                           multiple>
+                </div>
+                <div class="board-file-preview" data-file-preview></div>
+                <small class="form-text">
+                    파일은 최대 10MB, 여러 개 선택 가능합니다.
+                </small>
+            </div>
+
+            <!-- 버튼 -->
+            <div class="board-btn-wrap">
+                <button type="button"
+                        class="btn-cancel"
+                        onclick="history.back()">
+                    취소
+                </button>
+
+                <button type="submit"
+                        class="btn-submit"
+                        id="submitBtn">
+                    수정 완료
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- 썸머노트 스크립트 -->
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/lang/summernote-ko-KR.min.js"></script>
+
+    <!-- 게시판 공통 스크립트 -->
+    <script th:src="@{/js/board.js}"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('boardEditForm');
+            const titleInput = document.getElementById('title');
+            const submitBtn = document.getElementById('submitBtn');
+            const csrfTokenInput = document.querySelector('input[name="_csrf"]');
+
+            let isSubmitting = false;
+
+            // 썸머노트 시작
+            $('#content').summernote({
+                lang: 'ko-KR',
+                height: 400,
+                minHeight: 200,
+                maxHeight: 600,
+                placeholder: '내용을 입력하세요.',
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                    ['font', ['fontsize', 'color', 'highlight']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['insert', ['picture', 'link']],
+                    ['view', ['codeview']]
+                ],
+                callbacks: {
+                    onImageUpload: function (files) {
+                        // 여러 장 업로드 지원
+                        for (let i = 0; i < files.length; i++) {
+                            uploadEditorImage(files[i], csrfTokenInput.value);
+                        }
+                    }
+                }
+            });
+
+            // 폼 제출 기준으로 검사
+            form.addEventListener('submit', function (event) {
+                const title = titleInput.value.trim();
+                const content = $('#content').summernote('code');
+                const plainTextContent = stripHtml(content).trim();
+
+                if (title === '') {
+                    event.preventDefault();
+                    alert('제목을 입력해 주세요.');
+                    titleInput.focus();
+                    return;
+                }
+
+                if (plainTextContent === '') {
+                    event.preventDefault();
+                    alert('내용을 입력해 주세요.');
+                    $('#content').summernote('focus');
+                    return;
+                }
+
+                // 첨부파일 크기 검사 (10MB)
+                const fileInput = document.getElementById('files');
+                const maxSize = 10 * 1024 * 1024;
+
+                if (fileInput && fileInput.files) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        if (fileInput.files[i].size > maxSize) {
+                            event.preventDefault();
+                            alert('첨부파일은 10MB 이하만 올릴 수 있습니다.');
+                            return;
+                        }
+                    }
+                }
+
+                // 중복 제출 방지
+                if (isSubmitting) {
+                    event.preventDefault();
+                    return;
+                }
+
+                isSubmitting = true;
+                submitBtn.disabled = true;
+                submitBtn.textContent = '수정 중...';
+            });
+        });
+
+        /**
+         * HTML 태그를 걷어내고 실제 글자만 남김
+         * 예: <p><br></p> 같은 빈 내용 검사에 사용
+         */
+        function stripHtml(html) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            return tempDiv.textContent || tempDiv.innerText || '';
+        }
+
+        /**
+         * 에디터 이미지 업로드
+         */
+        async function uploadEditorImage(file, csrfToken) {
+            // 1장당 제한 예시: 5MB
+            const maxImageSize = 5 * 1024 * 1024;
+
+            if (!file) {
+                return;
+            }
+
+            if (file.size > maxImageSize) {
+                alert('에디터 이미지는 5MB 이하만 올릴 수 있습니다.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/files/images', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('서버 응답 오류');
+                }
+
+                const data = await response.json();
+
+                if (!data || !data.url) {
+                    throw new Error('이미지 주소를 받지 못했습니다.');
+                }
+
+                $('#content').summernote('insertImage', data.url, function ($image) { if (data.originalFilename) { $image.attr('data-original-name', data.originalFilename); $image.attr('alt', data.originalFilename); } });
+            } catch (error) {
+                alert('이미지 업로드에 실패했습니다.');
+                console.error('이미지 업로드 오류:', error);
+            }
+        }
+    </script>
+
+</main>
+</body>
+</html>

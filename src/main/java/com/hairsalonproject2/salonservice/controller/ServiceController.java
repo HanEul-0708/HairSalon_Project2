@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.*;
 public class ServiceController {
     private final SalonServiceQueryService salonServiceQueryService;
 
+    @GetMapping("/new")
+    public String createForm(Model model) {
+        model.addAttribute("form", new SalonServiceCreateRequest());
+        return "service/form";
+    }
+
     @GetMapping
     public String list(@RequestParam(required = false) String keyword, Model model) {
         model.addAttribute("services", salonServiceQueryService.list(keyword));
@@ -69,7 +75,7 @@ public class ServiceController {
         return "redirect:/salon-services/" + serviceId;
     }
 
-    @DeleteMapping("/{serviceId}")
+    @PostMapping("/{serviceId}/delete")
     public String delete(@PathVariable Integer serviceId) {
         salonServiceQueryService.delete(serviceId);
         return "redirect:/salon-services";
