@@ -1,0 +1,214 @@
+/* =====================================================
+   salon.css — 살롱 페이지 전용 스타일
+   ===================================================== */
+
+.salon-page,
+.salon-list-page,
+.salon-detail-page,
+.salon-form-page {
+    padding: 40px 0 70px;
+}
+
+.salon-search-form {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+    gap: 12px;
+    margin-bottom: 24px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 20px;
+}
+
+.salon-search-form input,
+.salon-search-form select {
+    width: 100%;
+    min-height: 44px;
+    padding: 11px 14px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    transition: var(--transition);
+}
+
+.salon-search-form input:focus,
+.salon-search-form select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.14);
+}
+
+.salon-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.salon-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: var(--transition-slow);
+}
+
+.salon-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--gold-border);
+}
+
+.salon-card__image {
+    width: 100%;
+    height: 210px;
+    background: linear-gradient(135deg, #f5f1e4 0%, #fff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.salon-card__body {
+    padding: 20px;
+}
+
+.salon-card__name {
+    font-size: 1.12rem;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.salon-card__meta,
+.salon-card__desc {
+    color: var(--text-sub);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.salon-card__footer {
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.salon-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    gap: 22px;
+}
+
+.salon-detail__main,
+.salon-detail__side {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 26px;
+}
+
+.salon-detail__image {
+    width: 100%;
+    height: 320px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, #f5f1e4 0%, #fff 100%);
+    margin-bottom: 20px;
+}
+
+.salon-info-list {
+    display: grid;
+    gap: 10px;
+}
+
+.salon-info-item {
+    display: flex;
+    gap: 10px;
+    color: var(--text-sub);
+}
+
+.salon-info-item strong {
+    min-width: 78px;
+    color: var(--text-main);
+}
+
+.salon-service-list,
+.salon-designer-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.salon-service-item,
+.salon-designer-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    background: #fcfbf7;
+}
+
+/* 살롱 카드 상단 제목 + 상태 배지 */
+.salon-card__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.salon-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.salon-status-badge--on {
+    background: #fdf8ee;
+    color: #8a6a12;
+    border: 1px solid #e8d5a3;
+}
+
+.salon-status-badge--off {
+    background: #f5f5f5;
+    color: #666666;
+    border: 1px solid #dddddd;
+}
+
+@media (max-width: 1024px) {
+    .salon-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .salon-search-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .salon-detail {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .salon-grid,
+    .salon-search-form {
+        grid-template-columns: 1fr;
+    }
+
+    .salon-detail__main,
+    .salon-detail__side {
+        padding: 20px;
+    }
+
+    .salon-card__footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

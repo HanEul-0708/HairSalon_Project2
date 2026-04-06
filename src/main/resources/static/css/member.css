@@ -1,0 +1,67 @@
+/* =====================================================
+   member.css — 회원 페이지 전용
+   ===================================================== */
+
+.member-page {
+    padding: 40px 0 70px;
+}
+
+/* 마이페이지 카드 */
+.mypage-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+}
+
+/* 정보 */
+.member-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.member-info strong {
+    color: var(--text-main);
+}
+
+.member-info span {
+    color: var(--text-sub);
+}
+
+/* 버튼 영역 */
+.member-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+/* 폼 */
+.member-form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.member-form input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+}
+
+/* 로그인 */
+.login-box {
+    max-width: 400px;
+    margin: 0 auto;
+    background: var(--white);
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.login-box input {
+    margin-bottom: 10px;
+}

@@ -291,4 +291,8 @@ public class MemberService {
         // 3. 상태 변경
         member.changeStatus(status);
     }
+
+    public void delete(String memberId) {
+        memberRepository.deleteById(memberId);
+    }
 }

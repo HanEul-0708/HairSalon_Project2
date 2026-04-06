@@ -8,6 +8,11 @@
     <title>마이페이지</title>
 
     <th:block th:fragment="headExtra"></th:block>
+
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/member.css">
+    <script src="/js/common.js"></script>
+    <script src="/js/member.js"></script>
 </head>
 <body>
 
@@ -116,6 +121,12 @@
         </div>
 
         <button type="submit" class="btn btn-dark">비밀번호 변경</button>
+    </form>
+
+    <form method="post"
+          action="/members/me/delete"
+          data-member-delete>
+        <button type="submit" class="btn btn-outline">회원 탈퇴</button>
     </form>
 
     <hr>

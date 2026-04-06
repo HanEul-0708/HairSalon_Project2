@@ -1,5 +1,6 @@
 package com.hairsalonproject2.common.config;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import com.hairsalonproject2.member.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
@@ -71,15 +72,16 @@ public class SecurityConfig {
                                 "/salons",
                                 "/salons/**",
                                 "/designers",
-                                "/designers/**",
+                                "/designers/*",
                                 "/salon-services",
                                 "/salon-services/**",
                                 "/reviews",
                                 "/reviews/**",
                                 "/boards/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/reviews").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/designers/**").hasRole("DESIGNER")
+                        .requestMatchers("/members/me/delete").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -87,7 +89,7 @@ public class SecurityConfig {
                         .loginProcessingUrl("/members/login")
                         .usernameParameter("memberId")
                         .passwordParameter("password")
-                        .defaultSuccessUrl("/", true)
+                        .defaultSuccessUrl("/", false)
                         .failureUrl("/members/login?error=true")
                         .permitAll()
                 )

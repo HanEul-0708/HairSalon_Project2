@@ -1,0 +1,96 @@
+/* =====================================================
+   service.css — 시술(service) 전용 스타일
+   ===================================================== */
+
+.service-page {
+    padding: 40px 0 70px;
+}
+
+/* 검색 폼 */
+.service-search-form {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) auto;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.service-search-form input {
+    padding: 10px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md);
+}
+
+/* 리스트 */
+.service-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.service-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.service-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.service-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.service-info {
+    color: var(--text-sub);
+    margin-bottom: 6px;
+}
+
+/* 비교 테이블 */
+.service-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.service-table th {
+    background: #fcfbf7;
+    padding: 12px;
+}
+
+.service-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.service-table tr:hover {
+    background: var(--gold-soft);
+}
+
+/* 폼 */
+.service-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.service-form input,
+.service-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+}
+
+/* 버튼 */
+.service-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}

@@ -207,6 +207,86 @@ hr {
 .page-header h1 { font-size: 1.5rem; margin-bottom: 4px; }
 .page-header p  { color: var(--text-sub); font-size: 0.9rem; margin: 0; }
 
+/* =============================================
+   본문 중앙 정렬 보강
+   ============================================= */
+
+main {
+    display: block;
+    width: 100%;
+    padding: var(--spacing-xl) 0;
+}
+
+.layout-main {
+    width: 100%;
+}
+
+.layout-main > .container,
+main > .container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+}
+
+/* 페이지 내부에서 자주 쓰는 영역들 폭 정리 */
+.search-form,
+.page-actions,
+.form-actions,
+.detail-card,
+.service-form,
+.data-table,
+.card,
+.list-wrap,
+.form-wrap,
+.table-wrap {
+    width: 100%;
+}
+
+/* 검색폼이 너무 왼쪽에 붙어 보이지 않게 */
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-lg);
+}
+
+/* 액션 버튼 영역 여백 */
+.page-actions,
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: var(--spacing-md) 0 var(--spacing-lg);
+}
+
+/* 카드/상세/폼 박스가 가운데 영역 안에서 자연스럽게 보이게 */
+.detail-card,
+.service-form,
+.form-wrap,
+.list-wrap,
+.table-wrap {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+/* 테이블 래핑 */
+.table-wrap {
+    overflow-x: auto;
+}
+
+/* 테이블 기본 폭 보강 */
+.data-table {
+    width: 100%;
+    background: var(--white);
+}
+
 
 /* =============================================
    4. Topbar

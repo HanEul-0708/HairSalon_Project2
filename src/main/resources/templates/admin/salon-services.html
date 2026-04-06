@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/layout}">
+<head>
+    <title>관리자 - 시술</title>
+    <th:block layout:fragment="pageCss"></th:block>
+</head>
+<body>
+<th:block layout:fragment="pageTitle">시술 관리</th:block>
+<div layout:fragment="content">
+    <div class="admin-card">
+        <div class="admin-card-title">시술 목록</div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>시술명</th>
+                    <th>살롱</th>
+                    <th>가격</th>
+                    <th>시간</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(services)}">
+                    <td colspan="5" style="text-align:center; padding:40px; color:#555;">조회된 시술이 없습니다.</td>
+                </tr>
+                <tr th:each="service : ${services}">
+                    <td th:text="${service.serviceId}">1</td>
+                    <td><a th:href="@{/salon-services/{id}(id=${service.serviceId})}" th:text="${service.name}">시술</a></td>
+                    <td th:text="${service.salonName}">살롱</td>
+                    <td th:text="${service.price}">0</td>
+                    <td th:text="${service.duration}">0</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

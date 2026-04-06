@@ -57,30 +57,36 @@ public class ReviewServiceImpl implements ReviewService {
      *
      * 처리 순서
      * 1. 예약 존재 여부 확인
-     * 2. 시술 완료(COMPLETED) 상태인지 확인
-     * 3. 이미 리뷰가 작성된 예약인지 확인
-     * 4. 리뷰 엔티티 생성 후 저장
-     * 5. 응답 DTO 반환
+     * 2. 로그인 회원이 예약 주인인지 확인
+     * 3. 시술 완료(COMPLETED) 상태인지 확인
+     * 4. 이미 리뷰가 작성된 예약인지 확인
+     * 5. 리뷰 엔티티 생성 후 저장
+     * 6. 응답 DTO 반환
      */
     @Override
     @Transactional
-    public ReviewResponse createReview(ReviewCreateRequest request) {
+    public ReviewResponse createReview(String loginMemberId, ReviewCreateRequest request) {
 
         // 1. 예약 조회
         Reservation reservation = reservationRepository.findById(request.getReservationId())
                 .orElseThrow(() -> new IllegalArgumentException("예약이 존재하지 않습니다."));
 
-        // 2. 시술 완료된 예약인지 확인
+        // 2. 로그인한 회원이 실제 예약자인지 확인
+        if (!reservation.getMember().getMemberId().equals(loginMemberId)) {
+            throw new IllegalArgumentException("본인 예약만 리뷰를 작성할 수 있습니다.");
+        }
+
+        // 3. 시술 완료된 예약인지 확인
         if (reservation.getStatus() != ReservationStatus.COMPLETED) {
             throw new IllegalArgumentException("시술 완료된 예약만 리뷰를 작성할 수 있습니다.");
         }
 
-        // 3. 이미 리뷰가 작성되었는지 확인
+        // 4. 이미 리뷰가 작성되었는지 확인
         if (reviewRepository.findByReservation_ReservationId(request.getReservationId()).isPresent()) {
             throw new IllegalArgumentException("이미 리뷰가 작성된 예약입니다.");
         }
 
-        // 4. 리뷰 엔티티 생성
+        // 5. 리뷰 엔티티 생성
         Review review = Review.builder()
                 .reservation(reservation)
                 .member(reservation.getMember())
@@ -89,10 +95,10 @@ public class ReviewServiceImpl implements ReviewService {
                 .content(request.getContent())
                 .build();
 
-        // 5. 저장
+        // 6. 저장
         Review savedReview = reviewRepository.save(review);
 
-        // 6. 응답 반환
+        // 7. 응답 반환
         return toResponse(savedReview);
     }
 
@@ -146,7 +152,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
-     * 전체 리뷰 조회
+     * 전체 리뷰 목록 조회
      */
     @Override
     public List<ReviewResponse> getAllReviews() {
@@ -156,7 +162,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
-     * 특정 회원이 작성한 리뷰 목록 조회
+     * 회원별 리뷰 목록 조회
      */
     @Override
     public List<ReviewResponse> getReviewsByMember(String memberId) {
@@ -167,22 +173,23 @@ public class ReviewServiceImpl implements ReviewService {
 
     /**
      * 리뷰 수정
+     *
+     * 현재는 리뷰 내용 / 평점만 수정
      */
     @Override
     @Transactional
     public ReviewResponse updateReview(Integer reviewId, ReviewUpdateRequest request) {
 
-        // 수정할 리뷰 조회
+        // 1. 리뷰 조회
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("리뷰가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 존재하지 않습니다."));
 
-        /*
-         * Review 엔티티는 팀장이 만든 파일이므로 수정하지 않고,
-         * 이미 만들어진 updateReview 메서드를 그대로 사용한다.
-         */
+        // 2. 리뷰 수정
         review.updateReview(request.getRating(), request.getContent());
 
-        return toResponse(review);
+        // 3. 저장 후 응답 반환
+        Review updatedReview = reviewRepository.save(review);
+        return toResponse(updatedReview);
     }
 
     /**
@@ -192,39 +199,25 @@ public class ReviewServiceImpl implements ReviewService {
     @Transactional
     public void deleteReview(Integer reviewId) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("삭제할 리뷰가 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 존재하지 않습니다."));
 
         reviewRepository.delete(review);
     }
 
     /**
-     * 디자이너 평균 평점 조회
-     *
-     * 리뷰가 없으면 0.0 반환
-     * 소수점 1자리 반올림
+     * 특정 디자이너 평균 평점 조회
      */
     @Override
     public Double getAverageRatingByDesigner(Integer designerId) {
-        Double averageRating = reviewRepository.findAverageRatingByDesignerId(designerId);
-
-        if (averageRating == null) {
-            return 0.0;
-        }
-
-        return Math.round(averageRating * 10) / 10.0;
+        return reviewRepository.findAverageRatingByDesignerId(designerId);
     }
 
     /**
-     * 평균 평점 기준 TOP3 디자이너 조회
-     *
-     * 조건:
-     * - 리뷰 2개 이상
-     * - 평균 평점 높은 순
-     * - 리뷰 수 많은 순
+     * 상위 디자이너 3명 조회
      */
     @Override
     public List<DesignerRankingResponse> getTop3Designers() {
-        return reviewRepository.findTopDesignersByAverageRatingAndReviewCount(2L)
+        return reviewRepository.findTopDesignersByAverageRatingAndReviewCount(1L)
                 .stream()
                 .limit(3)
                 .toList();
@@ -235,99 +228,44 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     public List<MonthlyReviewStatResponse> getMonthlyReviewStats() {
-        return reviewRepository.findMonthlyReviewStats()
-                .stream()
-                .toList();
+        return reviewRepository.findMonthlyReviewStats();
     }
 
     /**
-     * 특정 기간 월별 리뷰 통계 조회
+     * 특정 기간의 월별 리뷰 통계 조회
      */
     @Override
     public List<MonthlyReviewStatResponse> getMonthlyReviewStatsByPeriod(LocalDate startDate, LocalDate endDate) {
-
-        LocalDateTime startDateTime = startDate.atStartOfDay();
-        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
-
-        return reviewRepository.findMonthlyReviewStatsByPeriod(startDateTime, endDateTime)
-                .stream()
-                .toList();
-    }
-
-    /**
-     * 평균 평점 기준 미용실 랭킹 조회
-     */
-    @Override
-    public List<SalonRankingResponse> getTopSalons() {
-        return reviewRepository.findTopSalonsByAverageRating(2L)
-                .stream()
-                .limit(3)
-                .toList();
-    }
-
-    /**
-     * Review 엔티티 -> ReviewResponse DTO 변환
-     *
-     * 수정 내용:
-     * - memberName 추가
-     * - designerName 추가
-     *
-     * 이유:
-     * 프론트에서 이름을 표시하기 위해
-     * ID뿐 아니라 이름도 함께 반환하도록 개선
-     */
-    private ReviewResponse toResponse(Review review) {
-
-        return new ReviewResponse(
-
-                // 리뷰 PK
-                review.getReviewId(),
-
-                // 예약 ID
-                review.getReservation().getReservationId(),
-
-                // 회원 ID
-                review.getMember().getMemberId(),
-
-                // 회원 이름
-                review.getMember().getName(),
-
-                // 디자이너 ID
-                review.getDesigner().getDesignerId(),
-
-                // 디자이너 이름
-                review.getDesigner().getName(),
-
-                // 평점
-                review.getRating(),
-
-                // 리뷰 내용
-                review.getContent(),
-
-                // 디자이너 답글
-                review.getReplyContent(),
-
-                // 답글 작성일
-                review.getReplyCreatedAt(),
-
-                // 리뷰 작성일
-                review.getCreatedAt()
+        return reviewRepository.findMonthlyReviewStatsByPeriod(
+                startDate.atStartOfDay(),
+                endDate.atTime(23, 59, 59)
         );
     }
 
     /**
-     * 소수점 1자리 반올림 공통 메서드
-     *
-     * 예:
-     * 4.3333 -> 4.3
-     * 3.6666 -> 3.7
-     *
-     * null이면 0.0 반환
+     * 상위 미용실 랭킹 조회
      */
-    private Double roundToOneDecimal(Double value) {
-        if (value == null) {
-            return 0.0;
-        }
-        return Math.round(value * 10) / 10.0;
+    @Override
+    public List<SalonRankingResponse> getTopSalons() {
+        return reviewRepository.findTopSalonsByAverageRating(1L);
+    }
+
+    /**
+     * Review 엔티티 -> ReviewResponse DTO 변환
+     */
+    private ReviewResponse toResponse(Review review) {
+        return new ReviewResponse(
+                review.getReviewId(),
+                review.getReservation().getReservationId(),
+                review.getMember().getMemberId(),
+                review.getMember().getName(),
+                review.getDesigner().getDesignerId(),
+                review.getDesigner().getName(),
+                review.getRating(),
+                review.getContent(),
+                review.getReplyContent(),
+                review.getReplyCreatedAt(),
+                review.getCreatedAt()
+        );
     }
 }

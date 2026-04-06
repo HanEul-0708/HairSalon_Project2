@@ -1,6 +1,5 @@
 package com.hairsalonproject2.board.repository;
 
-import com.hairsalonproject2.board.dto.response.BoardReplyResponse;
 import com.hairsalonproject2.board.dto.response.BoardResponse;
 import com.hairsalonproject2.board.entity.Board;
 import com.hairsalonproject2.common.constant.BoardType;
@@ -20,23 +19,60 @@ import java.util.List;
  */
 public interface BoardRepository extends JpaRepository<Board, Integer> {
 
+    /**
+     * 게시판 종류별 원글 목록 조회
+     */
     List<Board> findByTypeAndParentIsNullOrderByBoardIdDesc(BoardType type);
 
+    /**
+     * 전체 원글 목록 조회
+     */
     List<Board> findByParentIsNullOrderByBoardIdDesc();
 
+    /**
+     * 특정 시각 이후 작성된 원글 수 조회
+     */
     long countByParentIsNullAndCreatedAtGreaterThanEqual(LocalDateTime createdAt);
 
-    List<Board> findTop5ByTypeAndParentIsNullAndHiddenFalseOrderByBoardIdDesc(BoardType type);
+    /**
+     * 특정 부모 글의 답글 목록 조회
+     *
+     * 중요:
+     * Board 엔티티에는 parentBoardId 필드가 없고
+     * parent(Board) 연관관계만 있으므로
+     * parent.boardId 기준으로 파생 메서드를 작성해야 한다.
+     */
+    List<Board> findByParent_BoardIdOrderByBoardIdAsc(Integer parentBoardId);
 
+    /**
+     * 특정 회원이 작성한 게시글 목록 조회
+     */
+    List<Board> findByMemberMemberIdOrderByBoardIdDesc(String memberId);
+
+    /**
+     * 특정 게시판 종류의 원글 수 조회
+     */
     long countByTypeAndParentIsNull(BoardType type);
 
+    /**
+     * 특정 게시판 종류의 노출 중인 원글 수 조회
+     */
     long countByTypeAndParentIsNullAndHiddenFalse(BoardType type);
 
+    /**
+     * 숨김 처리된 원글 수 조회
+     */
     long countByParentIsNullAndHiddenTrue();
 
+    /**
+     * 신고 수가 특정 값보다 큰 원글 수 조회
+     */
     long countByParentIsNullAndReportCountGreaterThan(Integer reportCount);
 
-    long countByParentBoardId(Integer parentBoardId);
+    /**
+     * 특정 부모 글의 답글 수 조회
+     */
+    long countByParent_BoardId(Integer parentBoardId);
 
     @Query(value = """
             SELECT new com.hairsalonproject2.board.dto.response.BoardResponse(
@@ -138,56 +174,8 @@ public interface BoardRepository extends JpaRepository<Board, Integer> {
                                         Pageable pageable);
 
     /**
-     * 내 글 목록 전용 DTO 조회
-     * children 엔티티를 직접 건드리지 않고 답변 여부를 같이 계산한다.
+     * 조회수 1 증가
      */
-    @Query("""
-            SELECT new com.hairsalonproject2.board.dto.response.BoardResponse(
-                b.boardId,
-                b.type,
-                b.title,
-                m.memberId,
-                b.viewCount,
-                b.createdAt,
-                CASE WHEN b.parent IS NOT NULL THEN true ELSE false END,
-                COUNT(c),
-                b.hidden,
-                b.reportCount,
-                CASE WHEN COUNT(c) > 0 THEN true ELSE false END
-            )
-            FROM Board b
-            JOIN b.member m
-            LEFT JOIN b.children c
-            WHERE m.memberId = :memberId
-            GROUP BY b.boardId, b.type, b.title, m.memberId, b.viewCount, b.createdAt, b.parent, b.hidden, b.reportCount
-            ORDER BY b.boardId DESC
-            """)
-    List<BoardResponse> findMyBoardResponses(@Param("memberId") String memberId);
-
-    /**
-     * 답글 목록 전용 DTO 조회
-     * 작성자까지 한 번에 가져와서 추가 조회를 줄인다.
-     */
-    @Query("""
-            SELECT new com.hairsalonproject2.board.dto.response.BoardReplyResponse(
-                b.boardId,
-                p.boardId,
-                b.type,
-                b.title,
-                b.content,
-                m.memberId,
-                b.createdAt,
-                b.updatedAt
-            )
-            FROM Board b
-            JOIN b.member m
-            LEFT JOIN b.parent p
-            WHERE p.boardId = :parentBoardId
-              AND b.hidden = false
-            ORDER BY b.boardId ASC
-            """)
-    List<BoardReplyResponse> findReplyResponsesByParentBoardId(@Param("parentBoardId") Integer parentBoardId);
-
     @Modifying
     @Query("""
             UPDATE Board b

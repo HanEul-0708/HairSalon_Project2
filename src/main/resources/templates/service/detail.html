@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>시술 상세</title>
+
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/service.css}">
+    <script th:src="@{/js/common.js}" defer></script>
+    <script th:src="@{/js/service.js}" defer></script>
+</head>
+<body>
+<main>
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title" th:text="${serviceItem.name}">시술명</h1>
+            <p class="page-desc">시술 상세 정보를 확인할 수 있습니다.</p>
+        </div>
+
+        <div class="detail-card">
+            <p>
+                <strong>살롱:</strong>
+                <a th:href="@{/salons/{id}(id=${serviceItem.salonId})}"
+                   th:text="${serviceItem.salonName}">살롱명</a>
+            </p>
+
+            <p th:text="|가격 ${serviceItem.price}원 / 소요시간 ${serviceItem.duration}분|">
+                가격 / 소요시간
+            </p>
+
+            <p th:text="${serviceItem.description}">설명</p>
+        </div>
+
+        <div class="page-actions">
+            <a th:href="@{/salon-services/{id}/edit(id=${serviceItem.serviceId})}"
+               class="btn btn-outline"
+               sec:authorize="hasAnyRole('ADMIN','DESIGNER')">수정</a>
+
+            <form method="post"
+                  th:action="@{/salon-services/{id}/delete(id=${serviceItem.serviceId})}"
+                  data-service-delete
+                  sec:authorize="hasAnyRole('ADMIN','DESIGNER')">
+                <input type="hidden" name="_method" value="delete">
+                <button type="submit" class="btn btn-outline">삭제</button>
+            </form>
+
+            <a th:href="@{/salon-services}" class="btn btn-primary">목록으로</a>
+        </div>
+    </div>
+</main>
+</body>
+</html>

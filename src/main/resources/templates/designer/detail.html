@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>디자이너 상세</title>
+    <link rel="stylesheet" th:href="@{/css/designer.css}">
+    <script th:src="@{/js/designer.js}" defer></script>
+</head>
+<body>
+<main>
+    <div class="container designer-page designer-detail-page">
+        <div class="page-header">
+            <h1 th:text="${designer.name}">디자이너</h1>
+            <p>디자이너 상세 정보와 가능 시술 정보를 확인할 수 있습니다.</p>
+        </div>
+
+        <div class="detail-card">
+            <p th:text="${designer.introduction}">소개</p>
+            <p th:text="|경력 ${designer.careerYears}년|">경력</p>
+            <p th:text="|평점 ${designer.averageRating} / 리뷰 ${designer.reviewCount}|">통계</p>
+
+            <div class="page-actions">
+                <a th:href="@{/designers/{id}/edit(id=${designer.designerId})}" class="btn btn-outline">수정</a>
+                <form method="post"
+                      th:action="@{/admin/designers/{id}/delete(id=${designer.designerId})}"
+                      sec:authorize="hasRole('ADMIN')">
+                    <button type="submit" class="btn btn-outline">삭제</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="detail-card" style="margin-top: 24px;">
+            <h2>가능 시술</h2>
+            <ul>
+                <li th:each="service : ${designer.salonServices}">
+                    <a th:href="@{/salon-services/{id}(id=${service.serviceId})}" th:text="${service.name}">시술</a>
+                    <span th:text="| - ${service.price}원|">가격</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</main>
+</body>
+</html>
