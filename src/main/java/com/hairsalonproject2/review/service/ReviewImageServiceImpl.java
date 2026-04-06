@@ -6,6 +6,7 @@ import com.hairsalonproject2.review.entity.ReviewImage;
 import com.hairsalonproject2.review.repository.ReviewImageRepository;
 import com.hairsalonproject2.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,11 +43,13 @@ public class ReviewImageServiceImpl implements ReviewImageService {
      */
     @Override
     @Transactional
-    public ReviewImageResponse uploadReviewImage(Integer reviewId, MultipartFile file, Integer sortOrder) {
+    public ReviewImageResponse uploadReviewImage(String loginMemberId, boolean isAdmin, Integer reviewId, MultipartFile file, Integer sortOrder) {
 
         // 1️⃣ 리뷰 존재 여부 확인
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("리뷰가 존재하지 않습니다."));
+
+        validateReviewOwner(review.getMember().getMemberId(), loginMemberId, isAdmin);
 
         // 2️⃣ 파일 저장 (서버 디스크 or S3 등)
         String imageUrl = fileStorageService.storeFile(file);
@@ -97,11 +100,19 @@ public class ReviewImageServiceImpl implements ReviewImageService {
      */
     @Override
     @Transactional
-    public void deleteImage(Integer imageId) {
+    public void deleteImage(String loginMemberId, boolean isAdmin, Integer imageId) {
 
         ReviewImage reviewImage = reviewImageRepository.findById(imageId)
                 .orElseThrow(() -> new IllegalArgumentException("삭제할 이미지가 없습니다."));
 
+        validateReviewOwner(reviewImage.getReview().getMember().getMemberId(), loginMemberId, isAdmin);
+
         reviewImageRepository.delete(reviewImage);
+    }
+
+    private void validateReviewOwner(String ownerMemberId, String loginMemberId, boolean isAdmin) {
+        if (!isAdmin && !ownerMemberId.equals(loginMemberId)) {
+            throw new AccessDeniedException("본인 리뷰 이미지만 변경할 수 있습니다.");
+        }
     }
 }

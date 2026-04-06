@@ -1,22 +1,9 @@
-/*
- * review.js — 리뷰 페이지 전용 스크립트
- * =====================================================
- * 포함 기능
- * 1. 별점 선택 UI
- * 2. 리뷰 글자 수 안내
- * 3. 리뷰 생성 API 호출
- * 4. 이미지 업로드 처리
- */
-
 document.addEventListener("DOMContentLoaded", function () {
     bindReviewRatingStars();
     bindReviewContentCounter();
     bindReviewFormSubmit();
 });
 
-/* =============================================
-   1. 별점 선택 UI
-   ============================================= */
 function bindReviewRatingStars() {
     var stars = document.querySelectorAll(".review-rating__star");
     var ratingInput = document.querySelector('input[name="rating"]');
@@ -46,9 +33,6 @@ function bindReviewRatingStars() {
     renderStars(parseInt(ratingInput.value || "0", 10));
 }
 
-/* =============================================
-   2. 리뷰 글자 수 안내
-   ============================================= */
 function bindReviewContentCounter() {
     var textarea = document.querySelector(".review-form textarea");
     if (!textarea) return;
@@ -65,9 +49,6 @@ function bindReviewContentCounter() {
     updateCounter();
 }
 
-/* =============================================
-   3. 리뷰 생성 + 이미지 업로드
-   ============================================= */
 function bindReviewFormSubmit() {
     var form = document.getElementById("reviewForm");
     if (!form) return;
@@ -81,12 +62,12 @@ function bindReviewFormSubmit() {
         var image = document.getElementById("image");
 
         if (!reservationId || !rating || !content) {
-            alert("리뷰 폼 구성에 문제가 있습니다.");
+            alert("리뷰 폼 구성이 올바르지 않습니다.");
             return;
         }
 
         if (!reservationId.value) {
-            alert("예약 정보가 없습니다. 예약을 통해 진입해주세요.");
+            alert("예약 정보가 없습니다. 예약 화면을 통해 다시 진입해주세요.");
             return;
         }
 
@@ -101,12 +82,15 @@ function bindReviewFormSubmit() {
             content: content.value.trim()
         };
 
+        var jsonHeaders = {
+            "Content-Type": "application/json"
+        };
+        applyCsrfHeaders(jsonHeaders);
+
         try {
             var reviewResponse = await fetch("/api/reviews", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: jsonHeaders,
                 body: JSON.stringify(reviewRequest)
             });
 
@@ -118,19 +102,22 @@ function bindReviewFormSubmit() {
 
             var createdReview = await reviewResponse.json();
 
-            // 이미지가 있으면 리뷰 생성 후 별도 업로드
             if (image && image.files && image.files.length > 0) {
                 var formData = new FormData();
                 formData.append("file", image.files[0]);
 
+                var imageHeaders = {};
+                applyCsrfHeaders(imageHeaders);
+
                 var imageResponse = await fetch("/reviews/" + createdReview.reviewId + "/images", {
                     method: "POST",
+                    headers: imageHeaders,
                     body: formData
                 });
 
                 if (!imageResponse.ok) {
                     var imageErrorText = await imageResponse.text();
-                    alert("리뷰는 등록되었지만 이미지 업로드는 실패했습니다.\n" + imageErrorText);
+                    alert("리뷰는 등록됐지만 이미지는 업로드하지 못했습니다.\n" + imageErrorText);
                     window.location.href = "/reviews";
                     return;
                 }
@@ -143,4 +130,15 @@ function bindReviewFormSubmit() {
             alert("리뷰 요청 중 오류가 발생했습니다.");
         }
     });
+}
+
+function applyCsrfHeaders(headers) {
+    var csrfTokenMeta = document.querySelector('meta[name="_csrf"]');
+    var csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
+
+    if (!csrfTokenMeta || !csrfHeaderMeta) {
+        return;
+    }
+
+    headers[csrfHeaderMeta.getAttribute("content")] = csrfTokenMeta.getAttribute("content");
 }

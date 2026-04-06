@@ -11,37 +11,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * ReviewRepository
- *
- * 리뷰 DB 접근 Repository
- */
 public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
-    /**
-     * 예약 1건당 리뷰 1개 여부 확인
-     */
     Optional<Review> findByReservation_ReservationId(Integer reservationId);
 
-    /**
-     * 회원별 리뷰 목록 조회
-     */
     List<Review> findByMember_MemberId(String memberId);
 
-    /**
-     * 특정 디자이너의 평균 평점 조회
-     */
+    // 예약 목록에서 "리뷰 작성" 버튼을 보여줄지 판단할 때 사용한다.
+    List<Review> findByReservation_ReservationIdIn(List<Integer> reservationIds);
+
     @Query("select avg(r.rating) from Review r where r.designer.designerId = :designerId")
     Double findAverageRatingByDesignerId(Integer designerId);
 
-    /**
-     * 리뷰 수가 일정 개수 이상인 디자이너 중
-     * 평균 평점이 높은 순으로 랭킹 조회
-     *
-     * 정렬 기준
-     * 1. 평균 평점 내림차순
-     * 2. 리뷰 수 내림차순
-     */
     @Query("""
             select new com.hairsalonproject2.review.dto.DesignerRankingResponse(
                 r.designer.designerId,
@@ -56,9 +37,6 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             """)
     List<DesignerRankingResponse> findTopDesignersByAverageRatingAndReviewCount(Long minReviewCount);
 
-    /**
-     * 전체 월별 리뷰 수 / 평균 평점 집계 조회
-     */
     @Query("""
             select new com.hairsalonproject2.review.dto.MonthlyReviewStatResponse(
                 year(r.createdAt),
@@ -72,11 +50,6 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             """)
     List<MonthlyReviewStatResponse> findMonthlyReviewStats();
 
-    /**
-     * 특정 기간의 월별 리뷰 수 / 평균 평점 집계 조회
-     *
-     * createdAt 기준으로 연도/월 그룹화
-     */
     @Query("""
             select new com.hairsalonproject2.review.dto.MonthlyReviewStatResponse(
                 year(r.createdAt),
@@ -92,9 +65,6 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
     List<MonthlyReviewStatResponse> findMonthlyReviewStatsByPeriod(LocalDateTime startDate,
                                                                    LocalDateTime endDate);
 
-    /**
-     * 미용실별 평균 평점 / 리뷰 수 랭킹 조회
-     */
     @Query("""
             select new com.hairsalonproject2.review.dto.SalonRankingResponse(
                 r.designer.salon.salonId,

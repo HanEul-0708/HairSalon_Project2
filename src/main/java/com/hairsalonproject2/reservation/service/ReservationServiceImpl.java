@@ -16,6 +16,7 @@ import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,14 +73,14 @@ public class ReservationServiceImpl implements ReservationService {
      */
     @Override
     @Transactional
-    public ReservationResponse createReservation(ReservationCreateRequest request) {
+    public ReservationResponse createReservation(String loginMemberId, ReservationCreateRequest request) {
 
         /**
          * 1. 요청으로 받은 memberId를 이용해서 회원 조회
          *
          * memberId가 DB에 없으면 예외 발생
          */
-        Member member = memberRepository.findById(request.getMemberId())
+        Member member = memberRepository.findById(loginMemberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
         /**
@@ -322,5 +323,20 @@ public class ReservationServiceImpl implements ReservationService {
          * 응답 DTO로 변환해서 반환
          */
         return toResponse(updatedReservation);
+    }
+
+    public void validateReservationAccess(Integer reservationId, String loginMemberId, boolean isAdmin) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 예약이 존재하지 않습니다."));
+
+        if (!isAdmin && !reservation.getMember().getMemberId().equals(loginMemberId)) {
+            throw new AccessDeniedException("회원 본인 예약만 조회하거나 변경할 수 있습니다.");
+        }
+    }
+
+    public void validateMemberAccess(String targetMemberId, String loginMemberId, boolean isAdmin) {
+        if (!isAdmin && !targetMemberId.equals(loginMemberId)) {
+            throw new AccessDeniedException("회원 본인 예약만 조회할 수 있습니다.");
+        }
     }
 }

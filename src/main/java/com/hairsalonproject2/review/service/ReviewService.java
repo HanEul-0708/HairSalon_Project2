@@ -48,12 +48,12 @@ public interface ReviewService {
     /**
      * 리뷰 수정
      */
-    ReviewResponse updateReview(Integer reviewId, ReviewUpdateRequest request);
+    ReviewResponse updateReview(String loginMemberId, boolean isAdmin, Integer reviewId, ReviewUpdateRequest request);
 
     /**
      * 리뷰 삭제
      */
-    void deleteReview(Integer reviewId);
+    void deleteReview(String loginMemberId, boolean isAdmin, Integer reviewId);
 
     /**
      * 특정 디자이너의 평균 평점 조회

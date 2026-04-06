@@ -12,50 +12,50 @@
 </head>
 <body>
 <main>
-<div class="container review-page review-form-page">
-    <div class="page-header">
-        <h1 class="page-title">리뷰 작성</h1>
-        <p class="page-desc">방문 후기를 작성하고 별점을 남길 수 있습니다.</p>
-    </div>
+    <div class="container review-page review-form-page">
+        <div class="page-header">
+            <h1 class="page-title">리뷰 작성</h1>
+            <p class="page-desc">방문 후기를 남기고 별점을 등록하세요.</p>
+        </div>
 
-    <form id="reviewForm" class="review-form" sec:authorize="isAuthenticated()">
-        <input type="hidden" id="reservationId" th:value="${reservationId}">
+        <form id="reviewForm" class="review-form" sec:authorize="isAuthenticated()">
+            <input type="hidden" id="reservationId" th:value="${reservationId}">
 
-        <div class="form-group">
-            <label for="rating">별점</label>
-            <div class="review-rating">
-                <input type="hidden" id="rating" name="rating" value="5">
-                <div class="review-rating__stars">
-                    <button type="button" class="review-rating__star is-active" data-value="1">★</button>
-                    <button type="button" class="review-rating__star is-active" data-value="2">★</button>
-                    <button type="button" class="review-rating__star is-active" data-value="3">★</button>
-                    <button type="button" class="review-rating__star is-active" data-value="4">★</button>
-                    <button type="button" class="review-rating__star is-active" data-value="5">★</button>
+            <div class="form-group">
+                <label for="rating">별점</label>
+                <div class="review-rating">
+                    <input type="hidden" id="rating" name="rating" value="5">
+                    <div class="review-rating__stars">
+                        <button type="button" class="review-rating__star is-active" data-value="1">&#9733;</button>
+                        <button type="button" class="review-rating__star is-active" data-value="2">&#9733;</button>
+                        <button type="button" class="review-rating__star is-active" data-value="3">&#9733;</button>
+                        <button type="button" class="review-rating__star is-active" data-value="4">&#9733;</button>
+                        <button type="button" class="review-rating__star is-active" data-value="5">&#9733;</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="content">리뷰 내용</label>
-            <textarea id="content" name="content" rows="5" placeholder="리뷰를 입력해주세요"></textarea>
-        </div>
+            <div class="form-group">
+                <label for="content">리뷰 내용</label>
+                <textarea id="content" name="content" rows="5" placeholder="리뷰를 입력해주세요"></textarea>
+            </div>
 
-        <div class="form-group">
-            <label for="image">이미지 업로드</label>
-            <input type="file" id="image" name="image" accept="image/*">
-        </div>
+            <div class="form-group">
+                <label for="image">이미지 업로드</label>
+                <input type="file" id="image" name="image" accept="image/*">
+            </div>
 
-        <div class="review-actions">
-            <button type="submit" class="btn btn-primary">리뷰 등록</button>
-            <a href="/reviews" class="btn btn-outline">목록으로</a>
-        </div>
-    </form>
+            <div class="review-actions">
+                <button type="submit" class="btn btn-primary">리뷰 등록</button>
+                <a href="/reviews" class="btn btn-outline">목록으로</a>
+            </div>
+        </form>
 
-    <div sec:authorize="!isAuthenticated()">
-        <p>리뷰를 작성하려면 로그인이 필요합니다.</p>
-        <a href="/members/login" class="btn btn-primary">로그인하러 가기</a>
+        <div sec:authorize="!isAuthenticated()" class="review-empty">
+            <p>리뷰를 작성하려면 로그인이 필요합니다.</p>
+            <a href="/members/login" class="btn btn-primary">로그인하러 가기</a>
+        </div>
     </div>
-</div>
 </main>
 </body>
 </html>

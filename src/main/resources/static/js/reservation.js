@@ -1,13 +1,3 @@
-/*
- * reservation.js — 예약 페이지 전용 스크립트
- * =====================================================
- * 포함 기능
- * 1. 오늘 이전 날짜 선택 방지
- * 2. 예약 폼 기본 검증
- * 3. 예약 생성 API 호출
- * 4. 카드 hover 접근성 보강
- */
-
 document.addEventListener("DOMContentLoaded", function () {
     setMinimumReservationDate();
     bindReservationFormSubmit();
@@ -15,9 +5,6 @@ document.addEventListener("DOMContentLoaded", function () {
     bindServicePriceSync();
 });
 
-/* =============================================
-   1. 오늘 이전 날짜 선택 방지
-   ============================================= */
 function setMinimumReservationDate() {
     var dateInput = document.getElementById("reservationDate");
     if (!dateInput) return;
@@ -30,9 +17,6 @@ function setMinimumReservationDate() {
     dateInput.min = year + "-" + month + "-" + day;
 }
 
-/* =============================================
-   2. 시술 선택 시 가격 동기화
-   ============================================= */
 function bindServicePriceSync() {
     var serviceSelect = document.getElementById("salonServiceId");
     var totalPriceInput = document.getElementById("totalPrice");
@@ -46,9 +30,6 @@ function bindServicePriceSync() {
     });
 }
 
-/* =============================================
-   3. 예약 폼 제출 → JSON API 호출
-   ============================================= */
 function bindReservationFormSubmit() {
     var form = document.getElementById("reservationForm");
     if (!form) return;
@@ -64,7 +45,7 @@ function bindReservationFormSubmit() {
         var totalPrice = document.getElementById("totalPrice");
 
         if (!memberId || !designerId || !salonServiceId || !reservationDate || !reservationTime || !totalPrice) {
-            alert("예약 폼 구성에 문제가 있습니다.");
+            alert("예약 폼 구성이 올바르지 않습니다.");
             return;
         }
 
@@ -82,12 +63,15 @@ function bindReservationFormSubmit() {
             totalPrice: Number(totalPrice.value)
         };
 
+        var headers = {
+            "Content-Type": "application/json"
+        };
+        applyCsrfHeaders(headers);
+
         try {
             var response = await fetch("/api/reservations", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: headers,
                 body: JSON.stringify(requestBody)
             });
 
@@ -106,9 +90,6 @@ function bindReservationFormSubmit() {
     });
 }
 
-/* =============================================
-   4. 카드 포커스 효과
-   ============================================= */
 function bindReservationCardFocusEffect() {
     var actionButtons = document.querySelectorAll(".reservation-actions .btn");
     if (!actionButtons.length) return;
@@ -130,4 +111,15 @@ function bindReservationCardFocusEffect() {
             }
         });
     });
+}
+
+function applyCsrfHeaders(headers) {
+    var csrfTokenMeta = document.querySelector('meta[name="_csrf"]');
+    var csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
+
+    if (!csrfTokenMeta || !csrfHeaderMeta) {
+        return;
+    }
+
+    headers[csrfHeaderMeta.getAttribute("content")] = csrfTokenMeta.getAttribute("content");
 }

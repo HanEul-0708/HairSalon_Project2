@@ -26,7 +26,7 @@ public interface ReservationService {
      * ReservationCreateRequest DTO를 받아서
      * Reservation 엔티티를 내부에서 생성
      */
-    ReservationResponse createReservation(ReservationCreateRequest request);
+    ReservationResponse createReservation(String loginMemberId, ReservationCreateRequest request);
 
     /**
      * 예약 1건 조회

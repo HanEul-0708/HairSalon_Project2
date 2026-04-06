@@ -15,6 +15,7 @@ import com.hairsalonproject2.review.entity.Review;
 import com.hairsalonproject2.review.repository.ReviewImageRepository;
 import com.hairsalonproject2.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -178,11 +179,13 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public ReviewResponse updateReview(Integer reviewId, ReviewUpdateRequest request) {
+    public ReviewResponse updateReview(String loginMemberId, boolean isAdmin, Integer reviewId, ReviewUpdateRequest request) {
 
         // 1. 리뷰 조회
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 존재하지 않습니다."));
+
+        validateReviewAccess(review, loginMemberId, isAdmin);
 
         // 2. 리뷰 수정
         review.updateReview(request.getRating(), request.getContent());
@@ -197,9 +200,11 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public void deleteReview(Integer reviewId) {
+    public void deleteReview(String loginMemberId, boolean isAdmin, Integer reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 존재하지 않습니다."));
+
+        validateReviewAccess(review, loginMemberId, isAdmin);
 
         reviewRepository.delete(review);
     }
@@ -267,5 +272,17 @@ public class ReviewServiceImpl implements ReviewService {
                 review.getReplyCreatedAt(),
                 review.getCreatedAt()
         );
+    }
+
+    public void validateReviewAccess(Integer reviewId, String loginMemberId, boolean isAdmin) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 존재하지 않습니다."));
+        validateReviewAccess(review, loginMemberId, isAdmin);
+    }
+
+    private void validateReviewAccess(Review review, String loginMemberId, boolean isAdmin) {
+        if (!isAdmin && !review.getMember().getMemberId().equals(loginMemberId)) {
+            throw new AccessDeniedException("본인 리뷰만 수정하거나 삭제할 수 있습니다.");
+        }
     }
 }
