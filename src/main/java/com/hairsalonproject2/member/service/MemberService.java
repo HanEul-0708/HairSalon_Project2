@@ -22,11 +22,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 /*
     회원 서비스
 
-    담당 범위
+    해당 범위
     1. 회원가입
     2. 내 정보 조회
     3. 내 정보 수정
@@ -44,28 +45,33 @@ public class MemberService {
 
     @Transactional
     public void signup(MemberSignupRequest request) {
+        String normalizedMemberId = normalizeMemberId(request.getMemberId());
+        String normalizedName = normalizeName(request.getName());
+        String normalizedPhone = normalizePhone(request.getPhone());
+        String normalizedEmail = normalizeEmail(request.getEmail());
+
         if (!request.getPassword().equals(request.getPasswordConfirm())) {
             throw new BusinessException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
         }
 
-        if (memberRepository.existsByMemberId(request.getMemberId())) {
+        if (memberRepository.existsByMemberId(normalizedMemberId)) {
             throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_ID);
         }
 
-        if (memberRepository.existsByEmail(request.getEmail())) {
+        if (memberRepository.existsByEmail(normalizedEmail)) {
             throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_EMAIL);
         }
 
-        if (memberRepository.existsByPhone(request.getPhone())) {
+        if (memberRepository.existsByPhone(normalizedPhone)) {
             throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_PHONE);
         }
 
         Member member = Member.builder()
-                .memberId(request.getMemberId())
+                .memberId(normalizedMemberId)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .name(request.getName())
-                .phone(request.getPhone())
-                .email(request.getEmail())
+                .name(normalizedName)
+                .phone(normalizedPhone)
+                .email(normalizedEmail)
                 .role(MemberRole.USER)
                 .status(MemberStatus.ACTIVE)
                 .build();
@@ -78,49 +84,50 @@ public class MemberService {
     }
 
     public boolean isMemberIdAvailable(String memberId) {
-        if (memberId == null || memberId.isBlank()) {
+        String normalizedMemberId = normalizeMemberId(memberId);
+        if (normalizedMemberId == null) {
             return false;
         }
 
-        return !memberRepository.existsByMemberId(memberId.trim());
+        return !memberRepository.existsByMemberId(normalizedMemberId);
     }
 
     public boolean isEmailAvailable(String email) {
-        if (email == null || email.isBlank()) {
+        String normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail == null) {
             return false;
         }
 
-        return !memberRepository.existsByEmail(email.trim());
+        return !memberRepository.existsByEmail(normalizedEmail);
     }
 
     public boolean isPhoneAvailable(String phone) {
-        if (phone == null || phone.isBlank()) {
+        String normalizedPhone = normalizePhone(phone);
+        if (normalizedPhone == null) {
             return false;
         }
 
-        return !memberRepository.existsByPhone(phone.trim());
+        return !memberRepository.existsByPhone(normalizedPhone);
     }
 
     public boolean isEmailAvailableForUpdate(String memberId, String email) {
-        if (email == null || email.isBlank()) {
+        String normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail == null) {
             return false;
         }
 
-        String trimmedEmail = email.trim();
-
-        return memberRepository.findByEmail(trimmedEmail)
+        return memberRepository.findByEmail(normalizedEmail)
                 .map(found -> found.getMemberId().equals(memberId))
                 .orElse(true);
     }
 
     public boolean isPhoneAvailableForUpdate(String memberId, String phone) {
-        if (phone == null || phone.isBlank()) {
+        String normalizedPhone = normalizePhone(phone);
+        if (normalizedPhone == null) {
             return false;
         }
 
-        String trimmedPhone = phone.trim();
-
-        return memberRepository.findByPhone(trimmedPhone)
+        return memberRepository.findByPhone(normalizedPhone)
                 .map(found -> found.getMemberId().equals(memberId))
                 .orElse(true);
     }
@@ -128,28 +135,27 @@ public class MemberService {
     @Transactional
     public void updateMyProfile(String memberId, MemberUpdateRequest request) {
         Member member = getMember(memberId);
+        String normalizedName = normalizeName(request.getName());
+        String normalizedPhone = normalizePhone(request.getPhone());
+        String normalizedEmail = normalizeEmail(request.getEmail());
 
-        if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            memberRepository.findByEmail(request.getEmail()).ifPresent(found -> {
+        if (normalizedEmail != null) {
+            memberRepository.findByEmail(normalizedEmail).ifPresent(found -> {
                 if (!found.getMemberId().equals(memberId)) {
                     throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_EMAIL);
                 }
             });
         }
 
-        if (request.getPhone() != null && !request.getPhone().isBlank()) {
-            memberRepository.findByPhone(request.getPhone()).ifPresent(found -> {
+        if (normalizedPhone != null) {
+            memberRepository.findByPhone(normalizedPhone).ifPresent(found -> {
                 if (!found.getMemberId().equals(memberId)) {
                     throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_PHONE);
                 }
             });
         }
 
-        member.updateProfile(
-                request.getName(),
-                request.getPhone(),
-                request.getEmail()
-        );
+        member.updateProfile(normalizedName, normalizedPhone, normalizedEmail);
     }
 
     @Transactional
@@ -179,10 +185,10 @@ public class MemberService {
     }
 
     public Page<MemberSummaryResponse> searchMembers(String keyword,
-                                                    MemberRole role,
-                                                    MemberStatus status,
-                                                    String sort,
-                                                    int page) {
+                                                     MemberRole role,
+                                                     MemberStatus status,
+                                                     String sort,
+                                                     int page) {
         Pageable pageable = PageRequest.of(page, 10, createSort(sort));
         String trimmedKeyword = (keyword == null) ? null : keyword.trim();
 
@@ -233,6 +239,24 @@ public class MemberService {
         member.changeRole(role);
     }
 
+    @Transactional
+    public void changeMemberStatusByAdmin(String adminMemberId,
+                                          String targetMemberId,
+                                          MemberStatus status) {
+        if (adminMemberId.equals(targetMemberId)) {
+            throw new BusinessException(ErrorCode.CANNOT_CHANGE_MY_STATUS);
+        }
+
+        Member member = getMember(targetMemberId);
+        member.changeStatus(status);
+    }
+
+    @Transactional
+    public void delete(String memberId) {
+        Member member = getMember(memberId);
+        member.changeStatus(MemberStatus.DELETED);
+    }
+
     private Member getMember(String memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -250,21 +274,39 @@ public class MemberService {
         return Sort.by(Sort.Order.desc("createdAt"));
     }
 
-    @Transactional
-    public void changeMemberStatusByAdmin(String adminMemberId,
-                                          String targetMemberId,
-                                          MemberStatus status) {
-        if (adminMemberId.equals(targetMemberId)) {
-            throw new BusinessException(ErrorCode.CANNOT_CHANGE_MY_STATUS);
+    private String normalizeMemberId(String memberId) {
+        if (memberId == null) {
+            return null;
         }
 
-        Member member = getMember(targetMemberId);
-        member.changeStatus(status);
+        String normalized = memberId.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
-    @Transactional
-    public void delete(String memberId) {
-        Member member = getMember(memberId);
-        member.changeStatus(MemberStatus.DELETED);
+    private String normalizeName(String name) {
+        if (name == null) {
+            return null;
+        }
+
+        String normalized = name.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String normalizePhone(String phone) {
+        if (phone == null) {
+            return null;
+        }
+
+        String normalized = phone.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        return normalized.isEmpty() ? null : normalized;
     }
 }
