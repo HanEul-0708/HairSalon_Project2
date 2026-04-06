@@ -3,22 +3,18 @@ package com.hairsalonproject2.salon.entity;
 import com.hairsalonproject2.common.entity.BaseCreatedEntity;
 import com.hairsalonproject2.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * SalonLike
  *
- * 회원이 미용실에 누른 좋아요(찜) 정보 엔티티
+ * salon_like 테이블과 매핑되는 엔티티
  *
- * 특징
- * 1. member + salon 조합은 DB에서 UNIQUE로 관리
- * 2. member / salon 양쪽에서 조회 가능
+ * 변경 포인트
+ * 1. 기존 String memberId → Member member 연관관계로 변경
+ * 2. member_id FK를 엔티티에서도 자연스럽게 사용하도록 수정
+ * 3. created_at 은 BaseCreatedEntity 로 공통 처리
  */
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(
         name = "salon_like",
@@ -29,6 +25,11 @@ import lombok.NoArgsConstructor;
                 )
         }
 )
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SalonLike extends BaseCreatedEntity {
 
     /**
@@ -52,10 +53,4 @@ public class SalonLike extends BaseCreatedEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "salon_id", nullable = false)
     private Salon salon;
-
-    @Builder
-    public SalonLike(Member member, Salon salon) {
-        this.member = member;
-        this.salon = salon;
-    }
 }

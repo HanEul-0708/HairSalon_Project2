@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>살롱 목록</title></head>
+<body>
+<h1>살롱 목록</h1>
+<form method="get" th:action="@{/salons}">
+    <input type="text" name="keyword" placeholder="이름/주소/설명" th:value="${search.keyword}">
+    <input type="text" name="region" placeholder="지역" th:value="${search.region}">
+    <input type="number" step="0.1" name="minRating" placeholder="최소 평점" th:value="${search.minRating}">
+    <input type="number" step="0.000001" name="latitude" placeholder="위도" th:value="${search.latitude}">
+    <input type="number" step="0.000001" name="longitude" placeholder="경도" th:value="${search.longitude}">
+    <input type="number" step="0.1" name="radiusKm" placeholder="반경 km" th:value="${search.radiusKm}">
+    <select name="sort">
+        <option value="recommended" th:selected="${search.sort == 'recommended'}">추천순</option>
+        <option value="distance" th:selected="${search.sort == 'distance'}">거리순</option>
+        <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
+        <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
+    </select>
+    <button type="submit">검색</button>
+</form>
+
+<form method="post" th:action="@{/salons/sync/kakao}">
+    <input type="text" name="keyword" placeholder="카카오 동기화 키워드">
+    <input type="text" name="region" placeholder="지역">
+    <button type="submit">카카오 API 동기화</button>
+</form>
+
+<table border="1">
+    <thead>
+    <tr><th>ID</th><th>이름</th><th>주소</th><th>평점</th><th>리뷰 수</th><th>좋아요</th><th>거리</th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="salon : ${salons}">
+        <td th:text="${salon.salonId}">1</td>
+        <td><a th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.name}">살롱</a></td>
+        <td th:text="${salon.address}">주소</td>
+        <td th:text="${salon.averageRating}">0.0</td>
+        <td th:text="${salon.reviewCount}">0</td>
+        <td th:text="${salon.likeCount}">0</td>
+        <td th:text="${salon.distanceKm != null ? salon.distanceKm + ' km' : '-'}">-</td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

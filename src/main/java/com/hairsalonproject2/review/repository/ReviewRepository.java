@@ -41,8 +41,6 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
      * 정렬 기준
      * 1. 평균 평점 내림차순
      * 2. 리뷰 수 내림차순
-     *
-     * 평균 평점은 소수점 1자리 반올림
      */
     @Query("""
             select new com.hairsalonproject2.review.dto.DesignerRankingResponse(
@@ -66,18 +64,18 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
                 year(r.createdAt),
                 month(r.createdAt),
                 count(r),
-               avg(r.rating)
+                avg(r.rating)
             )
             from Review r
             group by year(r.createdAt), month(r.createdAt)
             order by year(r.createdAt) asc, month(r.createdAt) asc
             """)
     List<MonthlyReviewStatResponse> findMonthlyReviewStats();
+
     /**
      * 특정 기간의 월별 리뷰 수 / 평균 평점 집계 조회
      *
      * createdAt 기준으로 연도/월 그룹화
-     * 평균 평점은 소수점 1자리 반올림
      */
     @Query("""
             select new com.hairsalonproject2.review.dto.MonthlyReviewStatResponse(
@@ -93,11 +91,9 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             """)
     List<MonthlyReviewStatResponse> findMonthlyReviewStatsByPeriod(LocalDateTime startDate,
                                                                    LocalDateTime endDate);
+
     /**
      * 미용실별 평균 평점 / 리뷰 수 랭킹 조회
-     *
-     * 디자이너가 소속된 미용실 기준으로 집계
-     * 평균 평점은 소수점 1자리 반올림
      */
     @Query("""
             select new com.hairsalonproject2.review.dto.SalonRankingResponse(

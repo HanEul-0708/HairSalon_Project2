@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>시술 상세</title></head>
+<body>
+<h1 th:text="${serviceItem.name}">시술명</h1>
+<p><a th:href="@{/salons/{id}(id=${serviceItem.salonId})}" th:text="${serviceItem.salonName}">살롱</a></p>
+<p th:text="|가격 ${serviceItem.price}원 / 소요시간 ${serviceItem.duration}분|">가격</p>
+<p th:text="${serviceItem.description}">설명</p>
+<p><a th:href="@{/salon-services/{id}/edit(id=${serviceItem.serviceId})}">수정</a></p>
+<form method="post" th:action="@{/salon-services/{id}(id=${serviceItem.serviceId})}">
+    <input type="hidden" name="_method" value="delete">
+    <button type="submit">삭제</button>
+</form>
+</body>
+</html>
