@@ -56,6 +56,7 @@ public class SecurityConfig {
                 // 브라우저 기본 로그인 팝업 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/files/images/**", "/files/download/**").permitAll()
                         .requestMatchers(
                                 "/",
                                 "/css/**",

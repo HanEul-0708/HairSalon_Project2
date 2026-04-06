@@ -30,6 +30,21 @@
                 </option>
             </select>
 
+            <select name="status" class="admin-select">
+                <option value="">전체 상태</option>
+                <option th:each="status : ${statuses}"
+                        th:value="${status}"
+                        th:text="${status.description}"
+                        th:selected="${status == selectedStatus}">
+                </option>
+            </select>
+
+            <select name="sort" class="admin-select">
+                <option value="latest" th:selected="${selectedSort == 'latest'}">최신순</option>
+                <option value="name" th:selected="${selectedSort == 'name'}">이름순</option>
+                <option value="role" th:selected="${selectedSort == 'role'}">권한순</option>
+            </select>
+
             <button type="submit" class="admin-btn admin-btn-primary">
                 <i class="bi bi-search"></i>
                 검색
@@ -66,8 +81,12 @@
                         <span th:if="${member.role.name() == 'USER'}" class="badge-active">USER</span>
                     </td>
                     <td>
-                        <span th:if="${member.status.name() == 'ACTIVE'}" class="badge-active" th:text="${member.status.description}">활성</span>
-                        <span th:if="${member.status.name() != 'ACTIVE'}" class="badge-inactive" th:text="${member.status.description}">비활성</span>
+                        <span th:if="${member.status.name() == 'ACTIVE'}"
+                              class="badge-active"
+                              th:text="${member.status.description}">활성</span>
+                        <span th:if="${member.status.name() != 'ACTIVE'}"
+                              class="badge-inactive"
+                              th:text="${member.status.description}">비활성</span>
                     </td>
                     <td th:text="${#temporals.format(member.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-31 10:30</td>
                     <td>
@@ -83,13 +102,13 @@
 
         <div class="admin-pagination" th:if="${totalPages > 1}">
             <a th:if="${currentPage > 0}"
-               th:href="@{/admin/members(page=${currentPage - 1}, keyword=${keyword}, role=${selectedRole})}"
+               th:href="@{/admin/members(page=${currentPage - 1}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus}, sort=${selectedSort})}"
                class="admin-page-link">
                 이전
             </a>
 
             <a th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
-               th:href="@{/admin/members(page=${pageNumber}, keyword=${keyword}, role=${selectedRole})}"
+               th:href="@{/admin/members(page=${pageNumber}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus}, sort=${selectedSort})}"
                th:text="${pageNumber + 1}"
                th:classappend="${pageNumber == currentPage} ? ' active'"
                class="admin-page-link">
@@ -97,7 +116,7 @@
             </a>
 
             <a th:if="${currentPage < totalPages - 1}"
-               th:href="@{/admin/members(page=${currentPage + 1}, keyword=${keyword}, role=${selectedRole})}"
+               th:href="@{/admin/members(page=${currentPage + 1}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus}, sort=${selectedSort})}"
                class="admin-page-link">
                 다음
             </a>

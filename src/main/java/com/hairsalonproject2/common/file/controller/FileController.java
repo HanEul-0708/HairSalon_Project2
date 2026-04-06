@@ -53,6 +53,10 @@ public class FileController {
     @GetMapping("/images/{storedFilename}")
     public ResponseEntity<Resource> viewImage(@PathVariable String storedFilename) {
         try {
+            if (isQnaAttachment(storedFilename)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
             Resource resource = loadSafeResource(storedFilename);
             if (resource == null) {
                 return ResponseEntity.notFound().build();
