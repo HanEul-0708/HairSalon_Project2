@@ -1,118 +1,44 @@
 <!DOCTYPE html>
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/layout}">
 <head>
-    <meta charset="UTF-8">
     <title>관리자 - 회원 목록</title>
-    <link rel="stylesheet" href="/css/admin.css">
+    <th:block layout:fragment="pageCss"></th:block>
 </head>
 <body>
-
-<main class="container admin-member-shell">
+<th:block layout:fragment="pageTitle">회원 관리</th:block>
+<div layout:fragment="content">
     <div th:replace="~{fragments/message :: flashMessage}"></div>
 
-    <section class="admin-member-hero">
-        <div class="admin-member-hero__copy">
-            <p class="admin-member-eyebrow">Admin Member Management</p>
-            <h2>회원 관리</h2>
-            <p class="admin-member-hero__text">
-                회원 검색, 권한 구분, 상태 확인을 한 화면에서 빠르게 관리할 수 있습니다.
-            </p>
-            <div class="admin-member-hero__meta" sec:authorize="isAuthenticated()">
-                <span class="admin-member-chip">
-                    현재 로그인 관리자: <strong sec:authentication="name"></strong>
-                </span>
-                <span class="admin-member-chip" th:text="|총 ${memberPage.totalElements}명|">총 0명</span>
-            </div>
-        </div>
+    <div class="admin-card">
+        <div class="admin-card-title">회원 검색</div>
+        <form class="admin-filter-wrap" th:action="@{/admin/members}" method="get">
+            <input type="text"
+                   name="keyword"
+                   class="admin-search-input"
+                   placeholder="아이디, 이메일, 이름 검색"
+                   th:value="${keyword}">
 
-        <div class="admin-member-hero__stats">
-            <div class="admin-member-stat">
-                <span>현재 페이지</span>
-                <strong th:text="${currentPage + 1}">1</strong>
-            </div>
-            <div class="admin-member-stat">
-                <span>전체 페이지</span>
-                <strong th:text="${totalPages == 0 ? 1 : totalPages}">1</strong>
-            </div>
-        </div>
-    </section>
+            <select name="role" class="admin-select">
+                <option value="">전체 권한</option>
+                <option th:each="role : ${roles}"
+                        th:value="${role}"
+                        th:text="${role.name()}"
+                        th:selected="${role == selectedRole}">
+                </option>
+            </select>
 
-    <section class="admin-member-panel">
-        <div class="admin-member-panel__header">
-            <div>
-                <p class="admin-member-eyebrow">Filter</p>
-                <h3>검색 및 정렬</h3>
-            </div>
-        </div>
-
-        <form th:action="@{/admin/members}" method="get" class="admin-member-filter">
-            <div class="admin-member-filter__field admin-member-filter__field--wide">
-                <label for="keyword">검색어</label>
-                <input type="text"
-                       id="keyword"
-                       name="keyword"
-                       class="form-control"
-                       placeholder="아이디, 이름, 이메일 검색"
-                       th:value="${keyword}">
-            </div>
-
-            <div class="admin-member-filter__field">
-                <label for="role">권한</label>
-                <select id="role" name="role" class="form-select">
-                    <option value="">전체 권한</option>
-                    <option th:each="r : ${roles}"
-                            th:value="${r}"
-                            th:text="${r.description}"
-                            th:selected="${r == selectedRole}">
-                    </option>
-                </select>
-            </div>
-
-            <div class="admin-member-filter__field">
-                <label for="status">상태</label>
-                <select id="status" name="status" class="form-select">
-                    <option value="">전체 상태</option>
-                    <option th:each="s : ${statuses}"
-                            th:value="${s}"
-                            th:text="${s.description}"
-                            th:selected="${s == selectedStatus}">
-                    </option>
-                </select>
-            </div>
-
-            <div class="admin-member-filter__field">
-                <label for="sort">정렬</label>
-                <select id="sort" name="sort" class="form-select">
-                    <option value="latest" th:selected="${selectedSort == 'latest'}">최신순</option>
-                    <option value="name" th:selected="${selectedSort == 'name'}">이름순</option>
-                    <option value="role" th:selected="${selectedSort == 'role'}">권한순</option>
-                </select>
-            </div>
-
-            <div class="admin-member-filter__actions">
-                <button type="submit" class="btn btn-gold">검색</button>
-                <a th:href="@{/admin/members}" class="btn btn-outline">초기화</a>
-            </div>
+            <button type="submit" class="admin-btn admin-btn-primary">
+                <i class="bi bi-search"></i>
+                검색
+            </button>
+            <a th:href="@{/admin/members}" class="admin-btn admin-btn-secondary">초기화</a>
         </form>
-    </section>
 
-    <section class="admin-member-panel">
-        <div class="admin-member-panel__header">
-            <div>
-                <p class="admin-member-eyebrow">Directory</p>
-                <h3>회원 목록</h3>
-            </div>
-        </div>
-
-        <div th:if="${#lists.isEmpty(members)}" class="admin-member-empty">
-            검색 결과가 없습니다.
-        </div>
-
-        <div class="admin-member-table-wrap" th:if="${not #lists.isEmpty(members)}">
-            <table class="table admin-member-table">
+        <div class="admin-table-wrap">
+            <table class="admin-table">
                 <thead>
                 <tr>
                     <th>아이디</th>
@@ -122,31 +48,31 @@
                     <th>권한</th>
                     <th>상태</th>
                     <th>가입일</th>
-                    <th>상세</th>
+                    <th>관리</th>
                 </tr>
                 </thead>
                 <tbody>
+                <tr th:if="${#lists.isEmpty(members)}">
+                    <td colspan="8" style="text-align:center; padding:40px; color:#555;">조회된 회원이 없습니다.</td>
+                </tr>
                 <tr th:each="member : ${members}">
                     <td th:text="${member.memberId}">member01</td>
                     <td th:text="${member.name}">홍길동</td>
                     <td th:text="${member.email}">test@example.com</td>
                     <td th:text="${member.phone}">010-1234-5678</td>
                     <td>
-                        <span class="admin-member-badge admin-member-badge--role"
-                              th:text="${member.role.description}">일반 회원</span>
+                        <span th:if="${member.role.name() == 'ADMIN'}" class="badge-notice">ADMIN</span>
+                        <span th:if="${member.role.name() == 'DESIGNER'}" class="badge-qna">DESIGNER</span>
+                        <span th:if="${member.role.name() == 'USER'}" class="badge-active">USER</span>
                     </td>
                     <td>
-                        <span class="admin-member-badge"
-                              th:text="${member.status.description}"
-                              th:classappend="${member.status.name() == 'ACTIVE'} ? ' admin-member-badge--active' :
-                                              (${member.status.name() == 'INACTIVE'} ? ' admin-member-badge--inactive' : ' admin-member-badge--deleted')">
-                            활성
-                        </span>
+                        <span th:if="${member.status.name() == 'ACTIVE'}" class="badge-active" th:text="${member.status.description}">활성</span>
+                        <span th:if="${member.status.name() != 'ACTIVE'}" class="badge-inactive" th:text="${member.status.description}">비활성</span>
                     </td>
                     <td th:text="${#temporals.format(member.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-31 10:30</td>
                     <td>
                         <a th:href="@{/admin/members/{memberId}(memberId=${member.memberId})}"
-                           class="btn btn-outline-gold btn-sm">
+                           class="admin-btn admin-btn-secondary">
                             상세보기
                         </a>
                     </td>
@@ -155,39 +81,28 @@
             </table>
         </div>
 
-        <div th:if="${totalPages > 0}" class="admin-member-pagination">
+        <div class="admin-pagination" th:if="${totalPages > 1}">
             <a th:if="${currentPage > 0}"
-               th:href="@{/admin/members(page=${currentPage - 1}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus}, sort=${selectedSort})}"
-               class="btn btn-outline btn-sm">
+               th:href="@{/admin/members(page=${currentPage - 1}, keyword=${keyword}, role=${selectedRole})}"
+               class="admin-page-link">
                 이전
             </a>
 
-            <span th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}">
-                <a th:if="${pageNumber != currentPage}"
-                   th:href="@{/admin/members(page=${pageNumber}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus}, sort=${selectedSort})}"
-                   th:text="${pageNumber + 1}"
-                   class="btn btn-outline btn-sm">
-                    1
-                </a>
-                <strong th:if="${pageNumber == currentPage}"
-                        th:text="${pageNumber + 1}"
-                        class="btn btn-gold btn-sm">
-                    1
-                </strong>
-            </span>
+            <a th:each="pageNumber : ${#numbers.sequence(0, totalPages - 1)}"
+               th:href="@{/admin/members(page=${pageNumber}, keyword=${keyword}, role=${selectedRole})}"
+               th:text="${pageNumber + 1}"
+               th:classappend="${pageNumber == currentPage} ? ' active'"
+               class="admin-page-link">
+                1
+            </a>
 
             <a th:if="${currentPage < totalPages - 1}"
-               th:href="@{/admin/members(page=${currentPage + 1}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus}, sort=${selectedSort})}"
-               class="btn btn-outline btn-sm">
+               th:href="@{/admin/members(page=${currentPage + 1}, keyword=${keyword}, role=${selectedRole})}"
+               class="admin-page-link">
                 다음
             </a>
         </div>
-    </section>
-
-    <div class="admin-member-footer">
-        <a th:href="@{/}" class="btn btn-outline">메인으로</a>
     </div>
-</main>
-
+</div>
 </body>
 </html>

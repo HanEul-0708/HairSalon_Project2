@@ -50,6 +50,7 @@ public class AdminMemberController {
         model.addAttribute("statuses", MemberStatus.values());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", memberPage.getTotalPages());
+        model.addAttribute("currentMenu", "members");
 
         return "admin/member-list";
     }
@@ -60,6 +61,7 @@ public class AdminMemberController {
         model.addAttribute("member", member);
         model.addAttribute("roles", MemberRole.values());
         model.addAttribute("statuses", MemberStatus.values());
+        model.addAttribute("currentMenu", "members");
         return "admin/member-detail";
     }
 

@@ -56,12 +56,22 @@
             <h4>첨부파일</h4>
             <ul>
                 <li th:each="file : ${board.files}">
-                    <a th:href="@{/files/download/{stored}(stored=${file.storedFilename}, originalFilename=${file.originalFilename})}"
-                       th:text="${file.originalFilename}">
+                    <span class="board-detail-file-name"
+                          th:text="${file.originalFilename}">
                         첨부파일명
-                    </a>
+                    </span>
                 </li>
             </ul>
+            <p class="board-detail-file-note">문의 게시판 첨부파일은 미리보기만 제공되며 다운로드는 지원하지 않습니다.</p>
+        </div>
+
+        <div class="board-detail-images" th:if="${not #lists.isEmpty(board.files)}">
+            <div th:each="file : ${board.files}" th:if="${file.image}" class="board-detail-image-item">
+                <img th:src="@{/files/images/{stored}(stored=${file.storedFilename})}"
+                     th:alt="${file.originalFilename}"
+                     class="board-detail-image-preview">
+                <div class="board-detail-image-caption" th:text="${file.originalFilename}">image.jpg</div>
+            </div>
         </div>
 
         <!-- 버튼 영역 -->

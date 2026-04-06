@@ -12,7 +12,7 @@
                 <span class="topbar__sep" sec:authorize="isAnonymous()"></span>
                 <a th:href="@{/members/signup}" sec:authorize="isAnonymous()">회원가입</a>
 
-                <span sec:authorize="isAuthenticated()" class="topbar__user">
+                    <span sec:authorize="isAuthenticated()" class="topbar__user">
                     <strong sec:authentication="name"></strong> 님
                 </span>
 
@@ -54,31 +54,31 @@
                         <a th:href="@{/}" class="gnb__link">홈</a>
                     </li>
 
-                    <li class="gnb__item has-dropdown">
-                        <a href="#" class="gnb__link">
-                            미용실 <span class="gnb__arrow">+</span>
-                        </a>
-                        <div class="dropdown-panel">
-                            <div class="dropdown-panel__group">
-                                <h4>매장 탐색</h4>
-                                <a th:href="@{/salons}">미용실 전체 보기</a>
-                                <a th:href="@{/salons/nearby}">가까운 미용실 찾기</a>
-                                <a th:href="@{/salons/search}">미용실 검색</a>
-                                <a th:href="@{/salons/branches}">지점 안내</a>
+                        <li class="gnb__item has-dropdown">
+                            <a href="#" class="gnb__link">
+                                미용실 <span class="gnb__arrow">▾</span>
+                            </a>
+                            <div class="dropdown-panel">
+                                <div class="dropdown-panel__group">
+                                    <h4>탐색</h4>
+                                    <a th:href="@{/salons}">미용실 전체 보기</a>
+                                    <a th:href="@{/salons/nearby}">가까운 미용실 찾기</a>
+                                    <a th:href="@{/salons/search}">미용실 검색</a>
+                                    <a th:href="@{/salons/branches}">지점 안내</a>
+                                </div>
+                                <div class="dropdown-panel__group">
+                                    <h4>비교 / 추천</h4>
+                                    <a th:href="@{/salons/price-compare}">가격 비교</a>
+                                    <a th:href="@{/salons/recommend-by-service}">시술별 추천 미용실</a>
+                                    <a th:href="@{/salons/top-rated}">평점 4점↑ 미용실</a>
+                                </div>
+                                <div class="dropdown-panel__group">
+                                    <h4>외부 검색</h4>
+                                    <a th:href="@{/salons/kakao-search}">카카오 미용실 검색</a>
+                                    <a th:href="@{/salons/map}">지도에서 보기</a>
+                                </div>
                             </div>
-                            <div class="dropdown-panel__group">
-                                <h4>비교 / 추천</h4>
-                                <a th:href="@{/salons/price-compare}">가격 비교</a>
-                                <a th:href="@{/salons/recommend-by-service}">시술별 추천 미용실</a>
-                                <a th:href="@{/salons/top-rated}">평점 높은 미용실</a>
-                            </div>
-                            <div class="dropdown-panel__group">
-                                <h4>지도 검색</h4>
-                                <a th:href="@{/salons/kakao-search}">카카오 미용실 검색</a>
-                                <a th:href="@{/salons/map}">지도에서 보기</a>
-                            </div>
-                        </div>
-                    </li>
+                        </li>
 
                     <li class="gnb__item has-dropdown">
                         <a href="#" class="gnb__link">
@@ -171,11 +171,19 @@
                 <a th:href="@{/members/signup}">회원가입</a>
             </div>
 
-            <div sec:authorize="isAuthenticated()">
-                <span><strong sec:authentication="name"></strong> 님</span>
-                <a th:href="@{/members/me}">마이페이지</a>
-                <a th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">관리자</a>
-                <a th:href="@{/designers/me/reservations}" sec:authorize="hasRole('DESIGNER')">예약 관리</a>
+                <div sec:authorize="isAuthenticated()">
+                <span>
+                    <strong sec:authentication="name"></strong> 님
+                </span>
+                    <a th:href="@{/members/me}">마이페이지</a>
+
+                    <span sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin}">관리자</a>
+                </span>
+
+                    <span sec:authorize="hasRole('DESIGNER')">
+                    <a th:href="@{/designers/me/reservations}">예약 관리</a>
+                </span>
 
                 <form th:action="@{/members/logout}" method="post">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -198,5 +206,6 @@
         </nav>
     </div>
 
-    <div class="mobile-backdrop" id="mobileBackdrop"></div>
-</header>
+        <div class="mobile-backdrop" id="mobileBackdrop"></div>
+
+    </header>

@@ -1,60 +1,163 @@
 package com.hairsalonproject2.common.util;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.safety.Safelist;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Pattern;
+
 /**
- * HtmlSanitizer
- * 게시글 본문 HTML에서 위험한 태그와 속성을 제거하는 도구
+ * Sanitizes board HTML while preserving the inline formatting used by Summernote.
  */
-public class HtmlSanitizer {
+public final class HtmlSanitizer {
 
-    /**
-     * HTML 정리
-     * - 기본적인 글자 꾸밈 허용
-     * - 이미지 허용
-     * - 링크 허용
-     * - script, iframe 같은 위험 태그 제거
-     * - style 속성 제거
-     */
+    private static final Set<String> ALLOWED_IMAGE_CLASSES = Set.of(
+            "board-image-align-left",
+            "board-image-align-center",
+            "board-image-align-right"
+    );
+
+    private static final Set<String> ALLOWED_STYLE_PROPERTIES = Set.of(
+            "color", "background-color", "background", "font-size", "text-align"
+    );
+
+    private static final Pattern SAFE_COLOR = Pattern.compile(
+            "^(#[0-9a-fA-F]{3,8}|rgb(a)?\\([0-9\\s.,%]+\\)|hsl(a)?\\([0-9\\s.,%]+\\)|[a-zA-Z]+)$"
+    );
+
+    private static final Pattern SAFE_FONT_SIZE = Pattern.compile(
+            "^[0-9]+(\\.[0-9]+)?(px|pt|em|rem|%)$"
+    );
+
+    private static final Set<String> SAFE_FONT_SIZE_KEYWORDS = Set.of(
+            "xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large",
+            "smaller", "larger"
+    );
+
+    private static final String LOCAL_EDITOR_IMAGE_PREFIX = "/files/images/";
+
+    private HtmlSanitizer() {
+    }
+
     public static String sanitize(String html) {
-
         if (html == null || html.isBlank()) {
             return "";
         }
 
-        /*
-         * basicWithImages()
-         * -> 기본 글자 꾸밈 + 링크 + 이미지 허용
-         */
         Safelist safelist = Safelist.basicWithImages();
-
-        /*
-         * 링크 허용 속성 보강
-         */
+        safelist.addTags("span", "div", "font");
         safelist.addAttributes("a", "href", "title", "target");
-
-        /*
-         * 이미지 허용 속성 보강
-         */
-        safelist.addAttributes("img", "src", "alt", "title", "width", "height");
-
-        /*
-         * iframe 제거
-         * 영상 임베드 등을 막고 싶을 때 안전하다
-         */
+        safelist.addAttributes("img", "src", "alt", "title", "width", "height", "class");
+        safelist.addAttributes("font", "size", "color");
+        safelist.addAttributes(":all", "style");
         safelist.removeTags("iframe");
 
-        /*
-         * style 속성 제거
-         * CSS를 이용한 우회 공격 가능성을 줄임
-         */
-        safelist.removeAttributes(":all", "style");
+        String cleanedHtml = Jsoup.clean(html, safelist);
+        return sanitizeInlineStyles(html, cleanedHtml);
+    }
 
-        /*
-         * clean()
-         * -> 허용한 것만 남기고 나머지는 제거
-         */
-        return Jsoup.clean(html, safelist);
+    private static String sanitizeInlineStyles(String originalHtml, String cleanedHtml) {
+        Document sourceDocument = Jsoup.parseBodyFragment(originalHtml);
+        Document document = Jsoup.parseBodyFragment(cleanedHtml);
+
+        for (Element element : document.body().select("[style]")) {
+            String sanitizedStyle = Arrays.stream(element.attr("style").split(";"))
+                    .map(String::trim)
+                    .filter(style -> !style.isBlank())
+                    .map(HtmlSanitizer::sanitizeStyleDeclaration)
+                    .filter(style -> style != null && !style.isBlank())
+                    .reduce((left, right) -> left + "; " + right)
+                    .orElse("");
+
+            if (sanitizedStyle.isBlank()) {
+                element.removeAttr("style");
+                continue;
+            }
+
+            element.attr("style", sanitizedStyle);
+        }
+
+        for (Element image : document.body().select("img[class]")) {
+            Set<String> allowedClasses = new HashSet<>();
+            image.classNames().forEach(className -> {
+                if (ALLOWED_IMAGE_CLASSES.contains(className)) {
+                    allowedClasses.add(className);
+                }
+            });
+
+            if (allowedClasses.isEmpty()) {
+                image.removeAttr("class");
+            } else {
+                image.classNames(allowedClasses);
+            }
+        }
+
+        restoreSafeImageSources(sourceDocument, document);
+
+        return document.body().html();
+    }
+
+    private static void restoreSafeImageSources(Document sourceDocument, Document cleanedDocument) {
+        var sourceImages = sourceDocument.body().select("img[src]");
+        var cleanedImages = cleanedDocument.body().select("img");
+        int count = Math.min(sourceImages.size(), cleanedImages.size());
+
+        for (int i = 0; i < count; i++) {
+            Element cleanedImage = cleanedImages.get(i);
+            if (cleanedImage.hasAttr("src") && !cleanedImage.attr("src").isBlank()) {
+                continue;
+            }
+
+            String source = sourceImages.get(i).attr("src").trim();
+            if (isSafeImageSource(source)) {
+                cleanedImage.attr("src", source);
+            }
+        }
+    }
+
+    private static boolean isSafeImageSource(String source) {
+        if (source == null || source.isBlank()) {
+            return false;
+        }
+
+        return source.startsWith(LOCAL_EDITOR_IMAGE_PREFIX)
+                || source.startsWith("http://")
+                || source.startsWith("https://");
+    }
+
+    private static String sanitizeStyleDeclaration(String declaration) {
+        String[] parts = declaration.split(":", 2);
+        if (parts.length != 2) {
+            return null;
+        }
+
+        String property = parts[0].trim().toLowerCase(Locale.ROOT);
+        String value = parts[1].trim();
+
+        if (!ALLOWED_STYLE_PROPERTIES.contains(property)) {
+            return null;
+        }
+
+        if (!isSafeStyleValue(property, value)) {
+            return null;
+        }
+
+        return property + ": " + value;
+    }
+
+    private static boolean isSafeStyleValue(String property, String value) {
+        return switch (property) {
+            case "color", "background-color", "background" -> SAFE_COLOR.matcher(value).matches();
+            case "font-size" -> SAFE_FONT_SIZE.matcher(value).matches()
+                    || SAFE_FONT_SIZE_KEYWORDS.contains(value.toLowerCase(Locale.ROOT));
+            case "text-align" -> Set.of("left", "center", "right", "justify")
+                    .contains(value.toLowerCase(Locale.ROOT));
+            default -> false;
+        };
     }
 }

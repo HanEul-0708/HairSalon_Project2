@@ -1,152 +1,103 @@
 <!DOCTYPE html>
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/layout}">
 <head>
-    <meta charset="UTF-8">
     <title>관리자 - 회원 상세</title>
-    <link rel="stylesheet" href="/css/admin.css">
+    <th:block layout:fragment="pageCss"></th:block>
 </head>
 <body>
-
-<main class="container admin-member-shell">
+<th:block layout:fragment="pageTitle">회원 상세</th:block>
+<div layout:fragment="content">
     <div th:replace="~{fragments/message :: flashMessage}"></div>
 
-    <section class="admin-member-hero admin-member-hero--detail">
-        <div class="admin-member-hero__copy">
-            <p class="admin-member-eyebrow">Member Detail</p>
-            <h2 th:text="${member.name}">회원명</h2>
-            <p class="admin-member-hero__text">
-                계정 상태, 권한, 기본 회원 정보를 확인하고 필요한 관리 작업을 수행하세요.
-            </p>
-            <div class="admin-member-hero__meta">
-                <span class="admin-member-chip" th:text="${member.memberId}">member01</span>
-                <span class="admin-member-chip" th:text="${member.role.description}">일반 회원</span>
-                <span class="admin-member-chip" th:text="${member.status.description}">활성</span>
+    <div th:if="${roleErrorMessage}" class="alert alert-danger" th:text="${roleErrorMessage}"></div>
+    <div th:if="${deleteErrorMessage}" class="alert alert-danger" th:text="${deleteErrorMessage}"></div>
+
+    <div class="admin-card">
+        <div class="admin-card-title">기본 정보</div>
+        <div class="admin-detail-grid">
+            <div class="admin-detail-item">
+                <span class="admin-detail-label">아이디</span>
+                <strong class="admin-detail-value" th:text="${member.memberId}">member01</strong>
+            </div>
+            <div class="admin-detail-item">
+                <span class="admin-detail-label">이름</span>
+                <strong class="admin-detail-value" th:text="${member.name}">홍길동</strong>
+            </div>
+            <div class="admin-detail-item">
+                <span class="admin-detail-label">전화번호</span>
+                <strong class="admin-detail-value" th:text="${member.phone}">010-1234-5678</strong>
+            </div>
+            <div class="admin-detail-item">
+                <span class="admin-detail-label">이메일</span>
+                <strong class="admin-detail-value" th:text="${member.email}">test@example.com</strong>
+            </div>
+            <div class="admin-detail-item">
+                <span class="admin-detail-label">권한</span>
+                <strong class="admin-detail-value" th:text="${member.role.name()}">USER</strong>
+            </div>
+            <div class="admin-detail-item">
+                <span class="admin-detail-label">상태</span>
+                <strong class="admin-detail-value" th:text="${member.status.description}">활성</strong>
+            </div>
+            <div class="admin-detail-item">
+                <span class="admin-detail-label">가입일</span>
+                <strong class="admin-detail-value"
+                        th:text="${#temporals.format(member.createdAt, 'yyyy-MM-dd HH:mm')}">
+                    2026-03-31 10:30
+                </strong>
             </div>
         </div>
-
-        <div class="admin-member-hero__stats">
-            <div class="admin-member-stat">
-                <span>가입일</span>
-                <strong th:text="${#temporals.format(member.createdAt, 'yyyy-MM-dd')}">2026-04-06</strong>
-            </div>
-            <div class="admin-member-stat">
-                <span>이메일</span>
-                <strong th:text="${member.email}">member@example.com</strong>
-            </div>
-        </div>
-    </section>
-
-    <section class="admin-member-detail-grid">
-        <article class="admin-member-panel admin-member-panel--profile">
-            <div class="admin-member-panel__header">
-                <div>
-                    <p class="admin-member-eyebrow">Profile</p>
-                    <h3>기본 정보</h3>
-                </div>
-            </div>
-
-            <div class="admin-member-profile-list">
-                <div class="admin-member-profile-item">
-                    <span>아이디</span>
-                    <strong th:text="${member.memberId}">member01</strong>
-                </div>
-                <div class="admin-member-profile-item">
-                    <span>이름</span>
-                    <strong th:text="${member.name}">홍길동</strong>
-                </div>
-                <div class="admin-member-profile-item">
-                    <span>전화번호</span>
-                    <strong th:text="${member.phone}">010-1234-5678</strong>
-                </div>
-                <div class="admin-member-profile-item">
-                    <span>이메일</span>
-                    <strong th:text="${member.email}">member@example.com</strong>
-                </div>
-                <div class="admin-member-profile-item">
-                    <span>권한</span>
-                    <strong th:text="${member.role.description}">일반 회원</strong>
-                </div>
-                <div class="admin-member-profile-item">
-                    <span>상태</span>
-                    <strong th:text="${member.status.description}">활성</strong>
-                </div>
-            </div>
-        </article>
-
-        <article class="admin-member-panel">
-            <div class="admin-member-panel__header">
-                <div>
-                    <p class="admin-member-eyebrow">Permission</p>
-                    <h3>권한 변경</h3>
-                </div>
-            </div>
-
-            <form th:action="@{/admin/members/{memberId}/role(memberId=${member.memberId})}" method="post" class="admin-member-form">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <label class="form-label" for="role">권한 선택</label>
-                <select id="role" name="role" class="form-select">
-                    <option th:each="role : ${roles}"
-                            th:value="${role}"
-                            th:text="${role.description}"
-                            th:selected="${role == member.role}">
-                    </option>
-                </select>
-                <button type="submit" class="btn btn-gold">권한 변경</button>
-            </form>
-        </article>
-
-        <article class="admin-member-panel">
-            <div class="admin-member-panel__header">
-                <div>
-                    <p class="admin-member-eyebrow">Status</p>
-                    <h3>회원 상태 변경</h3>
-                </div>
-            </div>
-
-            <form th:action="@{/admin/members/{memberId}/status(memberId=${member.memberId})}" method="post" class="admin-member-form">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <label class="form-label" for="status">상태 선택</label>
-                <select id="status" name="status" class="form-select">
-                    <option th:each="status : ${statuses}"
-                            th:value="${status}"
-                            th:text="${status.description}"
-                            th:selected="${status == member.status}">
-                    </option>
-                </select>
-                <button type="submit" class="btn btn-primary">상태 변경</button>
-            </form>
-        </article>
-
-        <article class="admin-member-panel admin-member-panel--danger">
-            <div class="admin-member-panel__header">
-                <div>
-                    <p class="admin-member-eyebrow">Danger Zone</p>
-                    <h3>회원 삭제</h3>
-                </div>
-            </div>
-
-            <p class="admin-member-danger-text">
-                삭제 처리된 회원은 더 이상 정상 로그인할 수 없으며, 상태는 삭제로 변경됩니다.
-            </p>
-
-            <form th:action="@{/admin/members/{memberId}/delete(memberId=${member.memberId})}" method="post">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <button type="submit"
-                        class="btn btn-danger"
-                        onclick="return confirm('정말 이 회원을 삭제하시겠습니까?');">
-                    회원 삭제
-                </button>
-            </form>
-        </article>
-    </section>
-
-    <div class="admin-member-footer">
-        <a th:href="@{/admin/members}" class="btn btn-outline">목록으로</a>
     </div>
-</main>
 
+    <div class="admin-card">
+        <div class="admin-card-title">권한 변경</div>
+        <form th:action="@{/admin/members/{memberId}/role(memberId=${member.memberId})}" method="post" class="admin-form-row">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <select name="role" class="admin-select">
+                <option th:each="role : ${roles}"
+                        th:value="${role}"
+                        th:text="${role.name()}"
+                        th:selected="${role == member.role}">
+                </option>
+            </select>
+            <button type="submit" class="admin-btn admin-btn-primary">권한 변경</button>
+        </form>
+    </div>
+
+    <div class="admin-card">
+        <div class="admin-card-title">회원 상태 변경</div>
+        <form th:action="@{/admin/members/{memberId}/status(memberId=${member.memberId})}" method="post" class="admin-form-row">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <select name="status" class="admin-select">
+                <option th:each="status : ${statuses}"
+                        th:value="${status}"
+                        th:text="${status.description}"
+                        th:selected="${status == member.status}">
+                </option>
+            </select>
+            <button type="submit" class="admin-btn admin-btn-primary">상태 변경</button>
+        </form>
+    </div>
+
+    <div class="admin-card admin-danger-card">
+        <div class="admin-card-title">회원 삭제</div>
+        <p class="admin-danger-text">삭제는 되돌릴 수 없습니다. 정말 필요한 경우에만 진행하세요.</p>
+        <form th:action="@{/admin/members/{memberId}/delete(memberId=${member.memberId})}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit"
+                    class="admin-btn admin-btn-danger"
+                    onclick="return confirm('정말 이 회원을 삭제하시겠습니까?');">
+                회원 삭제
+            </button>
+        </form>
+    </div>
+
+    <div class="admin-action-row">
+        <a th:href="@{/admin/members}" class="admin-btn admin-btn-secondary">목록으로</a>
+    </div>
+</div>
 </body>
 </html>
