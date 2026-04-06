@@ -23,7 +23,7 @@ import java.util.List;
  * 리뷰 관련 API 요청을 처리하는 컨트롤러
  */
 @RestController
-@RequestMapping("/reviews")
+@RequestMapping("/api/reviews")
 @RequiredArgsConstructor
 public class ReviewController {
 

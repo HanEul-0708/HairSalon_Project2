@@ -1,0 +1,231 @@
+/* =====================================================
+   reservation.css — 예약 페이지 전용 스타일
+   ===================================================== */
+
+.reservation-page,
+.reservation-form-page,
+.reservation-list-page {
+    padding: 40px 0 70px;
+}
+
+.reservation-form,
+.reservation-list {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 28px;
+}
+
+.reservation-form {
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md);
+    background: var(--white);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.14);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: var(--radius-full);
+    border: 1px solid transparent;
+    font-size: 0.92rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+    color: var(--primary);
+    box-shadow: var(--shadow-gold);
+}
+
+.btn-primary:hover {
+    color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    background: var(--white);
+    color: var(--text-main);
+    border-color: var(--gold-border);
+}
+
+.btn-outline:hover {
+    background: var(--gold-soft);
+    color: var(--text-main);
+}
+
+.reservation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.reservation-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, #fff 0%, #fcfbf7 100%);
+    transition: var(--transition-slow);
+}
+
+.reservation-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--gold-border);
+}
+
+.reservation-info {
+    flex: 1;
+}
+
+.reservation-info p {
+    margin: 0 0 8px;
+    color: var(--text-sub);
+    font-size: 0.95rem;
+}
+
+.reservation-info strong {
+    display: inline-block;
+    min-width: 72px;
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.reservation-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 130px;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.status.confirmed {
+    background: rgba(46,125,50,0.12);
+    color: var(--success);
+}
+
+.status.done {
+    background: rgba(21,101,192,0.12);
+    color: var(--info);
+}
+
+.status.canceled {
+    background: rgba(198,40,40,0.12);
+    color: var(--danger);
+}
+
+.form-error-message {
+    margin-top: 6px;
+    font-size: 0.84rem;
+    color: var(--danger);
+}
+
+.form-help-text {
+    margin-top: 4px;
+    font-size: 0.82rem;
+    color: var(--text-sub);
+}
+
+@media (max-width: 768px) {
+    .reservation-form,
+    .reservation-list {
+        padding: 20px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .reservation-card {
+        flex-direction: column;
+    }
+
+    .reservation-actions {
+        width: 100%;
+        min-width: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .form-actions {
+        justify-content: stretch;
+    }
+
+    .form-actions .btn,
+    .reservation-actions .btn {
+        width: 100%;
+    }
+}

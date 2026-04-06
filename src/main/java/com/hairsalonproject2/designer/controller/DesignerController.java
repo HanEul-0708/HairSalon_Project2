@@ -1,21 +1,33 @@
 package com.hairsalonproject2.designer.controller;
 
-import com.hairsalonproject2.designer.dto.request.DesignerCreateRequest;
 import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
-import com.hairsalonproject2.designer.dto.request.DesignerUpdateRequest;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 디자이너 공개 페이지 전용 컨트롤러
+ *
+ * 역할
+ * 1. 디자이너 목록 조회
+ * 2. 디자이너 상세 조회
+ *
+ * 주의
+ * - 생성/수정/삭제 같은 관리 기능은 AdminDesignerController 로 분리
+ */
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/designers")
 public class DesignerController {
+
     private final DesignerQueryService designerQueryService;
 
+    /**
+     * 디자이너 목록 페이지
+     * GET /designers
+     */
     @GetMapping
     public String list(@ModelAttribute DesignerSearchRequest request, Model model) {
         model.addAttribute("designers", designerQueryService.search(request));
@@ -23,49 +35,13 @@ public class DesignerController {
         return "designer/list";
     }
 
+    /**
+     * 디자이너 상세 페이지
+     * GET /designers/{designerId}
+     */
     @GetMapping("/{designerId}")
     public String detail(@PathVariable Integer designerId, Model model) {
         model.addAttribute("designer", designerQueryService.getDetail(designerId));
         return "designer/detail";
-    }
-
-    @PostMapping
-    public String create(@ModelAttribute("form") DesignerCreateRequest request, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return "designer/form";
-        }
-        Integer designerId = designerQueryService.create(request);
-        return "redirect:/designers/" + designerId;
-    }
-
-    @GetMapping("/{designerId}/edit")
-    public String editForm(@PathVariable Integer designerId, Model model) {
-        var detail = designerQueryService.getDetail(designerId);
-        DesignerUpdateRequest form = new DesignerUpdateRequest();
-        form.setSalonId(detail.getSalonId());
-        form.setMemberId(detail.getMemberId());
-        form.setName(detail.getName());
-        form.setProfileImage(detail.getProfileImage());
-        form.setIntroduction(detail.getIntroduction());
-        form.setCareerYears(detail.getCareerYears());
-        model.addAttribute("designerId", designerId);
-        model.addAttribute("form", form);
-        return "designer/form";
-    }
-
-    @PostMapping("/{designerId}/edit")
-    public String update(@PathVariable Integer designerId, @ModelAttribute("form") DesignerUpdateRequest request, BindingResult bindingResult, Model model) {
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("designerId", designerId);
-            return "designer/form";
-        }
-        designerQueryService.update(designerId, request);
-        return "redirect:/designers/" + designerId;
-    }
-
-    @DeleteMapping("/{designerId}")
-    public String delete(@PathVariable Integer designerId) {
-        designerQueryService.delete(designerId);
-        return "redirect:/designers";
     }
 }

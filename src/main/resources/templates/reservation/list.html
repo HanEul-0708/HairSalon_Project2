@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>예약 내역</title>
-
-    <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/reservation.css">
+    <link rel="stylesheet" th:href="@{/css/reservation.css}">
+    <script th:src="@{/js/reservation.js}" defer></script>
 </head>
 <body>
+<main>
 <div class="container">
     <div class="page-header">
         <h1 class="page-title">예약 내역</h1>
@@ -24,8 +26,8 @@
                 <p><strong>상태</strong> <span class="status confirmed">예약완료</span></p>
             </div>
             <div class="reservation-actions">
-                <a href="/reservation/create" class="btn btn-primary">예약하기</a>
-                <a href="/review/write" class="btn btn-outline">리뷰작성</a>
+                <a href="/reservations/new" class="btn btn-primary">예약하기</a>
+                <a th:href="@{/reviews/write(reservationId=1)}" class="btn btn-outline">리뷰작성</a>
             </div>
         </div>
 
@@ -37,7 +39,7 @@
                 <p><strong>상태</strong> <span class="status done">방문완료</span></p>
             </div>
             <div class="reservation-actions">
-                <a href="/review/write" class="btn btn-primary">리뷰작성</a>
+                <a th:href="@{/reviews/write(reservationId=2)}" class="btn btn-outline">리뷰작성</a>
             </div>
         </div>
 
@@ -49,12 +51,11 @@
                 <p><strong>상태</strong> <span class="status canceled">예약취소</span></p>
             </div>
             <div class="reservation-actions">
-                <a href="/reservation/create" class="btn btn-outline">다시예약</a>
+                <a href="/reservations/new" class="btn btn-outline">다시예약</a>
             </div>
         </div>
     </div>
 </div>
-
-<script src="/js/reservation.js"></script>
+</main>
 </body>
 </html>

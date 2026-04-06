@@ -196,4 +196,15 @@ public class MemberController {
         redirectAttributes.addFlashAttribute("successMessage", "비밀번호가 변경되었습니다.");
         return "redirect:/members/me";
     }
+
+    @PostMapping("/me/delete")
+    public String deleteMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        // 현재 로그인한 사용자 ID 가져오기
+        String memberId = userDetails.getMember().getMemberId();
+
+        memberService.delete(memberId);
+
+        return "redirect:/members/logout";
+    }
 }

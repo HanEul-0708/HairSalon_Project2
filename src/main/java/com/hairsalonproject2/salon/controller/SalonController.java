@@ -20,6 +20,12 @@ public class SalonController {
     private final SalonQueryService salonQueryService;
     private final ExternalSalonSyncService externalSalonSyncService;
 
+    @GetMapping("/new")
+    public String createForm(Model model) {
+        model.addAttribute("form", new SalonCreateRequest());
+        return "salon/form";
+    }
+
     @GetMapping
     public String list(@ModelAttribute SalonSearchRequest request, Model model) {
         model.addAttribute("salons", salonQueryService.search(request));
@@ -81,7 +87,7 @@ public class SalonController {
     public String like(@PathVariable Integer salonId, Authentication authentication, RedirectAttributes redirectAttributes) {
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             redirectAttributes.addFlashAttribute("message", "로그인이 필요합니다.");
-            return "redirect:/login";
+            return "redirect:/members/login";
         }
         boolean created = salonQueryService.like(salonId, authentication.getName());
         redirectAttributes.addFlashAttribute("message", created ? "찜 완료" : "이미 찜한 살롱입니다.");
@@ -92,7 +98,7 @@ public class SalonController {
     public String unlike(@PathVariable Integer salonId, Authentication authentication, RedirectAttributes redirectAttributes) {
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             redirectAttributes.addFlashAttribute("message", "로그인이 필요합니다.");
-            return "redirect:/login";
+            return "redirect:/members/login";
         }
         boolean deleted = salonQueryService.unlike(salonId, authentication.getName());
         redirectAttributes.addFlashAttribute("message", deleted ? "찜 취소 완료" : "찜 정보가 없습니다.");

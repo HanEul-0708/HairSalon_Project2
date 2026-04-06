@@ -18,7 +18,7 @@ import java.util.List;
  * 클라이언트 요청 → Service 호출 → 결과 반환
  */
 @RestController
-@RequestMapping("/reservations")
+@RequestMapping("/api/reservations")
 @RequiredArgsConstructor
 public class ReservationController {
 
