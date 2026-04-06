@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface DesignerRepository extends JpaRepository<Designer, Integer>, JpaSpecificationExecutor<Designer> {
     List<Designer> findBySalonSalonId(Integer salonId);
+    boolean existsByMember_MemberId(String memberId);
 
     @Query(value = """
             SELECT d.designer_id AS designerId,

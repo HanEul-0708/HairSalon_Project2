@@ -12,8 +12,8 @@ import lombok.Setter;
  * 회원가입 요청 DTO
  *
  * 역할
- * - 회원가입 화면에서 입력받은 값을 전달
- * - Bean Validation 으로 1차 검증 수행
+ * - 회원가입 폼에서 입력받은 값을 전달한다.
+ * - Bean Validation으로 1차 검증을 수행한다.
  */
 @Getter
 @Setter
@@ -26,10 +26,10 @@ public class MemberSignupRequest {
      * 조건
      * - 필수
      * - 4자 이상 30자 이하
-     * - 영문 소문자, 숫자만 허용
+     * - 영문 소문자와 숫자만 허용
      */
     @NotBlank(message = "아이디는 필수입니다.")
-    @Size(min = 4, max = 30, message = "아이디는 4자 이상 30자 이하로 입력해주세요.")
+    @Size(min = 4, max = 30, message = "아이디는 4자 이상 30자 이하로 입력해 주세요.")
     @Pattern(regexp = "^[a-z0-9]+$", message = "아이디는 영문 소문자와 숫자만 사용할 수 있습니다.")
     private String memberId;
 
@@ -41,7 +41,7 @@ public class MemberSignupRequest {
      * - 8자 이상 100자 이하
      */
     @NotBlank(message = "비밀번호는 필수입니다.")
-    @Size(min = 8, max = 100, message = "비밀번호는 8자 이상 입력해주세요.")
+    @Size(min = 8, max = 100, message = "비밀번호는 8자 이상 입력해 주세요.")
     private String password;
 
     /**
@@ -49,7 +49,7 @@ public class MemberSignupRequest {
      *
      * 조건
      * - 필수
-     * - 실제 일치 여부는 Service 에서 추가 검증
+     * - 실제 일치 여부는 Service에서 추가 검증
      */
     @NotBlank(message = "비밀번호 확인은 필수입니다.")
     private String passwordConfirm;
@@ -80,7 +80,7 @@ public class MemberSignupRequest {
      * 이메일
      */
     @NotBlank(message = "이메일은 필수입니다.")
-    @Email(message = "이메일 형식이 아닙니다.")
+    @Email(message = "이메일 형식이 올바르지 않습니다.")
     @Size(max = 100, message = "이메일은 100자 이하여야 합니다.")
     private String email;
 }

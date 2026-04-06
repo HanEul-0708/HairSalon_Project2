@@ -158,6 +158,7 @@ public class SalonQueryService {
                     .rank(i + 1)
                     .salonId(s.getSalonId())
                     .salonName(s.getName())
+                    .address(s.getAddress())
                     .averageRating(s.getAverageRating())
                     .reviewCount(s.getReviewCount())
                     .likeCount(s.getLikeCount())

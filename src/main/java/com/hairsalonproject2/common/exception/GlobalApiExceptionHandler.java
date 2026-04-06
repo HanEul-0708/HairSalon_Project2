@@ -19,12 +19,7 @@ public class GlobalApiExceptionHandler {
     /**
      * IllegalArgumentException 처리
      *
-     * 주로 잘못된 요청 값, 없는 데이터, 비즈니스 검증 실패 등에 사용
-     *
-     * 예:
-     * - 예약이 존재하지 않습니다.
-     * - 이미 리뷰가 작성된 예약입니다.
-     * - 시술 완료된 예약만 리뷰를 작성할 수 있습니다.
+     * 주로 잘못된 요청 값이나 비즈니스 검증 실패 상황에 사용한다.
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException e) {
@@ -40,12 +35,7 @@ public class GlobalApiExceptionHandler {
     /**
      * DTO 검증 예외 처리
      *
-     * @Valid가 붙은 요청 DTO에서 검증 실패 시 발생
-     *
-     * 예:
-     * - 회원 ID는 필수입니다.
-     * - 예약 날짜는 필수입니다.
-     * - 결제 금액은 0 이상이어야 합니다.
+     * @Valid가 붙은 요청 DTO에서 검증 실패 시 발생한다.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException e) {
@@ -54,7 +44,7 @@ public class GlobalApiExceptionHandler {
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.BAD_REQUEST.value());
 
-        // 첫 번째 검증 에러 메시지만 꺼내서 응답
+        // 첫 번째 검증 에러 메시지만 추출해 응답한다.
         String message = e.getBindingResult()
                 .getFieldError()
                 .getDefaultMessage();
@@ -67,7 +57,7 @@ public class GlobalApiExceptionHandler {
     /**
      * 그 외 모든 예외 처리
      *
-     * 예상하지 못한 서버 내부 오류를 잡음
+     * 예상하지 못한 서버 내부 오류를 다룬다.
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleException(Exception e) {

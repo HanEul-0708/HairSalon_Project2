@@ -7,141 +7,220 @@
     <meta charset="UTF-8">
     <title>마이페이지</title>
 
-    <th:block th:fragment="headExtra"></th:block>
-
-    <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/member.css">
-    <script src="/js/common.js"></script>
-    <script src="/js/member.js"></script>
+    <th:block th:fragment="headExtra">
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="/css/member.css">
+        <script src="/js/common.js"></script>
+        <script src="/js/member.js"></script>
+    </th:block>
 </head>
 <body>
 
-<main class="container py-5">
-
-    <h2 class="mb-4">마이페이지</h2>
-
+<main class="container mypage-shell">
     <div th:replace="~{fragments/message :: flashMessage}"></div>
 
-    <div class="mb-3" sec:authorize="isAuthenticated()">
-        현재 로그인 사용자: <span sec:authentication="name"></span>
-    </div>
-
-    <div class="mb-4" sec:authorize="hasRole('ADMIN')">
-        <a th:href="@{/admin/members}" class="btn btn-outline-dark btn-sm">관리자 회원 관리</a>
-    </div>
-
-    <hr>
-
-    <h3 class="mb-3">내 정보</h3>
-    <table class="table table-bordered">
-        <tbody>
-        <tr>
-            <th>아이디</th>
-            <td th:text="${member.memberId}"></td>
-        </tr>
-        <tr>
-            <th>이름</th>
-            <td th:text="${member.name}"></td>
-        </tr>
-        <tr>
-            <th>전화번호</th>
-            <td th:text="${member.phone}"></td>
-        </tr>
-        <tr>
-            <th>이메일</th>
-            <td th:text="${member.email}"></td>
-        </tr>
-        <tr>
-            <th>권한</th>
-            <td th:text="${member.role.description}"></td>
-        </tr>
-        <tr>
-            <th>가입일</th>
-            <td th:text="${member.createdAt}"></td>
-        </tr>
-        </tbody>
-    </table>
-
-    <hr>
-
-    <h3 class="mb-3">회원정보 수정</h3>
-    <form th:action="@{/members/me/edit}" th:object="${memberUpdateRequest}" method="post" class="mb-4">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-
-        <div class="mb-3">
-            <label for="updateName" class="form-label">이름</label>
-            <input type="text" id="updateName" th:field="*{name}" class="form-control">
-            <div class="text-danger small mt-1"
-                 th:if="${#fields.hasErrors('name')}"
-                 th:errors="*{name}"></div>
+    <section class="mypage-hero">
+        <div class="mypage-hero__copy">
+            <p class="mypage-eyebrow">My Salon Profile</p>
+            <h2>마이페이지</h2>
+            <p class="mypage-hero__text">
+                예약 서비스 이용을 위한 회원 정보와 보안 설정을 한곳에서 관리하세요.
+            </p>
+            <div class="mypage-hero__meta" sec:authorize="isAuthenticated()">
+                <span class="mypage-chip">
+                    <strong sec:authentication="name"></strong> 님
+                </span>
+                <span class="mypage-chip" th:text="${member.role.description}">일반 회원</span>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label for="updatePhone" class="form-label">전화번호</label>
-            <input type="text" id="updatePhone" th:field="*{phone}" class="form-control">
-            <div class="text-danger small mt-1"
-                 th:if="${#fields.hasErrors('phone')}"
-                 th:errors="*{phone}"></div>
+        <div class="mypage-summary">
+            <div class="mypage-summary__row">
+                <span class="mypage-summary__label">회원 아이디</span>
+                <strong th:text="${member.memberId}">member01</strong>
+            </div>
+            <div class="mypage-summary__row">
+                <span class="mypage-summary__label">가입일</span>
+                <strong th:text="${#temporals.format(member.createdAt, 'yyyy-MM-dd HH:mm')}">2026-04-06 10:00</strong>
+            </div>
+            <div class="mypage-summary__row">
+                <span class="mypage-summary__label">이메일</span>
+                <strong th:text="${member.email}">member@example.com</strong>
+            </div>
+            <a th:href="@{/admin/members}"
+               sec:authorize="hasRole('ADMIN')"
+               class="btn btn-outline-gold btn-sm">
+                관리자 회원 관리
+            </a>
         </div>
+    </section>
 
-        <div class="mb-3">
-            <label for="updateEmail" class="form-label">이메일</label>
-            <input type="text" id="updateEmail" th:field="*{email}" class="form-control">
-            <div class="text-danger small mt-1"
-                 th:if="${#fields.hasErrors('email')}"
-                 th:errors="*{email}"></div>
-        </div>
+    <section class="mypage-grid">
+        <article class="mypage-panel mypage-panel--profile">
+            <div class="mypage-panel__header">
+                <div>
+                    <p class="mypage-panel__eyebrow">Profile</p>
+                    <h3>내 정보</h3>
+                </div>
+            </div>
 
-        <button type="submit" class="btn btn-dark">회원정보 수정</button>
-    </form>
+            <div class="mypage-profile-list">
+                <div class="mypage-profile-item">
+                    <span>이름</span>
+                    <strong th:text="${member.name}">홍길동</strong>
+                </div>
+                <div class="mypage-profile-item">
+                    <span>전화번호</span>
+                    <strong th:text="${member.phone}">010-1234-5678</strong>
+                </div>
+                <div class="mypage-profile-item">
+                    <span>이메일</span>
+                    <strong th:text="${member.email}">member@example.com</strong>
+                </div>
+                <div class="mypage-profile-item">
+                    <span>권한</span>
+                    <strong th:text="${member.role.description}">일반 회원</strong>
+                </div>
+            </div>
+        </article>
 
-    <hr>
+        <article class="mypage-panel">
+            <div class="mypage-panel__header">
+                <div>
+                    <p class="mypage-panel__eyebrow">Edit</p>
+                    <h3>회원정보 수정</h3>
+                </div>
+            </div>
 
-    <h3 class="mb-3">비밀번호 변경</h3>
-    <form th:action="@{/members/me/password}"
-          th:object="${memberPasswordChangeRequest}"
-          method="post"
-          class="mb-4">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <form th:action="@{/members/me/edit}"
+                  th:object="${memberUpdateRequest}"
+                  method="post"
+                  class="mypage-form"
+                  data-profile-form>
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
-        <div class="mb-3">
-            <label for="currentPassword" class="form-label">현재 비밀번호</label>
-            <input type="password" id="currentPassword" th:field="*{currentPassword}" class="form-control">
-            <div class="text-danger small mt-1"
-                 th:if="${#fields.hasErrors('currentPassword')}"
-                 th:errors="*{currentPassword}"></div>
-        </div>
+                <div class="mb-3">
+                    <label for="updateName" class="form-label">이름</label>
+                    <input type="text"
+                           id="updateName"
+                           th:field="*{name}"
+                           class="form-control"
+                           data-required-message="이름은 필수입니다."
+                           data-invalid-message="이름은 50자 이하여야 합니다.">
+                    <div class="text-danger small mt-1"
+                         th:if="${#fields.hasErrors('name')}"
+                         th:errors="*{name}"></div>
+                    <div class="small mt-1" data-profile-feedback-for="name"></div>
+                </div>
 
-        <div class="mb-3">
-            <label for="newPassword" class="form-label">새 비밀번호</label>
-            <input type="password" id="newPassword" th:field="*{newPassword}" class="form-control">
-            <div class="text-danger small mt-1"
-                 th:if="${#fields.hasErrors('newPassword')}"
-                 th:errors="*{newPassword}"></div>
-        </div>
+                <div class="mb-3">
+                    <label for="updatePhone" class="form-label">전화번호</label>
+                    <input type="text"
+                           id="updatePhone"
+                           th:field="*{phone}"
+                           class="form-control"
+                           th:attr="data-current-phone=${member.phone}"
+                           data-required-message="전화번호는 필수입니다."
+                           data-invalid-message="전화번호 형식이 올바르지 않습니다.">
+                    <div class="text-danger small mt-1"
+                         th:if="${#fields.hasErrors('phone')}"
+                         th:errors="*{phone}"></div>
+                    <div class="small mt-1" data-profile-feedback-for="phone"></div>
+                </div>
 
-        <button type="submit" class="btn btn-dark">비밀번호 변경</button>
-    </form>
+                <div class="mb-3">
+                    <label for="updateEmail" class="form-label">이메일</label>
+                    <input type="text"
+                           id="updateEmail"
+                           th:field="*{email}"
+                           class="form-control"
+                           th:attr="data-current-email=${member.email}"
+                           data-required-message="이메일은 필수입니다."
+                           data-invalid-message="이메일 형식이 올바르지 않습니다.">
+                    <div class="text-danger small mt-1"
+                         th:if="${#fields.hasErrors('email')}"
+                         th:errors="*{email}"></div>
+                    <div class="small mt-1" data-profile-feedback-for="email"></div>
+                </div>
 
-    <form method="post"
-          action="/members/me/delete"
-          data-member-delete>
-        <button type="submit" class="btn btn-outline">회원 탈퇴</button>
-    </form>
+                <button type="submit" class="btn btn-gold" data-profile-submit>회원정보 저장</button>
+            </form>
+        </article>
 
-    <hr>
+        <article class="mypage-panel">
+            <div class="mypage-panel__header">
+                <div>
+                    <p class="mypage-panel__eyebrow">Security</p>
+                    <h3>비밀번호 변경</h3>
+                </div>
+            </div>
 
-    <div class="d-flex gap-2">
-        <form th:action="@{/}" method="get">
-            <button type="submit" class="btn btn-outline-secondary">홈으로</button>
-        </form>
+            <form th:action="@{/members/me/password}" th:object="${memberPasswordChangeRequest}" method="post" class="mypage-form">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
-        <form th:action="@{/members/logout}" method="post">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <button type="submit" class="btn btn-outline-danger">로그아웃</button>
-        </form>
-    </div>
+                <div class="mb-3">
+                    <label for="currentPassword" class="form-label">현재 비밀번호</label>
+                    <input type="password" id="currentPassword" th:field="*{currentPassword}" class="form-control">
+                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></div>
+                </div>
 
+                <div class="mb-3">
+                    <label for="newPassword" class="form-label">새 비밀번호</label>
+                    <input type="password"
+                           id="newPassword"
+                           th:field="*{newPassword}"
+                           class="form-control"
+                           data-required-message="새 비밀번호를 입력해 주세요."
+                           data-invalid-message="새 비밀번호는 8자 이상이어야 합니다.">
+                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></div>
+                    <div class="small mt-1" data-password-feedback-for="newPassword"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="newPasswordConfirm" class="form-label">새 비밀번호 확인</label>
+                    <input type="password"
+                           id="newPasswordConfirm"
+                           th:field="*{newPasswordConfirm}"
+                           class="form-control"
+                           data-required-message="새 비밀번호 확인을 입력해 주세요."
+                           data-invalid-message="새 비밀번호가 일치하지 않습니다.">
+                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('newPasswordConfirm')}" th:errors="*{newPasswordConfirm}"></div>
+                    <div class="small mt-1" data-password-feedback-for="newPasswordConfirm"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" data-password-submit>비밀번호 변경</button>
+            </form>
+        </article>
+
+        <article class="mypage-panel mypage-panel--danger">
+            <div class="mypage-panel__header">
+                <div>
+                    <p class="mypage-panel__eyebrow">Account</p>
+                    <h3>계정 관리</h3>
+                </div>
+            </div>
+
+            <p class="mypage-danger-text">
+                로그아웃하거나 계정을 탈퇴할 수 있습니다. 탈퇴 후에는 기존 계정으로 로그인할 수 없습니다.
+            </p>
+
+            <div class="mypage-action-stack">
+                <form method="post" th:action="@{/members/logout}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" class="btn btn-outline">로그아웃</button>
+                </form>
+
+                <form method="post" th:action="@{/members/me/delete}" data-member-delete>
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" class="btn btn-danger">회원 탈퇴</button>
+                </form>
+
+                <form th:action="@{/}" method="get">
+                    <button type="submit" class="btn btn-outline-gold">메인으로</button>
+                </form>
+            </div>
+        </article>
+    </section>
 </main>
 
 </body>

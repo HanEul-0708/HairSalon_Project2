@@ -19,74 +19,35 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * ReviewService 구현체
- *
- * 설명:
- * - 리뷰 작성 / 조회 / 수정 / 삭제
- * - 리뷰 상세 조회(이미지 포함)
- * - 디자이너 평점 평균 조회
- * - 월별 리뷰 통계 조회
- * - 디자이너 / 미용실 랭킹 조회
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReviewServiceImpl implements ReviewService {
 
-    /**
-     * 리뷰 Repository
-     */
     private final ReviewRepository reviewRepository;
-
-    /**
-     * 예약 Repository
-     */
     private final ReservationRepository reservationRepository;
-
-    /**
-     * 리뷰 이미지 Repository
-     */
     private final ReviewImageRepository reviewImageRepository;
 
-    /**
-     * 리뷰 작성
-     *
-     * 처리 순서
-     * 1. 예약 존재 여부 확인
-     * 2. 로그인 회원이 예약 주인인지 확인
-     * 3. 시술 완료(COMPLETED) 상태인지 확인
-     * 4. 이미 리뷰가 작성된 예약인지 확인
-     * 5. 리뷰 엔티티 생성 후 저장
-     * 6. 응답 DTO 반환
-     */
     @Override
     @Transactional
     public ReviewResponse createReview(String loginMemberId, ReviewCreateRequest request) {
-
-        // 1. 예약 조회
         Reservation reservation = reservationRepository.findById(request.getReservationId())
                 .orElseThrow(() -> new IllegalArgumentException("예약이 존재하지 않습니다."));
 
-        // 2. 로그인한 회원이 실제 예약자인지 확인
         if (!reservation.getMember().getMemberId().equals(loginMemberId)) {
             throw new IllegalArgumentException("본인 예약만 리뷰를 작성할 수 있습니다.");
         }
 
-        // 3. 시술 완료된 예약인지 확인
         if (reservation.getStatus() != ReservationStatus.COMPLETED) {
             throw new IllegalArgumentException("시술 완료된 예약만 리뷰를 작성할 수 있습니다.");
         }
 
-        // 4. 이미 리뷰가 작성되었는지 확인
         if (reviewRepository.findByReservation_ReservationId(request.getReservationId()).isPresent()) {
             throw new IllegalArgumentException("이미 리뷰가 작성된 예약입니다.");
         }
 
-        // 5. 리뷰 엔티티 생성
         Review review = Review.builder()
                 .reservation(reservation)
                 .member(reservation.getMember())
@@ -95,16 +56,10 @@ public class ReviewServiceImpl implements ReviewService {
                 .content(request.getContent())
                 .build();
 
-        // 6. 저장
         Review savedReview = reviewRepository.save(review);
-
-        // 7. 응답 반환
         return toResponse(savedReview);
     }
 
-    /**
-     * 리뷰 단건 조회
-     */
     @Override
     public ReviewResponse getReview(Integer reviewId) {
         Review review = reviewRepository.findById(reviewId)
@@ -113,19 +68,11 @@ public class ReviewServiceImpl implements ReviewService {
         return toResponse(review);
     }
 
-    /**
-     * 리뷰 상세 조회
-     *
-     * 리뷰 기본 정보와 연결된 이미지 목록을 함께 반환
-     */
     @Override
     public ReviewDetailResponse getReviewDetail(Integer reviewId) {
-
-        // 1. 리뷰 조회
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 존재하지 않습니다."));
 
-        // 2. 리뷰 이미지 목록 조회
         List<ReviewImageResponse> images = reviewImageRepository.findByReview_ReviewId(reviewId).stream()
                 .map(image -> new ReviewImageResponse(
                         image.getImageId(),
@@ -134,7 +81,6 @@ public class ReviewServiceImpl implements ReviewService {
                 ))
                 .toList();
 
-        // 3. 상세 응답 DTO 반환
         return new ReviewDetailResponse(
                 review.getReviewId(),
                 review.getReservation().getReservationId(),
@@ -151,9 +97,6 @@ public class ReviewServiceImpl implements ReviewService {
         );
     }
 
-    /**
-     * 전체 리뷰 목록 조회
-     */
     @Override
     public List<ReviewResponse> getAllReviews() {
         return reviewRepository.findAll().stream()
@@ -161,9 +104,13 @@ public class ReviewServiceImpl implements ReviewService {
                 .toList();
     }
 
-    /**
-     * 회원별 리뷰 목록 조회
-     */
+    @Override
+    public List<ReviewResponse> getRecentReviews() {
+        return reviewRepository.findTop3ByOrderByCreatedAtDesc().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Override
     public List<ReviewResponse> getReviewsByMember(String memberId) {
         return reviewRepository.findByMember_MemberId(memberId).stream()
@@ -171,30 +118,17 @@ public class ReviewServiceImpl implements ReviewService {
                 .toList();
     }
 
-    /**
-     * 리뷰 수정
-     *
-     * 현재는 리뷰 내용 / 평점만 수정
-     */
     @Override
     @Transactional
     public ReviewResponse updateReview(Integer reviewId, ReviewUpdateRequest request) {
-
-        // 1. 리뷰 조회
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 존재하지 않습니다."));
 
-        // 2. 리뷰 수정
         review.updateReview(request.getRating(), request.getContent());
-
-        // 3. 저장 후 응답 반환
         Review updatedReview = reviewRepository.save(review);
         return toResponse(updatedReview);
     }
 
-    /**
-     * 리뷰 삭제
-     */
     @Override
     @Transactional
     public void deleteReview(Integer reviewId) {
@@ -204,17 +138,11 @@ public class ReviewServiceImpl implements ReviewService {
         reviewRepository.delete(review);
     }
 
-    /**
-     * 특정 디자이너 평균 평점 조회
-     */
     @Override
     public Double getAverageRatingByDesigner(Integer designerId) {
         return reviewRepository.findAverageRatingByDesignerId(designerId);
     }
 
-    /**
-     * 상위 디자이너 3명 조회
-     */
     @Override
     public List<DesignerRankingResponse> getTop3Designers() {
         return reviewRepository.findTopDesignersByAverageRatingAndReviewCount(1L)
@@ -223,17 +151,11 @@ public class ReviewServiceImpl implements ReviewService {
                 .toList();
     }
 
-    /**
-     * 전체 월별 리뷰 통계 조회
-     */
     @Override
     public List<MonthlyReviewStatResponse> getMonthlyReviewStats() {
         return reviewRepository.findMonthlyReviewStats();
     }
 
-    /**
-     * 특정 기간의 월별 리뷰 통계 조회
-     */
     @Override
     public List<MonthlyReviewStatResponse> getMonthlyReviewStatsByPeriod(LocalDate startDate, LocalDate endDate) {
         return reviewRepository.findMonthlyReviewStatsByPeriod(
@@ -242,17 +164,14 @@ public class ReviewServiceImpl implements ReviewService {
         );
     }
 
-    /**
-     * 상위 미용실 랭킹 조회
-     */
     @Override
     public List<SalonRankingResponse> getTopSalons() {
-        return reviewRepository.findTopSalonsByAverageRating(1L);
+        return reviewRepository.findTopSalonsByAverageRating(1L)
+                .stream()
+                .limit(3)
+                .toList();
     }
 
-    /**
-     * Review 엔티티 -> ReviewResponse DTO 변환
-     */
     private ReviewResponse toResponse(Review review) {
         return new ReviewResponse(
                 review.getReviewId(),
@@ -261,6 +180,8 @@ public class ReviewServiceImpl implements ReviewService {
                 review.getMember().getName(),
                 review.getDesigner().getDesignerId(),
                 review.getDesigner().getName(),
+                review.getReservation().getDesigner().getSalon().getName(),
+                review.getReservation().getSalonService().getName(),
                 review.getRating(),
                 review.getContent(),
                 review.getReplyContent(),

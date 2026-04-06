@@ -1,17 +1,17 @@
 package com.hairsalonproject2.member.service;
 
+import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.repository.MemberRepository;
-import com.hairsalonproject2.common.constant.MemberStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 
 /**
- * Spring Security 로그인 시 회원 조회 서비스
+ * Spring Security 로그인용 회원 조회 서비스
  */
 @Service
 @RequiredArgsConstructor

@@ -342,6 +342,13 @@
     background: var(--gold-soft);
     font-size: 1.5rem;
     box-shadow: inset 0 0 0 1px rgba(201, 168, 76, 0.18);
+    color: #8b6820;
+}
+
+.feature-card__icon-svg {
+    width: 28px;
+    height: 28px;
+    display: block;
 }
 
 .feature-card__body {

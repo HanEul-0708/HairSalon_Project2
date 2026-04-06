@@ -24,7 +24,7 @@ public class CustomUserDetails implements UserDetails {
     /**
      * 권한 목록 반환
      *
-     * Spring Security 권한 규칙에 맞춰 ROLE_ 접두사를 붙인다.
+     * Spring Security 권한 규칙에 맞춰 ROLE_ 접두어를 붙인다.
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
