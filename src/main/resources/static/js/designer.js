@@ -1,12 +1,3 @@
-/*
- * designer.js — 디자이너 페이지 전용 스크립트
- * =====================================================
- * 포함 기능
- * 1. 검색 폼 Enter 제출
- * 2. 디자이너 카드 포커스 효과
- * 3. 삭제 버튼 확인
- */
-
 document.addEventListener("DOMContentLoaded", function () {
     bindDesignerSearchForm();
     bindDesignerCardFocusEffect();
@@ -14,7 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function bindDesignerSearchForm() {
-    var forms = document.querySelectorAll(".designer-search-form, .designer-list > form");
+    var forms = document.querySelectorAll(".designer-search-form");
     if (!forms.length) return;
 
     forms.forEach(function (form) {
@@ -52,13 +43,12 @@ function bindDesignerCardFocusEffect() {
 }
 
 function bindDesignerDeleteConfirm() {
-    var deleteForms = document.querySelectorAll('form[data-designer-delete-form]');
+    var deleteForms = document.querySelectorAll("form[data-designer-delete-form]");
     if (!deleteForms.length) return;
 
     deleteForms.forEach(function (form) {
         form.addEventListener("submit", function (event) {
-            var confirmed = confirm("정말 이 디자이너를 삭제하시겠습니까?");
-            if (!confirmed) {
+            if (!confirm("정말 이 디자이너를 삭제하시겠습니까?")) {
                 event.preventDefault();
             }
         });

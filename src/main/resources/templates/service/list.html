@@ -6,7 +6,6 @@
 <head>
     <meta charset="UTF-8">
     <title>시술 목록</title>
-
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/service.css}">
     <script th:src="@{/js/common.js}" defer></script>
@@ -14,47 +13,49 @@
 </head>
 <body>
 <main>
-    <div class="container">
+    <div class="container service-page">
         <div class="page-header">
             <h1 class="page-title">시술 목록</h1>
-            <p class="page-desc">원하는 시술을 검색하고 가격을 비교할 수 있습니다.</p>
+            <p class="page-desc">시술명으로 검색하고 살롱별 가격을 비교할 수 있습니다.</p>
         </div>
 
-        <form method="get" th:action="@{/salon-services}" class="search-form">
+        <form method="get" th:action="@{/salon-services}" class="service-search-form">
             <input type="text" name="keyword" placeholder="시술명" th:value="${keyword}">
             <button type="submit" class="btn btn-primary">검색</button>
         </form>
 
         <div class="page-actions">
-            <a th:href="@{/salon-services/compare}" class="btn btn-outline">가격 비교 화면</a>
+            <a th:href="@{/salon-services/compare}" class="btn btn-outline">가격 비교</a>
+            <a sec:authorize="hasAnyRole('ADMIN','DESIGNER')" th:href="@{/salon-services/new}" class="btn btn-outline">시술 등록</a>
         </div>
 
-        <table class="data-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>시술명</th>
-                <th>살롱</th>
-                <th>가격</th>
-                <th>시간</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="service : ${services}">
-                <td th:text="${service.serviceId}">1</td>
-                <td>
-                    <a th:href="@{/salon-services/{id}(id=${service.serviceId})}"
-                       th:text="${service.name}">시술</a>
-                </td>
-                <td th:text="${service.salonName}">살롱</td>
-                <td th:text="|${service.price}원|">0원</td>
-                <td th:text="|${service.duration}분|">0분</td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(services)}">
-                <td colspan="5">조회된 시술이 없습니다.</td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>시술명</th>
+                    <th>살롱</th>
+                    <th>가격</th>
+                    <th>소요 시간</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(services)}">
+                    <td colspan="5">조회된 시술이 없습니다.</td>
+                </tr>
+                <tr th:each="service : ${services}">
+                    <td th:text="${service.serviceId}">1</td>
+                    <td>
+                        <a th:href="@{/salon-services/{id}(id=${service.serviceId})}" th:text="${service.name}">시술명</a>
+                    </td>
+                    <td th:text="${service.salonName}">살롱명</td>
+                    <td th:text="|${service.price}원|">0원</td>
+                    <td th:text="|${service.duration}분|">0분</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </main>
 </body>

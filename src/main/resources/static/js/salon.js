@@ -1,27 +1,21 @@
-/*
- * salon.js — 살롱 페이지 전용 스크립트
- * =====================================================
- * 포함 기능
- * 1. 검색 폼 Enter 제출 보강
- * 2. 카드 포커스 접근성 보강
- */
-
 document.addEventListener("DOMContentLoaded", function () {
-    bindSalonSearchForm();
+    bindSalonSearchForms();
     bindSalonCardFocusEffect();
 });
 
-function bindSalonSearchForm() {
-    var form = document.querySelector(".salon-search-form");
-    if (!form) return;
+function bindSalonSearchForms() {
+    var forms = document.querySelectorAll(".salon-search-form");
+    if (!forms.length) return;
 
-    var inputs = form.querySelectorAll("input, select");
-    inputs.forEach(function (input) {
-        input.addEventListener("keypress", function (event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                form.submit();
-            }
+    forms.forEach(function (form) {
+        var inputs = form.querySelectorAll("input, select");
+        inputs.forEach(function (input) {
+            input.addEventListener("keypress", function (event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    form.submit();
+                }
+            });
         });
     });
 }

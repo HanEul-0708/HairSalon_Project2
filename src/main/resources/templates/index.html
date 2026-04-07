@@ -69,7 +69,7 @@
                     <a th:href="@{/reservations/new}" class="btn-hero-primary">
                         지금 예약하기
                     </a>
-                    <a th:href="@{/salons/search}" class="btn-hero-outline">
+                    <a th:href="@{/salons}" class="btn-hero-outline">
                         미용실 찾기
                     </a>
                 </div>
@@ -124,7 +124,7 @@
                 </a>
 
                 <!-- 가까운 미용실 -->
-                <a th:href="@{/salons/nearby}" class="feature-card">
+                <a th:href="@{/salons(sort='distance')}" class="feature-card">
                     <div class="feature-card__icon">📍</div>
                     <div class="feature-card__body">
                         <strong>내 위치 기반 검색</strong>
@@ -134,7 +134,7 @@
                 </a>
 
                 <!-- 가격 비교 -->
-                <a th:href="@{/salons/price-compare}" class="feature-card">
+                <a th:href="@{/salon-services/compare}" class="feature-card">
                     <div class="feature-card__icon">💰</div>
                     <div class="feature-card__body">
                         <strong>가격 비교</strong>
@@ -144,7 +144,7 @@
                 </a>
 
                 <!-- 추천 미용실 -->
-                <a th:href="@{/salons/top-rated}" class="feature-card feature-card--gold">
+                <a th:href="@{/salons(sort='rating')}" class="feature-card feature-card--gold">
                     <div class="feature-card__icon">⭐</div>
                     <div class="feature-card__body">
                         <strong>추천 미용실</strong>
@@ -267,7 +267,7 @@
             </div>
 
             <div class="section-more">
-                <a th:href="@{/salons/top-rated}">전체 추천 미용실 보기 →</a>
+                <a th:href="@{/salons(sort='rating')}">전체 추천 미용실 보기 →</a>
             </div>
 
         </div>

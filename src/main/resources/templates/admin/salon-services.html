@@ -1,43 +1,55 @@
 <!DOCTYPE html>
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{admin/layout}">
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
 <head>
-    <title>관리자 - 시술</title>
-    <th:block layout:fragment="pageCss"></th:block>
+    <meta charset="UTF-8">
+    <title>관리자 시술 관리</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
 </head>
 <body>
-<th:block layout:fragment="pageTitle">시술 관리</th:block>
-<div layout:fragment="content">
-    <div class="admin-card">
-        <div class="admin-card-title">시술 목록</div>
-        <div class="admin-table-wrap">
-            <table class="admin-table">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>시술명</th>
-                    <th>살롱</th>
-                    <th>가격</th>
-                    <th>시간</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:if="${#lists.isEmpty(services)}">
-                    <td colspan="5" style="text-align:center; padding:40px; color:#555;">조회된 시술이 없습니다.</td>
-                </tr>
-                <tr th:each="service : ${services}">
-                    <td th:text="${service.serviceId}">1</td>
-                    <td><a th:href="@{/salon-services/{id}(id=${service.serviceId})}" th:text="${service.name}">시술</a></td>
-                    <td th:text="${service.salonName}">살롱</td>
-                    <td th:text="${service.price}">0</td>
-                    <td th:text="${service.duration}">0</td>
-                </tr>
-                </tbody>
-            </table>
+<main>
+    <div class="container">
+        <div class="page-header">
+            <h1>시술 관리</h1>
+            <p>관리자 전용 시술 목록입니다.</p>
+        </div>
+
+        <div class="page-actions">
+            <a th:href="@{/salon-services/new}" class="btn btn-outline">시술 등록</a>
+            <a th:href="@{/admin/salons}" class="btn btn-outline">살롱 관리</a>
+            <a th:href="@{/admin/designers}" class="btn btn-outline">디자이너 관리</a>
+        </div>
+
+        <div class="admin-card">
+            <div class="admin-card-title">시술 목록</div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>시술명</th>
+                        <th>살롱</th>
+                        <th>가격</th>
+                        <th>시간</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(services)}">
+                        <td colspan="5" style="text-align:center; padding:40px; color:#555;">조회된 시술이 없습니다.</td>
+                    </tr>
+                    <tr th:each="service : ${services}">
+                        <td th:text="${service.serviceId}">1</td>
+                        <td><a th:href="@{/salon-services/{id}(id=${service.serviceId})}" th:text="${service.name}">시술명</a></td>
+                        <td th:text="${service.salonName}">살롱명</td>
+                        <td th:text="${service.price}">0</td>
+                        <td th:text="${service.duration}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
+</main>
 </body>
 </html>

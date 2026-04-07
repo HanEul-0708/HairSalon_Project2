@@ -1,30 +1,29 @@
-/*
- * service.js — 시술 페이지 전용
- */
-
 document.addEventListener("DOMContentLoaded", function () {
+    bindServiceSearchForm();
+    bindServiceDeleteConfirm();
+});
 
-    // 검색 폼 Enter 제출
+function bindServiceSearchForm() {
     var form = document.querySelector(".service-search-form");
-    if (form) {
-        form.querySelectorAll("input").forEach(function (input) {
-            input.addEventListener("keypress", function (e) {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    form.submit();
-                }
-            });
-        });
-    }
+    if (!form) return;
 
-    // 삭제 확인
-    var deleteForms = document.querySelectorAll('form[data-service-delete]');
-    deleteForms.forEach(function (form) {
-        form.addEventListener("submit", function (e) {
-            if (!confirm("정말 삭제하시겠습니까?")) {
-                e.preventDefault();
+    form.querySelectorAll("input").forEach(function (input) {
+        input.addEventListener("keypress", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                form.submit();
             }
         });
     });
+}
 
-});
+function bindServiceDeleteConfirm() {
+    var deleteForms = document.querySelectorAll("form[data-service-delete]");
+    deleteForms.forEach(function (form) {
+        form.addEventListener("submit", function (event) {
+            if (!confirm("정말 이 시술을 삭제하시겠습니까?")) {
+                event.preventDefault();
+            }
+        });
+    });
+}

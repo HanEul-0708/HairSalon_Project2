@@ -75,7 +75,7 @@ public class ServiceController {
         return "redirect:/salon-services/" + serviceId;
     }
 
-    @PostMapping("/{serviceId}/delete")
+    @DeleteMapping("/{serviceId}")
     public String delete(@PathVariable Integer serviceId) {
         salonServiceQueryService.delete(serviceId);
         return "redirect:/salon-services";

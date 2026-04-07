@@ -101,7 +101,7 @@
                 <i class="bi bi-house"></i>
                 <span>사이트로 이동</span>
             </a>
-            <form th:action="@{/logout}" method="post">
+            <form th:action="@{/members/logout}" method="post">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <button type="submit" class="admin-btn-logout">
                     <i class="bi bi-box-arrow-right"></i>

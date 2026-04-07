@@ -5,7 +5,6 @@
 <head>
     <meta charset="UTF-8">
     <title th:text="${designerId != null} ? '디자이너 수정' : '디자이너 등록'">디자이너 폼</title>
-
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/designer.css}">
     <script th:src="@{/js/common.js}" defer></script>
@@ -15,95 +14,91 @@
 <main>
     <div class="container designer-page designer-form-page">
         <div class="page-header">
-            <div class="container">
-                <h1 th:text="${designerId != null} ? '디자이너 수정' : '디자이너 등록'">디자이너 등록/수정</h1>
-                <p>디자이너 정보를 입력하거나 수정할 수 있습니다.</p>
-            </div>
+            <h1 th:text="${designerId != null} ? '디자이너 수정' : '디자이너 등록'">디자이너 등록</h1>
+            <p>살롱 소속, 연결 회원, 소개 정보를 입력합니다.</p>
         </div>
 
-        <!-- 수정용 폼 -->
         <form th:if="${designerId != null}"
               method="post"
               th:action="@{/admin/designers/{id}/edit(id=${designerId})}"
               th:object="${form}"
               class="designer-form">
-
-            <div class="form-group">
-                <label for="salonIdEdit">살롱 ID</label>
-                <input id="salonIdEdit" th:field="*{salonId}" placeholder="살롱 ID">
-            </div>
-
-            <div class="form-group">
-                <label for="memberIdEdit">연결 회원 ID</label>
-                <input id="memberIdEdit" th:field="*{memberId}" placeholder="연결 회원 ID">
+            <div class="designer-form-row">
+                <div class="form-group">
+                    <label for="salonIdEdit">살롱 ID</label>
+                    <input id="salonIdEdit" th:field="*{salonId}" placeholder="살롱 ID">
+                </div>
+                <div class="form-group">
+                    <label for="memberIdEdit">연결 회원 ID</label>
+                    <input id="memberIdEdit" th:field="*{memberId}" placeholder="연결 회원 ID">
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="nameEdit">이름</label>
-                <input id="nameEdit" th:field="*{name}" placeholder="이름">
+                <input id="nameEdit" th:field="*{name}" placeholder="디자이너 이름">
             </div>
 
             <div class="form-group">
-                <label for="profileImageEdit">프로필 이미지</label>
-                <input id="profileImageEdit" th:field="*{profileImage}" placeholder="프로필 이미지">
+                <label for="profileImageEdit">프로필 이미지 URL</label>
+                <input id="profileImageEdit" th:field="*{profileImage}" placeholder="프로필 이미지 URL">
             </div>
 
             <div class="form-group">
                 <label for="introductionEdit">소개</label>
-                <textarea id="introductionEdit" th:field="*{introduction}" placeholder="소개"></textarea>
+                <textarea id="introductionEdit" th:field="*{introduction}" placeholder="디자이너 소개"></textarea>
             </div>
 
             <div class="form-group">
-                <label for="careerYearsEdit">경력 연수</label>
-                <input id="careerYearsEdit" th:field="*{careerYears}" placeholder="경력 연수">
+                <label for="careerYearsEdit">경력 연차</label>
+                <input id="careerYearsEdit" th:field="*{careerYears}" placeholder="경력 연차">
             </div>
 
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">수정 완료</button>
-                <a th:href="@{/designers}" class="btn btn-outline">목록으로</a>
+            <div class="designer-actions">
+                <button type="submit" class="btn btn-primary">수정 저장</button>
+                <a th:href="@{/designers/{id}(id=${designerId})}" class="btn btn-outline">취소</a>
             </div>
         </form>
 
-        <!-- 등록용 폼 -->
         <form th:unless="${designerId != null}"
               method="post"
               th:action="@{/admin/designers}"
               th:object="${form}"
               class="designer-form">
-
-            <div class="form-group">
-                <label for="salonIdCreate">살롱 ID</label>
-                <input id="salonIdCreate" th:field="*{salonId}" placeholder="살롱 ID">
-            </div>
-
-            <div class="form-group">
-                <label for="memberIdCreate">연결 회원 ID</label>
-                <input id="memberIdCreate" th:field="*{memberId}" placeholder="연결 회원 ID">
+            <div class="designer-form-row">
+                <div class="form-group">
+                    <label for="salonIdCreate">살롱 ID</label>
+                    <input id="salonIdCreate" th:field="*{salonId}" placeholder="살롱 ID">
+                </div>
+                <div class="form-group">
+                    <label for="memberIdCreate">연결 회원 ID</label>
+                    <input id="memberIdCreate" th:field="*{memberId}" placeholder="연결 회원 ID">
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="nameCreate">이름</label>
-                <input id="nameCreate" th:field="*{name}" placeholder="이름">
+                <input id="nameCreate" th:field="*{name}" placeholder="디자이너 이름">
             </div>
 
             <div class="form-group">
-                <label for="profileImageCreate">프로필 이미지</label>
-                <input id="profileImageCreate" th:field="*{profileImage}" placeholder="프로필 이미지">
+                <label for="profileImageCreate">프로필 이미지 URL</label>
+                <input id="profileImageCreate" th:field="*{profileImage}" placeholder="프로필 이미지 URL">
             </div>
 
             <div class="form-group">
                 <label for="introductionCreate">소개</label>
-                <textarea id="introductionCreate" th:field="*{introduction}" placeholder="소개"></textarea>
+                <textarea id="introductionCreate" th:field="*{introduction}" placeholder="디자이너 소개"></textarea>
             </div>
 
             <div class="form-group">
-                <label for="careerYearsCreate">경력 연수</label>
-                <input id="careerYearsCreate" th:field="*{careerYears}" placeholder="경력 연수">
+                <label for="careerYearsCreate">경력 연차</label>
+                <input id="careerYearsCreate" th:field="*{careerYears}" placeholder="경력 연차">
             </div>
 
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">저장</button>
-                <a th:href="@{/designers}" class="btn btn-outline">목록으로</a>
+            <div class="designer-actions">
+                <button type="submit" class="btn btn-primary">등록</button>
+                <a th:href="@{/designers}" class="btn btn-outline">취소</a>
             </div>
         </form>
     </div>
