@@ -25,11 +25,15 @@ public class KakaoLocalSearchClient {
     @Value("${kakao.rest-api-key:}")
     private String restApiKey;
 
+    public boolean isConfigured() {
+        return restApiKey != null && !restApiKey.isBlank();
+    }
+
     public List<KakaoPlaceSearchResult> searchSalons(String keyword, String region, int page, int size) {
         if (keyword == null || keyword.isBlank()) {
             return List.of();
         }
-        if (restApiKey == null || restApiKey.isBlank()) {
+        if (!isConfigured()) {
             return List.of();
         }
 

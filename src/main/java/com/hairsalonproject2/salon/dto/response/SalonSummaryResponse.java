@@ -13,6 +13,8 @@ public class SalonSummaryResponse {
     private String address;
     private String phone;
     private String imageUrl;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     private BigDecimal averageRating;
     private Integer reviewCount;
     private Integer likeCount;

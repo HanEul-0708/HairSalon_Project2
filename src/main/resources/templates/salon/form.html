@@ -16,121 +16,123 @@
             <p>살롱 기본 정보와 외부 API 연동 정보를 관리합니다.</p>
         </div>
 
-        <form th:if="${salonId != null}"
-              method="post"
-              th:action="@{/salons/{id}/edit(id=${salonId})}"
-              th:object="${form}"
-              class="service-form">
-            <div class="form-group">
-                <label class="form-label" for="nameEdit">살롱명</label>
-                <input id="nameEdit" class="form-control" th:field="*{name}" placeholder="살롱명">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="addressEdit">주소</label>
-                <input id="addressEdit" class="form-control" th:field="*{address}" placeholder="지번 주소">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="roadAddressEdit">도로명 주소</label>
-                <input id="roadAddressEdit" class="form-control" th:field="*{roadAddress}" placeholder="도로명 주소">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="phoneEdit">전화번호</label>
-                <input id="phoneEdit" class="form-control" th:field="*{phone}" placeholder="전화번호">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="latitudeEdit">위도</label>
-                <input id="latitudeEdit" class="form-control" th:field="*{latitude}" placeholder="위도">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="longitudeEdit">경도</label>
-                <input id="longitudeEdit" class="form-control" th:field="*{longitude}" placeholder="경도">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="imageUrlEdit">이미지 URL</label>
-                <input id="imageUrlEdit" class="form-control" th:field="*{imageUrl}" placeholder="이미지 URL">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="placeUrlEdit">외부 상세 URL</label>
-                <input id="placeUrlEdit" class="form-control" th:field="*{placeUrl}" placeholder="Kakao/Naver 상세 URL">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="descriptionEdit">소개</label>
-                <textarea id="descriptionEdit" class="form-control" th:field="*{description}" placeholder="살롱 소개"></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="reservableEdit">예약 가능 여부</label>
-                <select id="reservableEdit" class="form-control" th:field="*{reservable}">
-                    <option th:value="true">예약 가능</option>
-                    <option th:value="false">예약 준비중</option>
-                </select>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">수정 저장</button>
-                <a th:href="@{/salons/{id}(id=${salonId})}" class="btn btn-outline">취소</a>
-            </div>
-        </form>
+        <th:block th:if="${salonId != null}">
+            <form method="post"
+                  th:action="@{/salons/{id}/edit(id=${salonId})}"
+                  th:object="${form}"
+                  class="service-form">
+                <div class="form-group">
+                    <label class="form-label" for="nameEdit">살롱명</label>
+                    <input id="nameEdit" class="form-control" th:field="*{name}" placeholder="살롱명">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="addressEdit">주소</label>
+                    <input id="addressEdit" class="form-control" th:field="*{address}" placeholder="지번 주소">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="roadAddressEdit">도로명 주소</label>
+                    <input id="roadAddressEdit" class="form-control" th:field="*{roadAddress}" placeholder="도로명 주소">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="phoneEdit">전화번호</label>
+                    <input id="phoneEdit" class="form-control" th:field="*{phone}" placeholder="전화번호">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="latitudeEdit">위도</label>
+                    <input id="latitudeEdit" class="form-control" th:field="*{latitude}" placeholder="위도">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="longitudeEdit">경도</label>
+                    <input id="longitudeEdit" class="form-control" th:field="*{longitude}" placeholder="경도">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="imageUrlEdit">이미지 URL</label>
+                    <input id="imageUrlEdit" class="form-control" th:field="*{imageUrl}" placeholder="이미지 URL">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="placeUrlEdit">외부 상세 URL</label>
+                    <input id="placeUrlEdit" class="form-control" th:field="*{placeUrl}" placeholder="Kakao/Naver 상세 URL">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="descriptionEdit">소개</label>
+                    <textarea id="descriptionEdit" class="form-control" th:field="*{description}" placeholder="살롱 소개"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reservableEdit">예약 가능 여부</label>
+                    <select id="reservableEdit" class="form-control" th:field="*{reservable}">
+                        <option th:value="true">예약 가능</option>
+                        <option th:value="false">예약 준비중</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">수정 저장</button>
+                    <a th:href="@{/salons/{id}(id=${salonId})}" class="btn btn-outline">취소</a>
+                </div>
+            </form>
+        </th:block>
 
-        <form th:unless="${salonId != null}"
-              method="post"
-              th:action="@{/salons}"
-              th:object="${form}"
-              class="service-form">
-            <div class="form-group">
-                <label class="form-label" for="sourceTypeCreate">출처</label>
-                <input id="sourceTypeCreate" class="form-control" th:field="*{sourceType}" placeholder="예: MANUAL, KAKAO">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="externalIdCreate">외부 ID</label>
-                <input id="externalIdCreate" class="form-control" th:field="*{externalId}" placeholder="외부 연동 ID">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="nameCreate">살롱명</label>
-                <input id="nameCreate" class="form-control" th:field="*{name}" placeholder="살롱명">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="addressCreate">주소</label>
-                <input id="addressCreate" class="form-control" th:field="*{address}" placeholder="지번 주소">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="roadAddressCreate">도로명 주소</label>
-                <input id="roadAddressCreate" class="form-control" th:field="*{roadAddress}" placeholder="도로명 주소">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="phoneCreate">전화번호</label>
-                <input id="phoneCreate" class="form-control" th:field="*{phone}" placeholder="전화번호">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="latitudeCreate">위도</label>
-                <input id="latitudeCreate" class="form-control" th:field="*{latitude}" placeholder="위도">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="longitudeCreate">경도</label>
-                <input id="longitudeCreate" class="form-control" th:field="*{longitude}" placeholder="경도">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="imageUrlCreate">이미지 URL</label>
-                <input id="imageUrlCreate" class="form-control" th:field="*{imageUrl}" placeholder="이미지 URL">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="placeUrlCreate">외부 상세 URL</label>
-                <input id="placeUrlCreate" class="form-control" th:field="*{placeUrl}" placeholder="Kakao/Naver 상세 URL">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="descriptionCreate">소개</label>
-                <textarea id="descriptionCreate" class="form-control" th:field="*{description}" placeholder="살롱 소개"></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="reservableCreate">예약 가능 여부</label>
-                <select id="reservableCreate" class="form-control" th:field="*{reservable}">
-                    <option th:value="true">예약 가능</option>
-                    <option th:value="false">예약 준비중</option>
-                </select>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">등록</button>
-                <a th:href="@{/salons}" class="btn btn-outline">취소</a>
-            </div>
-        </form>
+        <th:block th:unless="${salonId != null}">
+            <form method="post"
+                  th:action="@{/salons}"
+                  th:object="${form}"
+                  class="service-form">
+                <div class="form-group">
+                    <label class="form-label" for="sourceTypeCreate">출처</label>
+                    <input id="sourceTypeCreate" class="form-control" th:field="*{sourceType}" placeholder="예: MANUAL, KAKAO">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="externalIdCreate">외부 ID</label>
+                    <input id="externalIdCreate" class="form-control" th:field="*{externalId}" placeholder="외부 연동 ID">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="nameCreate">살롱명</label>
+                    <input id="nameCreate" class="form-control" th:field="*{name}" placeholder="살롱명">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="addressCreate">주소</label>
+                    <input id="addressCreate" class="form-control" th:field="*{address}" placeholder="지번 주소">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="roadAddressCreate">도로명 주소</label>
+                    <input id="roadAddressCreate" class="form-control" th:field="*{roadAddress}" placeholder="도로명 주소">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="phoneCreate">전화번호</label>
+                    <input id="phoneCreate" class="form-control" th:field="*{phone}" placeholder="전화번호">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="latitudeCreate">위도</label>
+                    <input id="latitudeCreate" class="form-control" th:field="*{latitude}" placeholder="위도">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="longitudeCreate">경도</label>
+                    <input id="longitudeCreate" class="form-control" th:field="*{longitude}" placeholder="경도">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="imageUrlCreate">이미지 URL</label>
+                    <input id="imageUrlCreate" class="form-control" th:field="*{imageUrl}" placeholder="이미지 URL">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="placeUrlCreate">외부 상세 URL</label>
+                    <input id="placeUrlCreate" class="form-control" th:field="*{placeUrl}" placeholder="Kakao/Naver 상세 URL">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="descriptionCreate">소개</label>
+                    <textarea id="descriptionCreate" class="form-control" th:field="*{description}" placeholder="살롱 소개"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reservableCreate">예약 가능 여부</label>
+                    <select id="reservableCreate" class="form-control" th:field="*{reservable}">
+                        <option th:value="true">예약 가능</option>
+                        <option th:value="false">예약 준비중</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">등록</button>
+                    <a th:href="@{/salons}" class="btn btn-outline">취소</a>
+                </div>
+            </form>
+        </th:block>
     </div>
 </main>
 </body>

@@ -5,7 +5,7 @@
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
 <head>
     <meta charset="UTF-8">
-    <title>살롱 목록</title>
+    <title th:text="${pageTitle} ?: '살롱 목록'">살롱 목록</title>
     <link rel="stylesheet" th:href="@{/css/salon.css}">
     <script th:src="@{/js/salon.js}" defer></script>
 </head>
@@ -13,8 +13,10 @@
 <main>
     <div class="container salon-page salon-list-page">
         <div class="page-header">
-            <h1>살롱 목록</h1>
-            <p>이름, 지역, 평점, 거리 조건으로 살롱을 검색하고 비교할 수 있습니다.</p>
+            <h1 th:text="${pageTitle} ?: '살롱 목록'">살롱 목록</h1>
+            <p th:text="${pageDescription} ?: '이름, 지역, 평점, 거리 조건으로 미용실을 검색하고 비교할 수 있습니다.'">
+                이름, 지역, 평점, 거리 조건으로 미용실을 검색하고 비교할 수 있습니다.
+            </p>
         </div>
 
         <div class="alert alert-info" th:if="${message}" th:text="${message}">안내 메시지</div>
@@ -32,7 +34,7 @@
             <input type="number" step="0.000001" name="longitude" placeholder="경도" th:value="${search.longitude}">
             <input type="number" step="0.1" name="radiusKm" placeholder="반경(km)" th:value="${search.radiusKm}">
             <select name="sort">
-                <option value="recommended" th:selected="${search.sort == 'recommended'}">추천순</option>
+                <option value="recommended" th:selected="${search.sort == 'recommended' or search.sort == null}">추천순</option>
                 <option value="distance" th:selected="${search.sort == 'distance'}">거리순</option>
                 <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
                 <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
@@ -41,14 +43,32 @@
         </form>
 
         <div class="page-actions">
+            <a th:href="@{/salons/nearby}" class="btn btn-outline">가까운 미용실 찾기</a>
+            <a th:href="@{/salons/top-rated}" class="btn btn-outline">평점 4점 이상</a>
+            <a th:href="@{/salons/recommend-by-service}" class="btn btn-outline">스타일 키워드 추천</a>
+            <a th:href="@{/salons/kakao-search}" class="btn btn-outline">카카오 검색</a>
             <a sec:authorize="hasRole('ADMIN')" th:href="@{/salons/new}" class="btn btn-outline">살롱 등록</a>
         </div>
+
+        <form method="get"
+              th:action="@{/salons/kakao-search}"
+              class="salon-search-form"
+              th:if="${kakaoSearchMode}">
+            <input type="text" name="keyword" placeholder="카카오 검색어" th:value="${kakaoKeyword}">
+            <input type="text" name="region" placeholder="지역" th:value="${kakaoRegion}">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <button type="submit" class="btn btn-outline">카카오 외부 검색</button>
+        </form>
 
         <form method="post"
               th:action="@{/salons/sync/kakao}"
               sec:authorize="hasRole('ADMIN')"
               class="salon-search-form">
-            <input type="text" name="keyword" placeholder="카카오 검색어">
+            <input type="text" name="keyword" placeholder="카카오 동기화 검색어">
             <input type="text" name="region" placeholder="지역">
             <div></div>
             <div></div>
@@ -58,8 +78,42 @@
             <button type="submit" class="btn btn-outline">Kakao API 동기화</button>
         </form>
 
+        <section th:if="${kakaoSearchMode}">
+            <div class="page-header">
+                <h2>카카오 외부 검색 결과</h2>
+                <p>외부 API 결과를 확인한 뒤 관리자가 동기화해 내부 데이터로 저장할 수 있습니다.</p>
+            </div>
+
+            <div class="empty-state" th:if="${kakaoResults != null and #lists.isEmpty(kakaoResults)}">
+                <p>표시할 카카오 검색 결과가 없습니다.</p>
+            </div>
+
+            <div class="salon-grid" th:if="${kakaoResults != null and !#lists.isEmpty(kakaoResults)}">
+                <div class="salon-card" th:each="place : ${kakaoResults}">
+                    <div class="salon-card__image">KAKAO</div>
+                    <div class="salon-card__body">
+                        <div class="salon-card__title-row">
+                            <h2 class="salon-card__name" th:text="${place.placeName}">외부 미용실명</h2>
+                            <span class="salon-status-badge salon-status-badge--on">외부 결과</span>
+                        </div>
+                        <p class="salon-card__meta" th:text="${place.roadAddressName} ?: ${place.addressName}">주소</p>
+                        <p class="salon-card__meta" th:text="${#strings.isEmpty(place.phone) ? '전화번호 없음' : place.phone}">
+                            전화번호
+                        </p>
+                        <p class="salon-card__desc"
+                           th:text="${place.latitude != null and place.longitude != null ? place.latitude + ', ' + place.longitude : '좌표 정보 없음'}">
+                            좌표 정보
+                        </p>
+                        <div class="salon-card__footer">
+                            <a class="btn btn-outline" th:if="${place.placeUrl}" th:href="${place.placeUrl}" target="_blank" rel="noopener">카카오 상세</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <div class="empty-state" th:if="${#lists.isEmpty(salons)}">
-            <p>조건에 맞는 살롱이 없습니다.</p>
+            <p>조건에 맞는 미용실이 없습니다.</p>
         </div>
 
         <div class="salon-grid" th:unless="${#lists.isEmpty(salons)}">

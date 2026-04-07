@@ -15,70 +15,72 @@
     <div class="container service-page">
         <div class="page-header">
             <h1 class="page-title" th:text="${serviceId != null} ? '시술 수정' : '시술 등록'">시술 등록</h1>
-            <p class="page-desc">살롱별 시술명, 가격, 소요 시간을 관리합니다.</p>
+            <p class="page-desc">살롱별 시술명, 가격, 소요 시간 정보를 관리합니다.</p>
         </div>
 
-        <form th:if="${serviceId != null}"
-              method="post"
-              th:action="@{/salon-services/{id}/edit(id=${serviceId})}"
-              th:object="${form}"
-              class="service-form">
-            <div class="form-group">
-                <label class="form-label" for="salonIdEdit">살롱 ID</label>
-                <input id="salonIdEdit" class="form-control" th:field="*{salonId}" placeholder="살롱 ID">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="nameEdit">시술명</label>
-                <input id="nameEdit" class="form-control" th:field="*{name}" placeholder="시술명">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="priceEdit">가격</label>
-                <input id="priceEdit" class="form-control" th:field="*{price}" placeholder="가격">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="durationEdit">소요 시간(분)</label>
-                <input id="durationEdit" class="form-control" th:field="*{duration}" placeholder="소요 시간(분)">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="descriptionEdit">설명</label>
-                <textarea id="descriptionEdit" class="form-control" th:field="*{description}" placeholder="시술 설명"></textarea>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">수정 저장</button>
-                <a th:href="@{/salon-services/{id}(id=${serviceId})}" class="btn btn-outline">취소</a>
-            </div>
-        </form>
+        <th:block th:if="${serviceId != null}">
+            <form method="post"
+                  th:action="@{/salon-services/{id}/edit(id=${serviceId})}"
+                  th:object="${form}"
+                  class="service-form">
+                <div class="form-group">
+                    <label class="form-label" for="salonIdEdit">살롱 ID</label>
+                    <input id="salonIdEdit" class="form-control" th:field="*{salonId}" placeholder="살롱 ID">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="nameEdit">시술명</label>
+                    <input id="nameEdit" class="form-control" th:field="*{name}" placeholder="시술명">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="priceEdit">가격</label>
+                    <input id="priceEdit" class="form-control" th:field="*{price}" placeholder="가격">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="durationEdit">소요 시간(분)</label>
+                    <input id="durationEdit" class="form-control" th:field="*{duration}" placeholder="소요 시간(분)">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="descriptionEdit">설명</label>
+                    <textarea id="descriptionEdit" class="form-control" th:field="*{description}" placeholder="시술 설명"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">수정 저장</button>
+                    <a th:href="@{/salon-services/{id}(id=${serviceId})}" class="btn btn-outline">취소</a>
+                </div>
+            </form>
+        </th:block>
 
-        <form th:unless="${serviceId != null}"
-              method="post"
-              th:action="@{/salon-services}"
-              th:object="${form}"
-              class="service-form">
-            <div class="form-group">
-                <label class="form-label" for="salonIdCreate">살롱 ID</label>
-                <input id="salonIdCreate" class="form-control" th:field="*{salonId}" placeholder="살롱 ID">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="nameCreate">시술명</label>
-                <input id="nameCreate" class="form-control" th:field="*{name}" placeholder="시술명">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="priceCreate">가격</label>
-                <input id="priceCreate" class="form-control" th:field="*{price}" placeholder="가격">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="durationCreate">소요 시간(분)</label>
-                <input id="durationCreate" class="form-control" th:field="*{duration}" placeholder="소요 시간(분)">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="descriptionCreate">설명</label>
-                <textarea id="descriptionCreate" class="form-control" th:field="*{description}" placeholder="시술 설명"></textarea>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">등록</button>
-                <a th:href="@{/salon-services}" class="btn btn-outline">취소</a>
-            </div>
-        </form>
+        <th:block th:unless="${serviceId != null}">
+            <form method="post"
+                  th:action="@{/salon-services}"
+                  th:object="${form}"
+                  class="service-form">
+                <div class="form-group">
+                    <label class="form-label" for="salonIdCreate">살롱 ID</label>
+                    <input id="salonIdCreate" class="form-control" th:field="*{salonId}" placeholder="살롱 ID">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="nameCreate">시술명</label>
+                    <input id="nameCreate" class="form-control" th:field="*{name}" placeholder="시술명">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="priceCreate">가격</label>
+                    <input id="priceCreate" class="form-control" th:field="*{price}" placeholder="가격">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="durationCreate">소요 시간(분)</label>
+                    <input id="durationCreate" class="form-control" th:field="*{duration}" placeholder="소요 시간(분)">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="descriptionCreate">설명</label>
+                    <textarea id="descriptionCreate" class="form-control" th:field="*{description}" placeholder="시술 설명"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">등록</button>
+                    <a th:href="@{/salon-services}" class="btn btn-outline">취소</a>
+                </div>
+            </form>
+        </th:block>
     </div>
 </main>
 </body>

@@ -5,22 +5,45 @@ import com.hairsalonproject2.salon.entity.Salon;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public final class SalonSpecifications {
     private SalonSpecifications() {
     }
 
     public static Specification<Salon> bySearch(SalonSearchRequest request) {
-        return Specification.<Salon>unrestricted().and(keywordContains(request.getKeyword())).and(regionContains(request.getRegion())).and(minRatingAtLeast(request.getMinRating())).and(reservableEquals(request.getReservable()));
+        return bySearch(request, List.of());
     }
 
-    private static Specification<Salon> keywordContains(String keyword) {
+    public static Specification<Salon> bySearch(SalonSearchRequest request, List<Integer> keywordMatchedSalonIds) {
+        return Specification.<Salon>unrestricted()
+                .and(keywordContains(request.getKeyword(), keywordMatchedSalonIds))
+                .and(regionContains(request.getRegion()))
+                .and(minRatingAtLeast(request.getMinRating()))
+                .and(reservableEquals(request.getReservable()));
+    }
+
+    private static Specification<Salon> keywordContains(String keyword, List<Integer> keywordMatchedSalonIds) {
         if (keyword == null || keyword.isBlank()) {
             return null;
         }
         return (root, query, cb) -> {
             String pattern = "%" + keyword.toLowerCase() + "%";
-            return cb.or(cb.like(cb.lower(root.get("name")), pattern), cb.like(cb.lower(root.get("address")), pattern), cb.like(cb.lower(root.get("roadAddress")), pattern), cb.like(cb.lower(root.get("description")), pattern));
+            if (keywordMatchedSalonIds == null || keywordMatchedSalonIds.isEmpty()) {
+                return cb.or(
+                        cb.like(cb.lower(root.get("name")), pattern),
+                        cb.like(cb.lower(root.get("address")), pattern),
+                        cb.like(cb.lower(root.get("roadAddress")), pattern),
+                        cb.like(cb.lower(root.get("description")), pattern)
+                );
+            }
+            return cb.or(
+                    cb.like(cb.lower(root.get("name")), pattern),
+                    cb.like(cb.lower(root.get("address")), pattern),
+                    cb.like(cb.lower(root.get("roadAddress")), pattern),
+                    cb.like(cb.lower(root.get("description")), pattern),
+                    root.get("salonId").in(keywordMatchedSalonIds)
+            );
         };
     }
 
