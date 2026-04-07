@@ -10,12 +10,14 @@ import com.hairsalonproject2.salon.dto.request.SalonCreateRequest;
 import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
 import com.hairsalonproject2.salon.dto.request.SalonUpdateRequest;
 import com.hairsalonproject2.salon.dto.response.SalonDetailResponse;
+import com.hairsalonproject2.salon.dto.response.SalonRecommendationConditionResponse;
 import com.hairsalonproject2.salon.dto.response.SalonRankResponse;
 import com.hairsalonproject2.salon.dto.response.SalonSummaryResponse;
 import com.hairsalonproject2.salon.entity.Salon;
 import com.hairsalonproject2.salon.entity.SalonLike;
 import com.hairsalonproject2.salon.repository.SalonLikeRepository;
 import com.hairsalonproject2.salon.repository.SalonRepository;
+import com.hairsalonproject2.review.repository.ReviewRepository;
 import com.hairsalonproject2.salonservice.dto.response.SalonServiceSummaryResponse;
 import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -30,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,6 +46,7 @@ public class SalonQueryService {
     private final SalonServiceRepository salonServiceRepository;
     private final SalonLikeRepository salonLikeRepository;
     private final MemberRepository memberRepository;
+    private final ReviewRepository reviewRepository;
 
     public List<SalonSummaryResponse> search(SalonSearchRequest request) {
         List<Salon> salons = salonRepository.findAll(SalonSpecifications.bySearch(request));
@@ -167,6 +171,22 @@ public class SalonQueryService {
         return result;
     }
 
+    public SalonRecommendationConditionResponse getRecommendationCondition(Integer salonId) {
+        Salon salon = salonRepository.findById(salonId)
+                .orElseThrow(() -> new EntityNotFoundException("Salon not found: " + salonId));
+
+        List<String> keywords = extractReviewKeywords(salonId);
+
+        return SalonRecommendationConditionResponse.builder()
+                .salonId(salon.getSalonId())
+                .salonName(salon.getName())
+                .averageRating(salon.getAverageRating())
+                .reviewCount(salon.getReviewCount())
+                .likeCount(salon.getLikeCount())
+                .reviewKeywords(keywords)
+                .build();
+    }
+
     @Transactional
     public Integer create(SalonCreateRequest request) {
         Salon salon = Salon.builder()
@@ -279,5 +299,39 @@ public class SalonQueryService {
         return BigDecimal.valueOf(distance)
                 .setScale(2, RoundingMode.HALF_UP)
                 .doubleValue();
+    }
+
+    private List<String> extractReviewKeywords(Integer salonId) {
+        List<String> reviewContents = reviewRepository.findByDesigner_Salon_SalonId(salonId).stream()
+                .map(review -> review.getContent() == null ? "" : review.getContent().toLowerCase())
+                .toList();
+
+        if (reviewContents.isEmpty()) {
+            return List.of();
+        }
+
+        String[] candidateKeywords = {
+                "커트", "컷", "레이어드", "펌", "염색", "탈색", "볼륨", "스타일",
+                "트렌디", "자연스러", "꼼꼼", "친절", "만족", "추천", "재방문", "깔끔"
+        };
+
+        Map<String, Integer> keywordCounts = new LinkedHashMap<>();
+        for (String keyword : candidateKeywords) {
+            int count = 0;
+            for (String content : reviewContents) {
+                if (content.contains(keyword.toLowerCase())) {
+                    count++;
+                }
+            }
+            if (count > 0) {
+                keywordCounts.put(keyword, count);
+            }
+        }
+
+        return keywordCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(5)
+                .map(Map.Entry::getKey)
+                .toList();
     }
 }

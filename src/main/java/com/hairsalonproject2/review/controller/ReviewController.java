@@ -5,6 +5,7 @@ import com.hairsalonproject2.review.dto.DesignerRankingResponse;
 import com.hairsalonproject2.review.dto.MonthlyReviewStatResponse;
 import com.hairsalonproject2.review.dto.ReviewCreateRequest;
 import com.hairsalonproject2.review.dto.ReviewDetailResponse;
+import com.hairsalonproject2.review.dto.ReviewLikeToggleResponse;
 import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.dto.ReviewUpdateRequest;
 import com.hairsalonproject2.review.dto.SalonRankingResponse;
@@ -31,18 +32,22 @@ public class ReviewController {
     }
 
     @GetMapping("/{reviewId}")
-    public ReviewResponse getReview(@PathVariable Integer reviewId) {
-        return reviewService.getReview(reviewId);
+    public ReviewResponse getReview(@PathVariable Integer reviewId,
+                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return reviewService.getReview(reviewId, getLoginMemberId(userDetails));
     }
 
     @GetMapping
-    public List<ReviewResponse> getAllReviews() {
-        return reviewService.getAllReviews();
+    public List<ReviewResponse> getAllReviews(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                              @RequestParam(required = false) Integer designerId,
+                                              @RequestParam(defaultValue = "latest") String sortBy) {
+        return reviewService.getAllReviews(getLoginMemberId(userDetails), designerId, sortBy);
     }
 
     @GetMapping("/member/{memberId}")
-    public List<ReviewResponse> getReviewsByMember(@PathVariable String memberId) {
-        return reviewService.getReviewsByMember(memberId);
+    public List<ReviewResponse> getReviewsByMember(@PathVariable String memberId,
+                                                   @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return reviewService.getReviewsByMember(memberId, getLoginMemberId(userDetails));
     }
 
     @PutMapping("/{reviewId}")
@@ -65,6 +70,12 @@ public class ReviewController {
                 isAdmin(userDetails),
                 reviewId
         );
+    }
+
+    @PostMapping("/{reviewId}/likes")
+    public ReviewLikeToggleResponse toggleLike(@PathVariable Integer reviewId,
+                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return reviewService.toggleLike(reviewId, userDetails.getMember().getMemberId());
     }
 
     @GetMapping("/designer/{designerId}/average-rating")
@@ -94,11 +105,16 @@ public class ReviewController {
     }
 
     @GetMapping("/{reviewId}/detail")
-    public ReviewDetailResponse getReviewDetail(@PathVariable Integer reviewId) {
-        return reviewService.getReviewDetail(reviewId);
+    public ReviewDetailResponse getReviewDetail(@PathVariable Integer reviewId,
+                                                @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails));
     }
 
     private boolean isAdmin(CustomUserDetails userDetails) {
         return userDetails.getMember().getRole().name().equals("ADMIN");
+    }
+
+    private String getLoginMemberId(CustomUserDetails userDetails) {
+        return userDetails == null ? null : userDetails.getMember().getMemberId();
     }
 }

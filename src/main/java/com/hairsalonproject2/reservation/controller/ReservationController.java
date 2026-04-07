@@ -4,6 +4,7 @@ import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.reservation.dto.ReservationCreateRequest;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
+import com.hairsalonproject2.reservation.dto.ReservationUpdateRequest;
 import com.hairsalonproject2.reservation.service.ReservationService;
 import com.hairsalonproject2.reservation.service.ReservationServiceImpl;
 import jakarta.validation.Valid;
@@ -25,6 +26,14 @@ public class ReservationController {
     public ReservationResponse createReservation(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                  @Valid @RequestBody ReservationCreateRequest request) {
         return reservationService.createReservation(userDetails.getMember().getMemberId(), request);
+    }
+
+    @PutMapping("/{id}")
+    public ReservationResponse updateReservation(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                 @PathVariable Integer id,
+                                                 @Valid @RequestBody ReservationUpdateRequest request) {
+        validateReservationAccess(userDetails, id);
+        return reservationService.updateReservation(id, request);
     }
 
     @GetMapping("/{id}")

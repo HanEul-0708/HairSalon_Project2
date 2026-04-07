@@ -3,6 +3,7 @@ package com.hairsalonproject2.salon.controller;
 import com.hairsalonproject2.salon.dto.request.SalonCreateRequest;
 import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
 import com.hairsalonproject2.salon.dto.request.SalonUpdateRequest;
+import com.hairsalonproject2.salon.dto.response.SalonRecommendationConditionResponse;
 import com.hairsalonproject2.salon.service.ExternalSalonSyncService;
 import com.hairsalonproject2.salon.service.SalonQueryService;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,14 @@ public class SalonController {
     @GetMapping("/{salonId}")
     public String detail(@PathVariable Integer salonId, Model model) {
         model.addAttribute("salon", salonQueryService.getDetail(salonId));
+        model.addAttribute("recommendationCondition", salonQueryService.getRecommendationCondition(salonId));
         return "salon/detail";
+    }
+
+    @GetMapping("/{salonId}/recommendation-condition")
+    @ResponseBody
+    public SalonRecommendationConditionResponse recommendationCondition(@PathVariable Integer salonId) {
+        return salonQueryService.getRecommendationCondition(salonId);
     }
 
     @GetMapping("/{salonId}/edit")

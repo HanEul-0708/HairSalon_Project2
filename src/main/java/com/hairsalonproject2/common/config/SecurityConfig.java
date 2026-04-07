@@ -67,6 +67,9 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**",
                                 "/upload/**",
+                                "/uploads/**",
+                                "/files/images/**",
+                                "/files/download/**",
                                 "/error/**",
 
                                 // 회원
@@ -93,7 +96,7 @@ public class SecurityConfig {
                         .loginProcessingUrl("/members/login")
                         .usernameParameter("memberId")
                         .passwordParameter("password")
-                        .defaultSuccessUrl("/", false)
+                        .defaultSuccessUrl("/", true)
                         .failureUrl("/members/login?error=true")
                         .permitAll()
                 )

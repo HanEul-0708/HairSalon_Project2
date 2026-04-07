@@ -17,6 +17,10 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
     List<Review> findByMember_MemberId(String memberId);
 
+    List<Review> findByDesigner_DesignerId(Integer designerId);
+
+    List<Review> findByDesigner_Salon_SalonId(Integer salonId);
+
     // 예약 목록에서 "리뷰 작성" 버튼을 보여줄지 판단할 때 사용한다.
     List<Review> findByReservation_ReservationIdIn(List<Integer> reservationIds);
 

@@ -14,7 +14,7 @@
     <div class="container reservation-page reservation-list-page">
         <div class="page-header">
             <h1 class="page-title">내 예약 목록</h1>
-            <p class="page-desc">예약 상태를 확인하고, 방문 완료된 예약은 바로 리뷰 작성으로 연결할 수 있습니다.</p>
+            <p class="page-desc">예약 변경, 취소, 리뷰 작성까지 한 곳에서 관리할 수 있습니다.</p>
         </div>
 
         <div class="reservation-list" th:if="${!#lists.isEmpty(reservations)}">
@@ -37,6 +37,10 @@
                         <span th:text="${#numbers.formatInteger(reservation.totalPrice, 3, 'COMMA') + '원'}">30,000원</span>
                     </p>
                     <p>
+                        <strong>결제 수단</strong>
+                        <span th:text="${reservation.paymentMethodLabel}">카드</span>
+                    </p>
+                    <p>
                         <strong>상태</strong>
                         <span class="status"
                               th:classappend="${reservation.status.name() == 'RESERVED' ? ' confirmed' : (reservation.status.name() == 'COMPLETED' ? ' done' : ' canceled')}"
@@ -47,18 +51,42 @@
                 </div>
 
                 <div class="reservation-actions">
-                    <!-- 방문이 끝났고 아직 리뷰를 안 쓴 예약만 리뷰 작성 버튼을 보여준다. -->
-                    <a th:if="${reservation.status.name() == 'COMPLETED' and !reviewedReservationIds.contains(reservation.reservationId)}"
+                    <a th:if="${reservation.status.name() == 'RESERVED' and !reviewedReservationIds.contains(reservation.reservationId)}"
+                       th:href="@{/reservations/{reservationId}/edit(reservationId=${reservation.reservationId})}"
+                       class="btn btn-outline">예약 변경</a>
+                    <button th:if="${reservation.status.name() == 'RESERVED' and !reviewedReservationIds.contains(reservation.reservationId)}"
+                            type="button"
+                            class="btn btn-danger"
+                            data-reservation-cancel
+                            th:attr="data-reservation-id=${reservation.reservationId}">예약 취소</button>
+                    <a th:if="${reviewableReservationMap[reservation.reservationId] and !reviewedReservationIds.contains(reservation.reservationId)}"
                        th:href="@{/reviews/write(reservationId=${reservation.reservationId})}"
                        class="btn btn-primary">리뷰 작성</a>
-                    <span th:if="${reservation.status.name() == 'COMPLETED' and reviewedReservationIds.contains(reservation.reservationId)}"
-                          class="btn btn-outline">리뷰 작성 완료</span>
-                    <span th:if="${reservation.status.name() == 'RESERVED'}"
+                    <span th:if="${reviewableReservationMap[reservation.reservationId] and reviewedReservationIds.contains(reservation.reservationId)}"
+                          class="btn btn-review-complete">리뷰 작성 완료</span>
+                    <span th:if="${reservation.status.name() == 'RESERVED' and !reviewableReservationMap[reservation.reservationId] and !reviewedReservationIds.contains(reservation.reservationId)}"
                           class="btn btn-outline">방문 후 리뷰 작성 가능</span>
                     <span th:if="${reservation.status.name() == 'CANCELLED'}"
                           class="btn btn-outline">취소된 예약</span>
+                    <p class="reservation-created-at"
+                       th:if="${reservation.createdAt != null}"
+                       th:text="${#temporals.format(reservation.createdAt, 'yyyy.MM.dd HH:mm')}">2026.04.18 17:42</p>
                 </div>
             </div>
+        </div>
+
+        <div class="pagination" th:if="${totalPages > 1}">
+            <a class="page-link"
+               th:classappend="${currentPage == 1 ? ' disabled' : ''}"
+               th:href="@{/reservations(page=${currentPage > 1 ? currentPage - 1 : 1})}">이전</a>
+            <a class="page-link"
+               th:each="pageNumber : ${pageNumbers}"
+               th:classappend="${pageNumber == currentPage ? ' active' : ''}"
+               th:href="@{/reservations(page=${pageNumber})}"
+               th:text="${pageNumber}">1</a>
+            <a class="page-link"
+               th:classappend="${currentPage == totalPages ? ' disabled' : ''}"
+               th:href="@{/reservations(page=${currentPage < totalPages ? currentPage + 1 : totalPages})}">다음</a>
         </div>
 
         <div class="review-empty" th:if="${#lists.isEmpty(reservations)}">
