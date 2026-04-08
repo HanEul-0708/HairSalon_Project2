@@ -23,17 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
-/*
-    회원 서비스
-
-    해당 범위
-    1. 회원가입
-    2. 내 정보 조회
-    3. 내 정보 수정
-    4. 비밀번호 변경
-    5. 관리자 회원 목록/삭제/권한 변경
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -111,30 +102,34 @@ public class MemberService {
     }
 
     public boolean isEmailAvailableForUpdate(String memberId, String email) {
+        String normalizedMemberId = normalizeMemberId(memberId);
         String normalizedEmail = normalizeEmail(email);
-        if (normalizedEmail == null) {
+        if (normalizedMemberId == null || normalizedEmail == null) {
             return false;
         }
 
         return memberRepository.findByEmail(normalizedEmail)
-                .map(found -> found.getMemberId().equals(memberId))
+                .map(found -> found.getMemberId().equals(normalizedMemberId))
                 .orElse(true);
     }
 
     public boolean isPhoneAvailableForUpdate(String memberId, String phone) {
+        String normalizedMemberId = normalizeMemberId(memberId);
         String normalizedPhone = normalizePhone(phone);
-        if (normalizedPhone == null) {
+        if (normalizedMemberId == null || normalizedPhone == null) {
             return false;
         }
 
         return memberRepository.findByPhone(normalizedPhone)
-                .map(found -> found.getMemberId().equals(memberId))
+                .map(found -> found.getMemberId().equals(normalizedMemberId))
                 .orElse(true);
     }
 
     @Transactional
     public void updateMyProfile(String memberId, MemberUpdateRequest request) {
         Member member = getMember(memberId);
+        ensureMemberCanBeModified(member);
+
         String normalizedName = normalizeName(request.getName());
         String normalizedPhone = normalizePhone(request.getPhone());
         String normalizedEmail = normalizeEmail(request.getEmail());
@@ -161,6 +156,7 @@ public class MemberService {
     @Transactional
     public void changePassword(String memberId, MemberPasswordChangeRequest request) {
         Member member = getMember(memberId);
+        ensureMemberCanBeModified(member);
 
         if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
             throw new BusinessException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
@@ -197,12 +193,13 @@ public class MemberService {
     }
 
     @Transactional
-    public void deleteMemberByAdmin(String adminMemberId, String targetMemberId) {
+    public void softDeleteByAdmin(String adminMemberId, String targetMemberId) {
         if (adminMemberId.equals(targetMemberId)) {
             throw new BusinessException(ErrorCode.CANNOT_DELETE_MYSELF);
         }
 
         Member targetMember = getMember(targetMemberId);
+        validateStatusTransition(targetMember, MemberStatus.DELETED);
 
         if (targetMember.getRole() == MemberRole.ADMIN) {
             long adminCount = memberRepository.countByRole(MemberRole.ADMIN);
@@ -211,7 +208,7 @@ public class MemberService {
             }
         }
 
-        targetMember.changeStatus(MemberStatus.DELETED);
+        applyStatusChange(targetMember, MemberStatus.DELETED);
     }
 
     @Transactional
@@ -223,6 +220,7 @@ public class MemberService {
         }
 
         Member member = getMember(targetMemberId);
+        ensureMemberCanBeModified(member);
 
         if (member.getRole() == MemberRole.ADMIN && role != MemberRole.ADMIN) {
             long adminCount = memberRepository.countByRole(MemberRole.ADMIN);
@@ -240,21 +238,23 @@ public class MemberService {
     }
 
     @Transactional
-    public void changeMemberStatusByAdmin(String adminMemberId,
-                                          String targetMemberId,
-                                          MemberStatus status) {
+    public void changeStatusByAdmin(String adminMemberId,
+                                    String targetMemberId,
+                                    MemberStatus status) {
         if (adminMemberId.equals(targetMemberId)) {
             throw new BusinessException(ErrorCode.CANNOT_CHANGE_MY_STATUS);
         }
 
         Member member = getMember(targetMemberId);
-        member.changeStatus(status);
+        validateStatusTransition(member, status);
+        applyStatusChange(member, status);
     }
 
     @Transactional
-    public void delete(String memberId) {
+    public void softDeleteSelf(String memberId) {
         Member member = getMember(memberId);
-        member.changeStatus(MemberStatus.DELETED);
+        validateStatusTransition(member, MemberStatus.DELETED);
+        applyStatusChange(member, MemberStatus.DELETED);
     }
 
     private Member getMember(String memberId) {
@@ -272,6 +272,21 @@ public class MemberService {
         }
 
         return Sort.by(Sort.Order.desc("createdAt"));
+    }
+
+    private void ensureMemberCanBeModified(Member member) {
+        if (member.getStatus() == MemberStatus.DELETED) {
+            throw new BusinessException(ErrorCode.DELETED_MEMBER_MODIFICATION_NOT_ALLOWED);
+        }
+    }
+
+    private void validateStatusTransition(Member member, MemberStatus targetStatus) {
+        ensureMemberCanBeModified(member);
+        Objects.requireNonNull(targetStatus, "targetStatus");
+    }
+
+    private void applyStatusChange(Member member, MemberStatus targetStatus) {
+        member.changeStatus(targetStatus);
     }
 
     private String normalizeMemberId(String memberId) {

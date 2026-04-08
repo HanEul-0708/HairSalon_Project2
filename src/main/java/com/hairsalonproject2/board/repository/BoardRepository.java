@@ -1,7 +1,10 @@
 package com.hairsalonproject2.board.repository;
 
+import com.hairsalonproject2.board.dto.response.BoardReplyResponse;
 import com.hairsalonproject2.board.dto.response.BoardResponse;
 import com.hairsalonproject2.board.entity.Board;
+import com.hairsalonproject2.board.entity.BoardFile;
+import com.hairsalonproject2.board.entity.BoardImage;
 import com.hairsalonproject2.common.constant.BoardType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +15,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * BoardRepository
@@ -43,6 +47,31 @@ public interface BoardRepository extends JpaRepository<Board, Integer> {
      * parent.boardId 기준으로 파생 메서드를 작성해야 한다.
      */
     List<Board> findByParent_BoardIdOrderByBoardIdAsc(Integer parentBoardId);
+
+    @Query("""
+            SELECT b
+            FROM Board b
+            JOIN FETCH b.member m
+            LEFT JOIN FETCH b.parent p
+            WHERE b.boardId = :boardId
+            """)
+    Optional<Board> findDetailByBoardId(@Param("boardId") Integer boardId);
+
+    @Query("""
+            SELECT bi
+            FROM BoardImage bi
+            WHERE bi.board.boardId = :boardId
+            ORDER BY bi.imageId ASC
+            """)
+    List<BoardImage> findImagesByBoardId(@Param("boardId") Integer boardId);
+
+    @Query("""
+            SELECT bf
+            FROM BoardFile bf
+            WHERE bf.board.boardId = :boardId
+            ORDER BY bf.fileId ASC
+            """)
+    List<BoardFile> findFilesByBoardId(@Param("boardId") Integer boardId);
 
     /**
      * 특정 회원이 작성한 게시글 목록 조회
@@ -172,6 +201,26 @@ public interface BoardRepository extends JpaRepository<Board, Integer> {
     Page<BoardResponse> searchAdminPage(@Param("type") BoardType type,
                                         @Param("keyword") String keyword,
                                         Pageable pageable);
+
+    @Query("""
+            SELECT new com.hairsalonproject2.board.dto.response.BoardReplyResponse(
+                b.boardId,
+                p.boardId,
+                b.type,
+                b.title,
+                b.content,
+                m.memberId,
+                b.createdAt,
+                b.updatedAt
+            )
+            FROM Board b
+            JOIN b.member m
+            LEFT JOIN b.parent p
+            WHERE p.boardId = :parentBoardId
+              AND b.hidden = false
+            ORDER BY b.boardId ASC
+            """)
+    List<BoardReplyResponse> findReplyResponsesByParentBoardId(@Param("parentBoardId") Integer parentBoardId);
 
     /**
      * 조회수 1 증가

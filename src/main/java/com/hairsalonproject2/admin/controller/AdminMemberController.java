@@ -71,7 +71,7 @@ public class AdminMemberController {
                                RedirectAttributes redirectAttributes) {
 
         try {
-            memberService.deleteMemberByAdmin(userDetails.getUsername(), memberId);
+            memberService.softDeleteByAdmin(userDetails.getUsername(), memberId);
             redirectAttributes.addFlashAttribute("successMessage", "회원을 삭제했습니다.");
             return "redirect:/admin/members";
 
@@ -105,7 +105,7 @@ public class AdminMemberController {
                                RedirectAttributes redirectAttributes) {
 
         try {
-            memberService.changeMemberStatusByAdmin(userDetails.getUsername(), memberId, status);
+            memberService.changeStatusByAdmin(userDetails.getUsername(), memberId, status);
             redirectAttributes.addFlashAttribute("successMessage", "회원 상태가 변경되었습니다.");
             return "redirect:/admin/members/" + memberId;
 

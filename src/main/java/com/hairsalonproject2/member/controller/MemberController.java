@@ -5,6 +5,7 @@ import com.hairsalonproject2.member.dto.request.MemberLoginRequest;
 import com.hairsalonproject2.member.dto.request.MemberPasswordChangeRequest;
 import com.hairsalonproject2.member.dto.request.MemberSignupRequest;
 import com.hairsalonproject2.member.dto.request.MemberUpdateRequest;
+import com.hairsalonproject2.member.dto.response.AvailabilityResponse;
 import com.hairsalonproject2.member.dto.response.MemberDetailResponse;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.member.service.MemberService;
@@ -22,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -82,47 +82,47 @@ public class MemberController {
 
     @GetMapping("/check-id")
     @ResponseBody
-    public Map<String, Object> checkMemberId(@RequestParam String memberId) {
-        return Map.of("available", memberService.isMemberIdAvailable(memberId));
+    public AvailabilityResponse checkMemberId(@RequestParam String memberId) {
+        return AvailabilityResponse.from(memberService.isMemberIdAvailable(memberId));
     }
 
     @GetMapping("/check-email")
     @ResponseBody
-    public Map<String, Object> checkEmail(@RequestParam String email) {
-        return Map.of("available", memberService.isEmailAvailable(email));
+    public AvailabilityResponse checkEmail(@RequestParam String email) {
+        return AvailabilityResponse.from(memberService.isEmailAvailable(email));
     }
 
     @GetMapping("/check-phone")
     @ResponseBody
-    public Map<String, Object> checkPhone(@RequestParam String phone) {
-        return Map.of("available", memberService.isPhoneAvailable(phone));
+    public AvailabilityResponse checkPhone(@RequestParam String phone) {
+        return AvailabilityResponse.from(memberService.isPhoneAvailable(phone));
     }
 
     @GetMapping("/me/check-email")
     @ResponseBody
-    public Map<String, Object> checkMyEmail(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                            @RequestParam String email) {
-        return Map.of("available", memberService.isEmailAvailableForUpdate(userDetails.getUsername(), email));
+    public AvailabilityResponse checkMyEmail(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                             @RequestParam String email) {
+        return AvailabilityResponse.from(memberService.isEmailAvailableForUpdate(userDetails.getUsername(), email));
     }
 
     @GetMapping("/me/check-phone")
     @ResponseBody
-    public Map<String, Object> checkMyPhone(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                            @RequestParam String phone) {
-        return Map.of("available", memberService.isPhoneAvailableForUpdate(userDetails.getUsername(), phone));
+    public AvailabilityResponse checkMyPhone(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                             @RequestParam String phone) {
+        return AvailabilityResponse.from(memberService.isPhoneAvailableForUpdate(userDetails.getUsername(), phone));
     }
 
     @GetMapping("/me")
     public String myPage(@AuthenticationPrincipal CustomUserDetails userDetails,
                          Model model) {
-        populateMyPageModel(model, userDetails.getUsername(), currentModel -> { });
+        prepareMyPageModel(model, userDetails.getUsername(), currentModel -> { });
         return "member/mypage";
     }
 
     @GetMapping("/me/edit")
     public String myEditPage(@AuthenticationPrincipal CustomUserDetails userDetails,
                              Model model) {
-        populateMyPageModel(model, userDetails.getUsername(), currentModel -> { });
+        prepareMyPageModel(model, userDetails.getUsername(), currentModel -> { });
         return "member/mypage";
     }
 
@@ -133,7 +133,7 @@ public class MemberController {
                                   Model model,
                                   RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
-            populateMyPageModel(model, userDetails.getUsername(),
+            prepareMyPageModel(model, userDetails.getUsername(),
                     currentModel -> currentModel.addAttribute("memberUpdateRequest", memberUpdateRequest));
             return "member/mypage";
         }
@@ -141,7 +141,7 @@ public class MemberController {
         try {
             memberService.updateMyProfile(userDetails.getUsername(), memberUpdateRequest);
         } catch (BusinessException e) {
-            populateMyPageModel(model, userDetails.getUsername(), currentModel -> {
+            prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
                 currentModel.addAttribute("memberUpdateRequest", memberUpdateRequest);
                 currentModel.addAttribute("errorMessage", e.getErrorCode().getMessage());
             });
@@ -159,7 +159,7 @@ public class MemberController {
                                  Model model,
                                  RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
-            populateMyPageModel(model, userDetails.getUsername(),
+            prepareMyPageModel(model, userDetails.getUsername(),
                     currentModel -> currentModel.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest));
             return "member/mypage";
         }
@@ -167,7 +167,7 @@ public class MemberController {
         try {
             memberService.changePassword(userDetails.getUsername(), memberPasswordChangeRequest);
         } catch (BusinessException e) {
-            populateMyPageModel(model, userDetails.getUsername(), currentModel -> {
+            prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
                 currentModel.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest);
                 currentModel.addAttribute("errorMessage", e.getErrorCode().getMessage());
             });
@@ -181,13 +181,13 @@ public class MemberController {
     @PostMapping("/me/delete")
     public String deleteMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
         String memberId = userDetails.getMember().getMemberId();
-        memberService.delete(memberId);
+        memberService.softDeleteSelf(memberId);
         return "redirect:/members/logout";
     }
 
-    private void populateMyPageModel(Model model,
-                                     String memberId,
-                                     Consumer<Model> customizer) {
+    private void prepareMyPageModel(Model model,
+                                    String memberId,
+                                    Consumer<Model> customizer) {
         MemberDetailResponse member = memberService.getMyDetail(memberId);
         model.addAttribute("member", member);
         model.addAttribute("memberUpdateRequest", createMemberUpdateRequest(member));
