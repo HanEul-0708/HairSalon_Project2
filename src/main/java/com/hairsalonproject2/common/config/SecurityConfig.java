@@ -56,13 +56,20 @@ public class SecurityConfig {
                 // 브라우저 기본 로그인 팝업 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/files/images/**", "/files/download/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/reviews/*/images").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/reviews/*/images/*").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/reviews").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/reviews/*").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").authenticated()
                         .requestMatchers(
                                 "/",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
                                 "/upload/**",
+                                "/uploads/**",
+                                "/files/images/**",
+                                "/files/download/**",
                                 "/error/**",
 
                                 // 회원
@@ -72,7 +79,7 @@ public class SecurityConfig {
                                 "/members/check-email",
                                 "/members/check-phone",
 
-                                // 메인/매장/디자이너/리뷰/게시판은 비회원도 접근 가능
+                                // 메인/살롱/디자이너/리뷰/게시판 테스트용 공개
                                 "/salons",
                                 "/salons/**",
                                 "/designers",

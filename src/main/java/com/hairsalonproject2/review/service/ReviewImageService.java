@@ -15,7 +15,7 @@ public interface ReviewImageService {
     /**
      * 리뷰 이미지 업로드
      */
-    ReviewImageResponse uploadReviewImage(Integer reviewId, MultipartFile file, Integer sortOrder);
+    ReviewImageResponse uploadReviewImage(String loginMemberId, boolean isAdmin, Integer reviewId, MultipartFile file, Integer sortOrder);
 
     /**
      * 특정 리뷰의 이미지 목록 조회
@@ -25,5 +25,5 @@ public interface ReviewImageService {
     /**
      * 리뷰 이미지 삭제
      */
-    void deleteImage(Integer imageId);
+    void deleteImage(String loginMemberId, boolean isAdmin, Integer imageId);
 }

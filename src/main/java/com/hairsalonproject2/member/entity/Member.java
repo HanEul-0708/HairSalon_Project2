@@ -7,6 +7,7 @@ import com.hairsalonproject2.common.entity.BaseCreatedEntity;
 import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.reservation.entity.Reservation;
 import com.hairsalonproject2.review.entity.Review;
+import com.hairsalonproject2.review.entity.ReviewLike;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -107,6 +108,9 @@ public class Member extends BaseCreatedEntity {
      */
     @OneToMany(mappedBy = "member")
     private List<Review> reviews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member")
+    private List<ReviewLike> reviewLikes = new ArrayList<>();
 
     /**
      * 회원이 작성한 게시글 목록

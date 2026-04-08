@@ -11,16 +11,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * 리뷰 DB 접근 Repository
- */
 public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
     Optional<Review> findByReservation_ReservationId(Integer reservationId);
 
     List<Review> findByMember_MemberId(String memberId);
 
-    List<Review> findTop3ByOrderByCreatedAtDesc();
+    List<Review> findByDesigner_DesignerId(Integer designerId);
+
+    List<Review> findByDesigner_Salon_SalonId(Integer salonId);
+
+    // 예약 목록에서 "리뷰 작성" 버튼을 보여줄지 판단할 때 사용한다.
+    List<Review> findByReservation_ReservationIdIn(List<Integer> reservationIds);
 
     @Query("select avg(r.rating) from Review r where r.designer.designerId = :designerId")
     Double findAverageRatingByDesignerId(Integer designerId);
@@ -29,13 +31,11 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             select new com.hairsalonproject2.review.dto.DesignerRankingResponse(
                 r.designer.designerId,
                 r.designer.name,
-                r.designer.salon.name,
-                r.designer.careerYears,
                 avg(r.rating),
                 count(r)
             )
             from Review r
-            group by r.designer.designerId, r.designer.name, r.designer.salon.name, r.designer.careerYears
+            group by r.designer.designerId, r.designer.name
             having count(r) >= :minReviewCount
             order by avg(r.rating) desc, count(r) desc
             """)
@@ -73,12 +73,11 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             select new com.hairsalonproject2.review.dto.SalonRankingResponse(
                 r.designer.salon.salonId,
                 r.designer.salon.name,
-                r.designer.salon.address,
                 avg(r.rating),
                 count(r)
             )
             from Review r
-            group by r.designer.salon.salonId, r.designer.salon.name, r.designer.salon.address
+            group by r.designer.salon.salonId, r.designer.salon.name
             having count(r) >= :minReviewCount
             order by avg(r.rating) desc, count(r) desc
             """)

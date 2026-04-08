@@ -15,6 +15,13 @@ public interface ReservationSlotRepository extends JpaRepository<ReservationSlot
             LocalTime slotTime
     );
 
+    boolean existsByDesigner_DesignerIdAndReservationDateAndSlotTimeAndReservation_ReservationIdNot(
+            Integer designerId,
+            LocalDate reservationDate,
+            LocalTime slotTime,
+            Integer reservationId
+    );
+
     // 디자이너 + 날짜 기준 예약 슬롯 조회
     List<ReservationSlot> findByDesigner_DesignerIdAndReservationDate(
             Integer designerId,

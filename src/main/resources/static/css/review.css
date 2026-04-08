@@ -15,8 +15,74 @@
     gap: 20px;
 }
 
+.review-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.review-summary__item,
+.review-filter,
+.review-reservation-summary {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.review-summary__item {
+    padding: 18px 20px;
+}
+
+.review-summary__label {
+    display: block;
+    color: var(--text-sub);
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+.review-summary__value {
+    color: var(--text-main);
+    font-size: 1.3rem;
+}
+
+.review-filter {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    padding: 18px 20px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+.review-filter__group {
+    min-width: 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.review-filter__group label {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.review-filter__group select {
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-dark);
+}
+
+.review-filter__actions {
+    display: flex;
+    gap: 10px;
+}
+
 .review-list {
     display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
 }
 
@@ -25,8 +91,25 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
-    padding: 24px;
+    padding: 20px;
     transition: var(--transition-slow);
+    height: 100%;
+}
+
+.review-card--link {
+    display: flex;
+    flex-direction: column;
+    color: inherit;
+    text-decoration: none;
+}
+
+.review-card__link {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    color: inherit;
+    text-decoration: none;
+    flex: 1;
 }
 
 .review-card:hover {
@@ -83,14 +166,82 @@
     color: var(--text-main);
     line-height: 1.8;
     font-size: 0.94rem;
+    margin: 0;
+}
+
+.review-card__image-wrap {
+    margin-bottom: 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: #f8f6f1;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 180px;
+}
+
+.review-card__image {
+    width: auto;
+    max-width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+    border-radius: calc(var(--radius-md) - 4px);
 }
 
 .review-card__footer {
-    margin-top: 18px;
+    margin-top: auto;
+    padding-top: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+}
+
+.review-card__bottom,
+.review-detail__stats {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.review-card__reservation {
+    color: var(--text-sub);
+    font-size: 0.88rem;
+}
+
+.review-like-button {
+    border: 1px solid #e6d7da;
+    background: #fff7f8;
+    color: #c15769;
+    border-radius: var(--radius-full);
+    min-height: 40px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.review-like-button:hover:not(:disabled),
+.review-like-button.is-liked {
+    background: #ffe7eb;
+    border-color: #e6a8b4;
+}
+
+.review-like-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.review-like-button__icon {
+    font-size: 0.95rem;
 }
 
 .review-detail {
@@ -99,6 +250,52 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     padding: 28px;
+}
+
+.review-detail__header {
+    margin-bottom: 24px;
+}
+
+.review-detail__content {
+    color: var(--text-main);
+    line-height: 1.9;
+    font-size: 1rem;
+    white-space: pre-wrap;
+}
+
+.review-reservation-summary {
+    padding: 18px 20px;
+    margin: 0 auto 18px;
+    max-width: 860px;
+}
+
+.review-reservation-summary p {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 10px;
+    color: var(--text-main);
+}
+
+.review-reservation-summary p:last-child {
+    margin-bottom: 0;
+}
+
+.review-detail__images {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+}
+
+.review-detail__images img {
+    width: 100%;
+    height: auto;
+    max-height: 520px;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: #f8f6f1;
 }
 
 .review-form {
@@ -185,6 +382,30 @@
     margin-top: 24px;
 }
 
+.review-detail__bottom {
+    margin-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.review-detail__manage {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-danger {
+    background: #b84e4e;
+    color: #fff;
+    border: 1px solid #b84e4e;
+}
+
+.btn-danger:hover {
+    background: #9f3f3f;
+    border-color: #9f3f3f;
+}
+
 .review-empty {
     background: var(--white);
     border: 1px dashed var(--gold-border);
@@ -194,7 +415,66 @@
     color: var(--text-sub);
 }
 
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--gold-border);
+    background: var(--white);
+    color: var(--text-main);
+    text-decoration: none;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.page-link:hover {
+    background: var(--gold-soft);
+    color: var(--text-main);
+}
+
+.page-link.active {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+    color: var(--primary);
+    box-shadow: var(--shadow-gold);
+}
+
+.page-link.disabled {
+    pointer-events: none;
+    opacity: 0.45;
+}
+
+@media (max-width: 1100px) {
+    .review-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .review-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
+    .review-summary {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .review-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .review-card,
     .review-detail,
     .review-form {
@@ -206,8 +486,23 @@
     }
 
     .review-card__footer,
-    .review-actions {
+    .review-card__bottom,
+    .review-actions,
+    .review-detail__bottom,
+    .review-detail__manage,
+    .review-detail__stats,
+    .review-filter,
+    .review-filter__actions,
+    .review-reservation-summary p {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .review-card__image-wrap {
+        min-height: 160px;
+    }
+
+    .review-card__image {
+        max-height: 160px;
     }
 }

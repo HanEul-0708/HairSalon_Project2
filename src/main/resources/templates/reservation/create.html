@@ -12,7 +12,7 @@
 </head>
 <body>
 <main>
-<div class="container">
+<div class="container reservation-page reservation-form-page">
     <div class="page-header">
         <h1 class="page-title">예약하기</h1>
         <p class="page-desc">디자이너와 시술, 날짜와 시간을 선택하여 예약할 수 있습니다.</p>
@@ -22,44 +22,74 @@
         <input type="hidden" id="memberId" th:value="${#authentication.name}">
         <input type="hidden" id="totalPrice" value="0">
 
-        <div class="form-group">
-            <label for="designerId">디자이너</label>
-            <select id="designerId" name="designerId" required>
-                <option value="">디자이너를 선택하세요</option>
-                <option th:each="designer : ${designers}" th:value="${designer.designerId}" th:text="${designer.name}">디자이너명</option>
-            </select>
-        </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="designerId">디자이너</label>
+                    <select id="designerId" name="designerId" required>
+                        <option value="">디자이너를 선택하세요</option>
+                        <option th:each="designer : ${designers}"
+                                th:value="${designer.designerId}"
+                                th:text="${designer.name}">
+                        </option>
+                    </select>
+                </div>
 
-        <div class="form-group">
-            <label for="salonServiceId">시술명</label>
-            <select id="salonServiceId" name="salonServiceId" required>
-                <option value="">시술을 선택하세요</option>
-                <option th:each="service : ${services}" th:value="${service.serviceId}" th:attr="data-price=${service.price}" th:text="|${service.name} (${service.price}원)|">시술명</option>
-            </select>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label for="reservationDate">예약 날짜</label>
-                <input type="date" id="reservationDate" name="reservationDate" required>
+                <div class="form-group">
+                    <label for="salonServiceId">시술</label>
+                    <select id="salonServiceId" name="salonServiceId" required>
+                        <option value="">시술을 선택하세요</option>
+                        <option th:each="service : ${services}"
+                                th:value="${service.serviceId}"
+                                th:text="${service.name + ' / ' + #numbers.formatInteger(service.price, 3, 'COMMA') + '원'}"
+                                th:attr="data-price=${service.price}">
+                        </option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="reservationTime">예약 시간</label>
-                <input type="time" id="reservationTime" name="reservationTime" required>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="reservationDate">예약 날짜</label>
+                    <input type="date" id="reservationDate" name="reservationDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="reservationTime">예약 시간</label>
+                    <select id="reservationTime" name="reservationTime" required>
+                        <option value="">예약 시간을 선택하세요</option>
+                    </select>
+                    <p class="form-help-text">15분 단위로 예약 시간을 선택할 수 있습니다.</p>
+                </div>
             </div>
-        </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">예약하기</button>
-            <a href="/reservations" class="btn btn-outline">목록으로</a>
-        </div>
-    </form>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="paymentMethod">결제 수단</label>
+                    <select id="paymentMethod" name="paymentMethod" required>
+                        <option value="">결제 수단을 선택하세요</option>
+                        <option th:each="paymentMethod : ${paymentMethods}"
+                                th:value="${paymentMethod.name()}"
+                                th:text="${paymentMethod.name() == 'CARD' ? '카드'
+                                        : (paymentMethod.name() == 'CASH' ? '현금'
+                                        : (paymentMethod.name() == 'KAKAO_PAY' ? '카카오페이' : '네이버페이'))}">
+                        </option>
+                    </select>
+                </div>
 
-    <div sec:authorize="!isAuthenticated()">
-        <p>예약하려면 로그인이 필요합니다.</p>
-        <a href="/members/login" class="btn btn-primary">로그인하러 가기</a>
+                <div class="form-group">
+                    <label for="totalPriceDisplay">결제 금액</label>
+                    <input type="text" id="totalPriceDisplay" name="totalPriceDisplay" readonly>
+                    <input type="hidden" id="totalPrice" name="totalPrice" value="0">
+                    <p class="form-help-text">시술 선택 시 자동으로 결제 금액이 반영됩니다.</p>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="/reservations" class="btn btn-outline">목록으로</a>
+                <button type="submit" class="btn btn-primary">예약하기</button>
+            </div>
+        </form>
     </div>
-</div>
 </main>
 </body>
 </html>

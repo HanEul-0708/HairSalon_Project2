@@ -12,38 +12,104 @@
 </head>
 <body>
 <main>
-<div class="container review-page review-list-page">
-    <div class="page-header">
-        <h1 class="page-title">리뷰 목록</h1>
-        <p class="page-desc">사용자가 작성한 리뷰를 확인할 수 있는 화면입니다.</p>
-    </div>
-
-    <div class="review-list">
-        <div class="review-card">
-            <div class="review-card__header">
-                <div class="review-card__meta">
-                    <div class="review-card__name">홍길동</div>
-                    <p class="review-card__info">HairSalon 강남점 · 커트</p>
-                </div>
-                <div class="review-card__rating">★★★★★</div>
-            </div>
-            <div class="review-card__content">디자이너분이 친절했고 스타일도 만족스러웠습니다.</div>
-            <div class="review-card__footer"><p class="review-card__date">작성일 : 2026-04-02</p></div>
+    <div class="container review-page review-list-page">
+        <div class="page-header">
+            <h1 class="page-title">리뷰 목록</h1>
+            <p class="page-desc">고객들의 별점과 후기, 첨부 이미지를 한눈에 확인할 수 있습니다.</p>
         </div>
 
-        <div class="review-card">
-            <div class="review-card__header">
-                <div class="review-card__meta">
-                    <div class="review-card__name">김민수</div>
-                    <p class="review-card__info">HairSalon 홍대점 · 펌</p>
-                </div>
-                <div class="review-card__rating">★★★★☆</div>
+        <form class="review-filter" method="get" action="/reviews">
+            <div class="review-filter__group">
+                <label for="designerId">디자이너</label>
+                <select id="designerId" name="designerId">
+                    <option value="">전체 디자이너</option>
+                    <option th:each="designerOption : ${designerOptions.entrySet()}"
+                            th:value="${designerOption.key}"
+                            th:text="${designerOption.value}"
+                            th:selected="${selectedDesignerId != null and selectedDesignerId == designerOption.key}">
+                    </option>
+                </select>
             </div>
-            <div class="review-card__content">전체적으로 만족합니다. 다음에도 방문하고 싶습니다.</div>
-            <div class="review-card__footer"><p class="review-card__date">작성일 : 2026-04-01</p></div>
+            <div class="review-filter__group">
+                <label for="sortBy">정렬</label>
+                <select id="sortBy" name="sortBy">
+                    <option value="latest" th:selected="${currentSort == 'latest'}">최신순</option>
+                    <option value="rating" th:selected="${currentSort == 'rating'}">별점순</option>
+                    <option value="likes" th:selected="${currentSort == 'likes'}">좋아요순</option>
+                </select>
+            </div>
+            <div class="review-filter__actions">
+                <button type="submit" class="btn btn-primary">적용</button>
+                <a href="/reviews" class="btn btn-outline">초기화</a>
+            </div>
+        </form>
+
+        <div class="review-list" th:if="${!#lists.isEmpty(reviews)}">
+            <article class="review-card" th:each="review : ${reviews}">
+                <a class="review-card__link"
+                   th:href="@{/reviews/{reviewId}(reviewId=${review.reviewId})}">
+                    <div class="review-card__header">
+                        <div class="review-card__avatar" th:text="${#strings.substring(review.memberName, 0, 1)}">김</div>
+                        <div class="review-card__meta">
+                            <p class="review-card__name" th:text="${review.memberName}">회원명</p>
+                            <p class="review-card__info">
+                                디자이너:
+                                <span th:text="${review.designerName}">디자이너명</span>
+                            </p>
+                            <p class="review-card__date"
+                               th:text="${#temporals.format(review.createdAt, 'yyyy-MM-dd HH:mm')}">2026-04-07 15:00</p>
+                        </div>
+                        <div class="review-card__rating" th:text="${'★ ' + review.rating}">★5</div>
+                    </div>
+
+                    <div class="review-card__image-wrap" th:if="${review.thumbnailImageUrl != null}">
+                        <img class="review-card__image"
+                             th:src="${review.thumbnailImageUrl}"
+                             onerror="this.parentElement.style.display='none'"
+                             alt="리뷰 대표 이미지">
+                    </div>
+
+                    <p class="review-card__content" th:text="${review.content}">리뷰 내용</p>
+
+                    <div class="review-card__footer" th:if="${review.replyContent != null and !#strings.isEmpty(review.replyContent)}">
+                        <strong>디자이너 답글</strong>
+                        <span th:text="${review.replyContent}">답글 내용</span>
+                    </div>
+                </a>
+
+                <div class="review-card__bottom">
+                    <span class="review-card__reservation"
+                          th:text="${review.serviceName + ' | 예약번호 ' + review.reservationId}">여성 커트 | 예약번호 1</span>
+                    <button type="button"
+                            class="review-like-button"
+                            th:classappend="${review.likedByCurrentUser ? ' is-liked' : ''}"
+                            th:attr="data-review-like=${review.reviewId}"
+                            th:disabled="${!isLoggedIn}">
+                        <span class="review-like-button__icon">♥</span>
+                        <span class="review-like-button__count" th:text="${review.likeCount}">0</span>
+                    </button>
+                </div>
+            </article>
+        </div>
+
+        <div class="review-empty" th:if="${#lists.isEmpty(reviews)}">
+            <p>조건에 맞는 리뷰가 없습니다.</p>
+        </div>
+
+        <div class="pagination" th:if="${totalPages > 1}">
+            <a class="page-link"
+               th:classappend="${currentPage == 1 ? ' disabled' : ''}"
+               th:href="@{/reviews(page=${currentPage > 1 ? currentPage - 1 : 1}, designerId=${selectedDesignerId}, sortBy=${currentSort})}">이전</a>
+            <a class="page-link"
+               th:each="pageNumber : ${pageNumbers}"
+               th:classappend="${pageNumber == currentPage ? ' active' : ''}"
+               th:href="@{/reviews(page=${pageNumber}, designerId=${selectedDesignerId}, sortBy=${currentSort})}"
+               th:text="${pageNumber}">1</a>
+            <a class="page-link"
+               th:classappend="${currentPage == totalPages ? ' disabled' : ''}"
+               th:href="@{/reviews(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, designerId=${selectedDesignerId}, sortBy=${currentSort})}">다음</a>
         </div>
     </div>
-</div>
 </main>
 </body>
 </html>
