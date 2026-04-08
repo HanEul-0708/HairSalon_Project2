@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface SalonServiceRepository extends JpaRepository<SalonService, Integer> {
     List<SalonService> findBySalonSalonId(Integer salonId);
+    boolean existsBySalonSalonId(Integer salonId);
 
     @Query("""
             select ss from SalonService ss

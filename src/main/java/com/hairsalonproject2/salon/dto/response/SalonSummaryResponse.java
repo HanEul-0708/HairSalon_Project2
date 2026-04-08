@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -18,4 +19,5 @@ public class SalonSummaryResponse {
     private Integer likeCount;
     private Boolean reservable;
     private Double distanceKm;
+    private LocalDateTime createdAt;
 }

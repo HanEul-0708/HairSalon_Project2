@@ -38,7 +38,9 @@ public class KakaoLocalSearchClient {
                 .queryParam("query", query)
                 .queryParam("page", page)
                 .queryParam("size", size)
-                .build(true)
+                // query 값(한글 포함)을 제대로 percent-encoding 해야 합니다.
+                // build(true)는 "이미 인코딩된 URI"로 취급해서 한글이 그대로 들어갈 수 있습니다.
+                .build(false)
                 .toUriString();
 
         String body = restClient.get()

@@ -239,6 +239,7 @@ public class DesignerQueryService {
                 .averageRating(ratingRow == null ? BigDecimal.ZERO : BigDecimal.valueOf(ratingRow.getAverageRating()))
                 .reviewCount(ratingRow == null ? 0L : ratingRow.getReviewCount())
                 .likeCount(d.getLikeCount() == null ? 0 : d.getLikeCount())
+                .createdAt(d.getCreatedAt())
                 .build();
     }
 

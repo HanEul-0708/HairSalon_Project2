@@ -74,6 +74,34 @@
     margin-top: 16px;
 }
 
+.salon-search-form--map {
+    margin-bottom: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+
+.salon-search-form--map .salon-search-form__intro h2 {
+    margin-bottom: 10px;
+    color: #2d261b;
+    font-size: 1.45rem;
+}
+
+.salon-search-form--map .salon-search-form__intro p:last-child {
+    color: #7b6e56;
+    line-height: 1.75;
+}
+
+.salon-search-form--map .salon-search-form__fields {
+    grid-template-columns: 1fr;
+}
+
+.salon-search-form--map .salon-search-form__actions {
+    margin-top: 0;
+}
+
 .salon-search-form input,
 .salon-search-form select {
     width: 100%;
@@ -465,6 +493,7 @@
     border: 1px solid var(--border);
     background: #fffdfa;
     transition: var(--transition);
+    cursor: pointer;
 }
 
 .salon-map-result:hover {
@@ -482,6 +511,10 @@
     color: #7b6e56;
     font-size: 14px;
     line-height: 1.5;
+}
+
+.salon-map-result__actions {
+    margin-top: 8px;
 }
 
 .salon-map-canvas-wrap {

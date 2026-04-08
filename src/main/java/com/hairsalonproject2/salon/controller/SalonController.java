@@ -3,14 +3,20 @@ package com.hairsalonproject2.salon.controller;
 import com.hairsalonproject2.salon.dto.request.SalonCreateRequest;
 import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
 import com.hairsalonproject2.salon.dto.request.SalonUpdateRequest;
+import com.hairsalonproject2.salon.dto.response.SalonMapResultResponse;
+import com.hairsalonproject2.salon.dto.response.SalonMapResultsPayload;
 import com.hairsalonproject2.salon.dto.response.SalonRecommendationConditionResponse;
+import com.hairsalonproject2.salon.repository.SalonRepository;
 import com.hairsalonproject2.salon.service.ExternalSalonSyncService;
 import com.hairsalonproject2.salon.service.SalonQueryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -24,10 +30,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 @RequestMapping("/salons")
 public class SalonController {
 
@@ -35,9 +45,13 @@ public class SalonController {
 
     private final SalonQueryService salonQueryService;
     private final ExternalSalonSyncService externalSalonSyncService;
+    private final SalonRepository salonRepository;
 
     @Value("${kakao.javascript-key:}")
     private String kakaoJavascriptKey;
+
+    @Value("${kakao.rest-api-key:}")
+    private String kakaoRestApiKey;
 
     @GetMapping("/new")
     public String createForm(Model model) {
@@ -86,7 +100,82 @@ public class SalonController {
         model.addAttribute("keyword", keyword == null ? "" : keyword.trim());
         model.addAttribute("region", region == null ? "" : region.trim());
         model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey == null ? "" : kakaoJavascriptKey.trim());
+        model.addAttribute("kakaoRestApiKey", kakaoRestApiKey == null ? "" : kakaoRestApiKey.trim());
         return "salon/map-search";
+    }
+
+    @GetMapping("/map/results")
+    @ResponseBody
+    public ResponseEntity<SalonMapResultsPayload> mapResults(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String region
+    ) {
+        String safeKeyword = keyword == null ? "" : keyword.trim();
+        String safeRegion = region == null ? "" : region.trim();
+
+        String queryUsed;
+        if (safeKeyword.isBlank() && safeRegion.isBlank()) {
+            queryUsed = "";
+        } else if (safeKeyword.isBlank()) {
+            queryUsed = safeRegion + " 미용실";
+        } else if (safeRegion.isBlank()) {
+            queryUsed = safeKeyword + " 미용실";
+        } else {
+            queryUsed = safeRegion + " " + safeKeyword + " 미용실";
+        }
+
+        if (kakaoRestApiKey == null || kakaoRestApiKey.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "카카오 REST API 키가 비어 있습니다. application-secret.properties의 kakao.rest-api-key 설정을 확인하세요."
+            );
+        }
+
+        List<Integer> savedIds;
+        try {
+            savedIds = externalSalonSyncService.syncFromKakao(keyword, region);
+        } catch (RuntimeException ex) {
+            // 카카오 API 호출 실패 시 500 에러 대신 빈 결과를 반환하되, 원인을 프론트에서 확인할 수 있게 한다.
+            String safeMessage = (ex.getMessage() == null ? "" : ex.getMessage())
+                    .replaceAll("\\r?\\n", " ")
+                    .trim();
+            if (safeMessage.length() > 120) {
+                safeMessage = safeMessage.substring(0, 120) + "...";
+            }
+            if (safeMessage.isBlank()) {
+                safeMessage = "카카오 REST API 검색 실패";
+            }
+
+            log.warn("mapResults failed. keyword='{}', region='{}'", keyword, region, ex);
+            return ResponseEntity.ok(
+                    SalonMapResultsPayload.builder()
+                            .results(List.of())
+                            .debug("카카오 검색어: '" + queryUsed + "'")
+                            .error(safeMessage)
+                            .build()
+            );
+        }
+
+        List<SalonMapResultResponse> results = savedIds.stream()
+                .map(salonRepository::findById)
+                .flatMap(java.util.Optional::stream)
+                .map(salon -> SalonMapResultResponse.builder()
+                        .salonId(salon.getSalonId())
+                        .name(salon.getName())
+                        .address(salon.getAddress())
+                        .roadAddress(salon.getRoadAddress())
+                        .placeUrl(salon.getPlaceUrl())
+                        .latitude(salon.getLatitude())
+                        .longitude(salon.getLongitude())
+                        .build())
+                .toList();
+
+        return ResponseEntity.ok(
+                SalonMapResultsPayload.builder()
+                        .results(results)
+                        .debug("카카오 검색어: '" + queryUsed + "', 결과 " + results.size() + "건")
+                        .build()
+        );
     }
 
     @GetMapping("/{salonId}")

@@ -6,11 +6,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface DesignerRepository extends JpaRepository<Designer, Integer>, JpaSpecificationExecutor<Designer> {
     List<Designer> findBySalonSalonId(Integer salonId);
+    boolean existsBySalonSalonId(Integer salonId);
     boolean existsByMember_MemberId(String memberId);
+    long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     @Query(value = """
             SELECT d.designer_id AS designerId,

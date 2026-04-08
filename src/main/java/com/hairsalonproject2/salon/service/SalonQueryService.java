@@ -322,6 +322,7 @@ public class SalonQueryService {
                 .likeCount(salon.getLikeCount())
                 .reservable(salon.getReservable())
                 .distanceKm(distanceKm)
+                .createdAt(salon.getCreatedAt())
                 .build();
     }
 

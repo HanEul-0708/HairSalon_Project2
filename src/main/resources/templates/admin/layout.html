@@ -39,7 +39,6 @@
                         <span>대시보드</span>
                     </a>
                 </li>
-
                 <li class="admin-nav-item">
                     <a th:href="@{/admin/boards}"
                        th:classappend="${currentMenu == 'boards'} ? 'active'"
@@ -73,6 +72,14 @@
                     </a>
                 </li>
                 <li class="admin-nav-item">
+                    <a th:href="@{/admin/reservations}"
+                       th:classappend="${currentMenu == 'reservations'} ? 'active'"
+                       class="admin-nav-link">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>예약 관리</span>
+                    </a>
+                </li>
+                <li class="admin-nav-item">
                     <a th:href="@{/admin/designers}"
                        th:classappend="${currentMenu == 'designers'} ? 'active'"
                        class="admin-nav-link">
@@ -80,7 +87,6 @@
                         <span>디자이너 관리</span>
                     </a>
                 </li>
-
                 <li class="admin-nav-item">
                     <a th:href="@{/admin/salon-services}"
                        th:classappend="${currentMenu == 'services'} ? 'active'"

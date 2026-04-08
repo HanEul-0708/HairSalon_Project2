@@ -1,6 +1,7 @@
 package com.hairsalonproject2.reservation.repository;
 
 import com.hairsalonproject2.reservation.entity.Reservation;
+import com.hairsalonproject2.common.constant.ReservationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
@@ -30,4 +31,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
             Integer designerId,
             LocalDate reservationDate
     );
+
+    List<Reservation> findByStatus(ReservationStatus status);
+
+    long countByStatus(ReservationStatus status);
 }

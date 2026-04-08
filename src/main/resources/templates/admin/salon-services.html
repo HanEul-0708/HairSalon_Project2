@@ -5,13 +5,20 @@
       layout:decorate="~{admin/layout}">
 <head>
     <title>관리자 - 시술</title>
-    <th:block layout:fragment="pageCss"></th:block>
 </head>
 <body>
 <th:block layout:fragment="pageTitle">시술 관리</th:block>
 <div layout:fragment="content">
     <div class="admin-card">
         <div class="admin-card-title">시술 목록</div>
+        <form class="admin-filter-wrap" th:action="@{/admin/salon-services}" method="get">
+            <input type="text" name="keyword" class="admin-search-input" placeholder="시술명 검색" th:value="${search.keyword}">
+            <input type="text" name="salonKeyword" class="admin-search-input" placeholder="살롱명 검색" th:value="${search.salonKeyword}">
+            <input type="number" name="maxPrice" class="admin-search-input" placeholder="최대 가격" th:value="${search.maxPrice}">
+            <input type="number" name="maxDuration" class="admin-search-input" placeholder="최대 시간(분)" th:value="${search.maxDuration}">
+            <button type="submit" class="admin-btn admin-btn-primary"><i class="bi bi-search"></i> 검색</button>
+            <a th:href="@{/admin/salon-services}" class="admin-btn admin-btn-secondary">초기화</a>
+        </form>
         <div class="admin-table-wrap">
             <table class="admin-table">
                 <thead>

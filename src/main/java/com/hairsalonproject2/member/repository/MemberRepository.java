@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.util.List;
 
 public interface MemberRepository extends JpaRepository<Member, String> {
 
@@ -24,6 +25,9 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     boolean existsByPhone(String phone);
 
     long countByRole(MemberRole role);
+    long countByRoleAndStatus(MemberRole role, MemberStatus status);
+    List<Member> findByRoleAndStatusOrderByCreatedAtAsc(MemberRole role, MemberStatus status);
+    Optional<Member> findFirstByRoleAndStatusAndDesignerIsNullOrderByCreatedAtAscMemberIdAsc(MemberRole role, MemberStatus status);
 
     @Query("""
             SELECT m

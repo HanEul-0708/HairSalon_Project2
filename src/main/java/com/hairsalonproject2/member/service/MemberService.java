@@ -199,7 +199,6 @@ public class MemberService {
         }
 
         Member targetMember = getMember(targetMemberId);
-        validateStatusTransition(targetMember, MemberStatus.DELETED);
 
         if (targetMember.getRole() == MemberRole.ADMIN) {
             long adminCount = memberRepository.countByRole(MemberRole.ADMIN);
@@ -208,7 +207,7 @@ public class MemberService {
             }
         }
 
-        applyStatusChange(targetMember, MemberStatus.DELETED);
+        memberRepository.delete(targetMember);
     }
 
     @Transactional

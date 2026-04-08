@@ -8,9 +8,11 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 public interface SalonRepository extends JpaRepository<Salon, Integer>, JpaSpecificationExecutor<Salon> {
     Optional<Salon> findByExternalId(String externalId);
+    long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     @Query("""
             select s from Salon s

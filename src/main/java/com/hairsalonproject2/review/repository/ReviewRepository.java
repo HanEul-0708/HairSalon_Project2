@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Integer> {
+    long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     Optional<Review> findByReservation_ReservationId(Integer reservationId);
 

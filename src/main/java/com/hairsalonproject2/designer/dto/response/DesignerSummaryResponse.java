@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -17,4 +18,5 @@ public class DesignerSummaryResponse {
     private BigDecimal averageRating;
     private Long reviewCount;
     private Integer likeCount;
+    private LocalDateTime createdAt;
 }
