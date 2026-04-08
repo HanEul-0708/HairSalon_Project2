@@ -6,9 +6,9 @@ import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
 import com.hairsalonproject2.reservation.dto.ReservationUpdateRequest;
 import com.hairsalonproject2.reservation.service.ReservationService;
-import com.hairsalonproject2.reservation.service.ReservationServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +20,6 @@ import java.util.List;
 public class ReservationController {
 
     private final ReservationService reservationService;
-    private final ReservationServiceImpl reservationServiceImpl;
 
     @PostMapping
     public ReservationResponse createReservation(@AuthenticationPrincipal CustomUserDetails userDetails,
@@ -44,6 +43,7 @@ public class ReservationController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<ReservationResponse> getAllReservations() {
         return reservationService.getAllReservations();
     }
@@ -51,11 +51,7 @@ public class ReservationController {
     @GetMapping("/member/{memberId}")
     public List<ReservationResponse> getReservationsByMember(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                              @PathVariable String memberId) {
-        reservationServiceImpl.validateMemberAccess(
-                memberId,
-                userDetails.getMember().getMemberId(),
-                isAdmin(userDetails)
-        );
+        validateMemberAccess(userDetails, memberId);
         return reservationService.getReservationsByMember(memberId);
     }
 
@@ -73,22 +69,27 @@ public class ReservationController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ReservationResponse updateReservationStatus(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                        @PathVariable Integer id,
                                                        @Valid @RequestBody ReservationStatusUpdateRequest request) {
-        validateReservationAccess(userDetails, id);
         return reservationService.updateReservationStatus(id, request);
     }
 
     private void validateReservationAccess(CustomUserDetails userDetails, Integer reservationId) {
-        reservationServiceImpl.validateReservationAccess(
-                reservationId,
-                userDetails.getMember().getMemberId(),
-                isAdmin(userDetails)
-        );
+        ReservationResponse reservation = reservationService.getReservation(reservationId);
+        if (!isAdmin(userDetails) && !reservation.getMemberId().equals(userDetails.getMember().getMemberId())) {
+            throw new org.springframework.security.access.AccessDeniedException("You can only access your own reservation.");
+        }
     }
 
     private boolean isAdmin(CustomUserDetails userDetails) {
         return userDetails.getMember().getRole().name().equals("ADMIN");
+    }
+
+    private void validateMemberAccess(CustomUserDetails userDetails, String memberId) {
+        if (!isAdmin(userDetails) && !memberId.equals(userDetails.getMember().getMemberId())) {
+            throw new org.springframework.security.access.AccessDeniedException("You can only access your own reservations.");
+        }
     }
 }

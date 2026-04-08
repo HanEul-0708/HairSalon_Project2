@@ -56,6 +56,8 @@ public class SecurityConfig {
                 // 브라우저 기본 로그인 팝업 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/api/reservations").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/reservations/*/status").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/reviews/*/images").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/reviews/*/images/*").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/reviews").authenticated()

@@ -22,6 +22,8 @@ import com.hairsalonproject2.salonservice.dto.response.SalonServiceSummaryRespon
 import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +51,27 @@ public class SalonQueryService {
     private final ReviewRepository reviewRepository;
 
     public List<SalonSummaryResponse> search(SalonSearchRequest request) {
+        SalonSearchRequest safeRequest = request == null ? new SalonSearchRequest() : request;
+        return search(safeRequest, 0, Integer.MAX_VALUE).getContent();
+    }
+
+    public Page<SalonSummaryResponse> search(SalonSearchRequest request, int page, int size) {
+        SalonSearchRequest safeRequest = request == null ? new SalonSearchRequest() : request;
+        List<SalonSummaryResponse> responses = searchInternal(safeRequest);
+        int safeSize = Math.max(size, 1);
+        int maxPage = responses.isEmpty() ? 0 : (responses.size() - 1) / safeSize;
+        int safePage = Math.min(Math.max(page, 0), maxPage);
+        int fromIndex = Math.min(safePage * safeSize, responses.size());
+        int toIndex = Math.min(fromIndex + safeSize, responses.size());
+
+        return new PageImpl<>(
+                responses.subList(fromIndex, toIndex),
+                PageRequest.of(safePage, safeSize),
+                responses.size()
+        );
+    }
+
+    private List<SalonSummaryResponse> searchInternal(SalonSearchRequest request) {
         List<Salon> salons = salonRepository.findAll(SalonSpecifications.bySearch(request));
         List<SalonSummaryResponse> responses = new ArrayList<>();
 
@@ -150,6 +173,27 @@ public class SalonQueryService {
                 .designers(designers)
                 .services(services)
                 .build();
+    }
+
+    public List<SalonSummaryResponse> getLikedSalons(String memberId) {
+        return salonLikeRepository.findAllByMember_MemberIdOrderByCreatedAtDesc(memberId).stream()
+                .map(SalonLike::getSalon)
+                .map(salon -> toSummary(salon, null))
+                .toList();
+    }
+
+    public List<Integer> getLikedSalonIds(String memberId) {
+        return salonLikeRepository.findAllByMember_MemberIdOrderByCreatedAtDesc(memberId).stream()
+                .map(like -> like.getSalon().getSalonId())
+                .toList();
+    }
+
+    public boolean isLikedByMember(Integer salonId, String memberId) {
+        if (memberId == null || memberId.isBlank()) {
+            return false;
+        }
+
+        return salonLikeRepository.existsByMember_MemberIdAndSalon_SalonId(memberId, salonId);
     }
 
     public List<SalonRankResponse> recommendedTop3() {

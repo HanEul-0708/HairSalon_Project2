@@ -131,8 +131,9 @@ public class BoardService {
     public void update(Integer boardId,
                        BoardUpdateRequest request,
                        String memberId,
-                       List<MultipartFile> files) {
-        boardCommandService.update(boardId, request, memberId, files);
+                       List<MultipartFile> files,
+                       boolean isAdmin) {
+        boardCommandService.update(boardId, request, memberId, files, isAdmin);
     }
 
     public boolean reportBoard(Integer boardId, String reporterId) {

@@ -1,5 +1,6 @@
 package com.hairsalonproject2.reservation.service;
 
+import com.hairsalonproject2.common.constant.PaymentMethod;
 import com.hairsalonproject2.common.constant.ReservationStatus;
 import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.designer.repository.DesignerRepository;
@@ -20,6 +21,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -37,13 +40,19 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional
     public ReservationResponse createReservation(String loginMemberId, ReservationCreateRequest request) {
         Member member = memberRepository.findById(loginMemberId)
-                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
         Designer designer = designerRepository.findById(request.getDesignerId())
-                .orElseThrow(() -> new IllegalArgumentException("디자이너가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Designer not found."));
         SalonService salonService = salonServiceRepository.findById(request.getSalonServiceId())
-                .orElseThrow(() -> new IllegalArgumentException("시술이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Salon service not found."));
+        validateDesignerAndServiceMatch(designer, salonService);
 
-        validateReservationSlot(designer.getDesignerId(), request.getReservationDate(), request.getReservationTime(), null);
+        validateReservationSlot(
+                designer.getDesignerId(),
+                request.getReservationDate(),
+                request.getReservationTime(),
+                null
+        );
 
         Reservation reservation = Reservation.builder()
                 .member(member)
@@ -64,7 +73,7 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     public ReservationResponse getReservation(Integer reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 예약이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
         return toResponse(reservation);
     }
 
@@ -93,16 +102,17 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional
     public ReservationResponse updateReservation(Integer reservationId, ReservationUpdateRequest request) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 예약이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
 
         if (reservation.getStatus() != ReservationStatus.RESERVED) {
-            throw new IllegalArgumentException("예약 완료 상태에서만 예약 변경이 가능합니다.");
+            throw new IllegalArgumentException("Only reserved reservations can be updated.");
         }
 
         Designer designer = designerRepository.findById(request.getDesignerId())
-                .orElseThrow(() -> new IllegalArgumentException("디자이너가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Designer not found."));
         SalonService salonService = salonServiceRepository.findById(request.getSalonServiceId())
-                .orElseThrow(() -> new IllegalArgumentException("시술이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Salon service not found."));
+        validateDesignerAndServiceMatch(designer, salonService);
 
         validateReservationSlot(
                 designer.getDesignerId(),
@@ -130,16 +140,9 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional
     public void cancelReservation(Integer reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 예약이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
 
-        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-            throw new IllegalArgumentException("이미 취소된 예약입니다.");
-        }
-
-        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
-            throw new IllegalArgumentException("방문 완료된 예약은 취소할 수 없습니다.");
-        }
-
+        validateStatusTransition(reservation.getStatus(), ReservationStatus.CANCELLED);
         reservation.changeStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
         reservationSlotRepository.deleteByReservation_ReservationId(reservationId);
@@ -149,14 +152,29 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional
     public ReservationResponse updateReservationStatus(Integer reservationId, ReservationStatusUpdateRequest request) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 예약이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
+
+        validateStatusTransition(reservation.getStatus(), request.getStatus());
         reservation.changeStatus(request.getStatus());
         return toResponse(reservationRepository.save(reservation));
     }
 
+    private void validateStatusTransition(ReservationStatus currentStatus, ReservationStatus nextStatus) {
+        if (currentStatus == nextStatus) {
+            return;
+        }
+
+        boolean allowed = currentStatus == ReservationStatus.RESERVED
+                && (nextStatus == ReservationStatus.CANCELLED || nextStatus == ReservationStatus.COMPLETED);
+
+        if (!allowed) {
+            throw new IllegalArgumentException("Only reserved reservations can be changed to cancelled or completed.");
+        }
+    }
+
     private void validateReservationSlot(Integer designerId,
-                                         java.time.LocalDate reservationDate,
-                                         java.time.LocalTime reservationTime,
+                                         LocalDate reservationDate,
+                                         LocalTime reservationTime,
                                          Integer reservationId) {
         boolean exists = reservationId == null
                 ? reservationSlotRepository.existsByDesigner_DesignerIdAndReservationDateAndSlotTime(
@@ -167,7 +185,7 @@ public class ReservationServiceImpl implements ReservationService {
         );
 
         if (exists) {
-            throw new IllegalArgumentException("이미 예약된 시간입니다.");
+            throw new IllegalArgumentException("This time slot is already reserved.");
         }
     }
 
@@ -180,6 +198,14 @@ public class ReservationServiceImpl implements ReservationService {
                 .build();
         reservation.addReservationSlot(slot);
         reservationSlotRepository.save(slot);
+    }
+
+    private void validateDesignerAndServiceMatch(Designer designer, SalonService salonService) {
+        if (designer.getSalon() == null
+                || salonService.getSalon() == null
+                || !designer.getSalon().getSalonId().equals(salonService.getSalon().getSalonId())) {
+            throw new IllegalArgumentException("Designer and service must belong to the same salon.");
+        }
     }
 
     private ReservationResponse toResponse(Reservation reservation) {
@@ -201,31 +227,31 @@ public class ReservationServiceImpl implements ReservationService {
                 .build();
     }
 
-    private String getPaymentMethodLabel(com.hairsalonproject2.common.constant.PaymentMethod paymentMethod) {
+    private String getPaymentMethodLabel(PaymentMethod paymentMethod) {
         if (paymentMethod == null) {
             return "-";
         }
 
         return switch (paymentMethod) {
-            case CARD -> "카드";
-            case CASH -> "현금";
-            case KAKAO_PAY -> "카카오페이";
-            case NAVER_PAY -> "네이버페이";
+            case CARD -> "Card";
+            case CASH -> "Cash";
+            case KAKAO_PAY -> "Kakao Pay";
+            case NAVER_PAY -> "Naver Pay";
         };
     }
 
     public void validateReservationAccess(Integer reservationId, String loginMemberId, boolean isAdmin) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 예약이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
 
         if (!isAdmin && !reservation.getMember().getMemberId().equals(loginMemberId)) {
-            throw new AccessDeniedException("회원 본인 예약만 조회하거나 변경할 수 있습니다.");
+            throw new AccessDeniedException("You can only access your own reservation.");
         }
     }
 
     public void validateMemberAccess(String targetMemberId, String loginMemberId, boolean isAdmin) {
         if (!isAdmin && !targetMemberId.equals(loginMemberId)) {
-            throw new AccessDeniedException("회원 본인 예약만 조회할 수 있습니다.");
+            throw new AccessDeniedException("You can only access your own reservations.");
         }
     }
 }

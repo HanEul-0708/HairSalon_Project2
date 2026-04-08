@@ -9,7 +9,15 @@ import java.math.BigDecimal;
 @Setter
 public class DesignerSearchRequest {
     private String keyword;
-    private Integer salonId;
+    private String salonKeyword;
     private BigDecimal minRating;
     private Integer minCareerYears;
+    private Long minReviewCount;
+    private String sortBy;
+    private Boolean likedOnly;
+    private boolean searched;
+
+    public boolean hasSearchRequest() {
+        return searched;
+    }
 }

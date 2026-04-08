@@ -47,6 +47,14 @@
                 <span class="mypage-summary__label">이메일</span>
                 <strong th:text="${member.email}">member@example.com</strong>
             </div>
+            <a th:href="@{/salons/likes}"
+               class="btn btn-outline-gold btn-sm">
+                좋아요 목록
+            </a>
+            <a th:href="@{/designers/likes}"
+               class="btn btn-outline-gold btn-sm">
+                좋아요한 디자이너
+            </a>
             <a th:href="@{/admin/members}"
                sec:authorize="hasRole('ADMIN')"
                class="btn btn-outline-gold btn-sm">

@@ -20,5 +20,7 @@ public class DesignerDetailResponse {
     private Integer careerYears;
     private BigDecimal averageRating;
     private Long reviewCount;
+    private Integer likeCount;
+    private boolean likedByCurrentUser;
     private List<SalonServiceSummaryResponse> salonServices;
 }

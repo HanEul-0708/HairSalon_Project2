@@ -18,6 +18,26 @@ public interface SalonServiceRepository extends JpaRepository<SalonService, Inte
             """)
     List<SalonService> searchByName(@Param("keyword") String keyword);
 
+    @Query("""
+            select ss
+            from SalonService ss
+            join ss.salon s
+            where (:keyword is null
+                    or lower(ss.name) like lower(concat('%', :keyword, '%'))
+                    or lower(coalesce(ss.description, '')) like lower(concat('%', :keyword, '%')))
+              and (:salonKeyword is null or lower(s.name) like lower(concat('%', :salonKeyword, '%')))
+              and (:region is null
+                    or lower(s.address) like lower(concat('%', :region, '%'))
+                    or lower(coalesce(s.roadAddress, '')) like lower(concat('%', :region, '%')))
+              and (:maxPrice is null or ss.price <= :maxPrice)
+              and (:maxDuration is null or ss.duration <= :maxDuration)
+            """)
+    List<SalonService> searchServices(@Param("keyword") String keyword,
+                                      @Param("salonKeyword") String salonKeyword,
+                                      @Param("region") String region,
+                                      @Param("maxPrice") Integer maxPrice,
+                                      @Param("maxDuration") Integer maxDuration);
+
     @Query(value = """
             SELECT ss.service_id AS serviceId,
                    ss.name AS serviceName,

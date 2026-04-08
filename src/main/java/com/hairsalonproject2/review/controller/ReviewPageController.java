@@ -4,7 +4,6 @@ import com.hairsalonproject2.common.constant.ReservationStatus;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.service.ReservationService;
-import com.hairsalonproject2.reservation.service.ReservationServiceImpl;
 import com.hairsalonproject2.review.dto.ReviewDetailResponse;
 import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.repository.ReviewRepository;
@@ -17,6 +16,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -32,27 +32,16 @@ public class ReviewPageController {
 
     private final ReviewService reviewService;
     private final ReservationService reservationService;
-    private final ReservationServiceImpl reservationServiceImpl;
     private final ReviewRepository reviewRepository;
 
     @GetMapping("/reviews")
     public String reviewListPage(@AuthenticationPrincipal CustomUserDetails userDetails,
                                  @RequestParam(defaultValue = "1") int page,
+                                 @RequestParam(defaultValue = "false") boolean searched,
                                  @RequestParam(required = false) Integer designerId,
                                  @RequestParam(defaultValue = "latest") String sortBy,
                                  Model model) {
         String loginMemberId = userDetails == null ? null : userDetails.getMember().getMemberId();
-        List<ReviewResponse> allReviews = reviewService.getAllReviews(loginMemberId, designerId, sortBy);
-        int totalReviews = allReviews.size();
-        int totalPages = Math.max(1, (int) Math.ceil((double) totalReviews / REVIEWS_PER_PAGE));
-        int currentPage = Math.min(Math.max(page, 1), totalPages);
-        int fromIndex = (currentPage - 1) * REVIEWS_PER_PAGE;
-        int toIndex = Math.min(fromIndex + REVIEWS_PER_PAGE, totalReviews);
-
-        List<ReviewResponse> pagedReviews = totalReviews == 0
-                ? Collections.emptyList()
-                : allReviews.subList(fromIndex, toIndex);
-
         Map<Integer, String> designerOptions = reviewService.getAllReviews(loginMemberId, null, "latest").stream()
                 .collect(Collectors.toMap(
                         ReviewResponse::getDesignerId,
@@ -64,16 +53,34 @@ public class ReviewPageController {
                 ? null
                 : reviewService.getAverageRatingByDesigner(designerId);
 
+        List<ReviewResponse> allReviews = searched
+                ? reviewService.getAllReviews(loginMemberId, designerId, sortBy)
+                : Collections.emptyList();
+        int totalReviews = allReviews.size();
+        int totalPages = searched && totalReviews > 0
+                ? (int) Math.ceil((double) totalReviews / REVIEWS_PER_PAGE)
+                : 0;
+        int currentPage = totalPages == 0 ? 1 : Math.min(Math.max(page, 1), totalPages);
+        int fromIndex = totalReviews == 0 ? 0 : (currentPage - 1) * REVIEWS_PER_PAGE;
+        int toIndex = totalReviews == 0 ? 0 : Math.min(fromIndex + REVIEWS_PER_PAGE, totalReviews);
+
+        List<ReviewResponse> pagedReviews = totalReviews == 0
+                ? Collections.emptyList()
+                : allReviews.subList(fromIndex, toIndex);
+
         model.addAttribute("reviews", pagedReviews);
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
-        model.addAttribute("pageNumbers", java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());
+        model.addAttribute("pageNumbers", totalPages == 0
+                ? Collections.emptyList()
+                : java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());
         model.addAttribute("currentSort", sortBy);
         model.addAttribute("selectedDesignerId", designerId);
         model.addAttribute("designerOptions", designerOptions);
         model.addAttribute("totalReviewCount", totalReviews);
         model.addAttribute("selectedDesignerAverage", selectedDesignerAverage);
         model.addAttribute("isLoggedIn", userDetails != null);
+        model.addAttribute("searched", searched);
         return "review/list";
     }
 
@@ -109,13 +116,11 @@ public class ReviewPageController {
             return "redirect:/members/login";
         }
 
-        reservationServiceImpl.validateReservationAccess(
-                reservationId,
-                userDetails.getMember().getMemberId(),
-                userDetails.getMember().getRole().name().equals("ADMIN")
-        );
-
         ReservationResponse reservation = reservationService.getReservation(reservationId);
+        if (!reservation.getMemberId().equals(userDetails.getMember().getMemberId())) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
+                    "You can only write a review for your own reservation.");
+        }
         if (!isReviewableReservation(reservation)) {
             throw new IllegalArgumentException("Only completed or same-day reservations can be reviewed.");
         }

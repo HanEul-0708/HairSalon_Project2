@@ -22,6 +22,49 @@
     margin: 0 auto;
 }
 
+.reservation-context-card {
+    max-width: 860px;
+    margin: 0 auto 22px;
+    padding: 20px 24px;
+    background: linear-gradient(180deg, #fffdf8 0%, #ffffff 100%);
+    border: 1px solid var(--gold-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.reservation-context-card__eyebrow {
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+
+.reservation-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.reservation-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--gold-border);
+    border-radius: var(--radius-full);
+    background: #fcfbf7;
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.reservation-filter-chip input {
+    width: auto;
+    min-height: auto;
+}
+
 .form-group {
     display: flex;
     flex-direction: column;

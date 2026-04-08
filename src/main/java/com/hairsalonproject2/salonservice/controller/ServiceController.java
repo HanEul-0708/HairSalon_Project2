@@ -1,9 +1,13 @@
 package com.hairsalonproject2.salonservice.controller;
 
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceCreateRequest;
+import com.hairsalonproject2.salonservice.dto.request.SalonServiceSearchRequest;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceUpdateRequest;
 import com.hairsalonproject2.salonservice.service.SalonServiceQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -13,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/salon-services")
 public class ServiceController {
+    private static final int SERVICES_PER_PAGE = 8;
+
     private final SalonServiceQueryService salonServiceQueryService;
 
     @GetMapping("/new")
@@ -22,9 +28,22 @@ public class ServiceController {
     }
 
     @GetMapping
-    public String list(@RequestParam(required = false) String keyword, Model model) {
-        model.addAttribute("services", salonServiceQueryService.list(keyword));
-        model.addAttribute("keyword", keyword);
+    public String list(@ModelAttribute SalonServiceSearchRequest request,
+                       @RequestParam(defaultValue = "1") int page,
+                       Model model) {
+        Page<?> resultPage = request.hasSearchRequest()
+                ? salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE)
+                : new PageImpl<>(java.util.Collections.emptyList(), PageRequest.of(0, SERVICES_PER_PAGE), 0);
+
+        model.addAttribute("services", resultPage.getContent());
+        model.addAttribute("search", request);
+        model.addAttribute("searched", request.hasSearchRequest());
+        model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
+        model.addAttribute("totalPages", resultPage.getTotalPages());
+        model.addAttribute("totalServiceCount", resultPage.getTotalElements());
+        model.addAttribute("pageNumbers", resultPage.getTotalPages() == 0
+                ? java.util.Collections.emptyList()
+                : java.util.stream.IntStream.rangeClosed(1, resultPage.getTotalPages()).boxed().toList());
         return "service/list";
     }
 

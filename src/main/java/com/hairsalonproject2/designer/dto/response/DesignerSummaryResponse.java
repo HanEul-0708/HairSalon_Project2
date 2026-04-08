@@ -16,4 +16,5 @@ public class DesignerSummaryResponse {
     private Integer careerYears;
     private BigDecimal averageRating;
     private Long reviewCount;
+    private Integer likeCount;
 }

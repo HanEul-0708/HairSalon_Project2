@@ -4,9 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * 디자이너 랭킹 응답 DTO
- */
 @Getter
 @Setter
 @AllArgsConstructor

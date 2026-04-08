@@ -5,43 +5,62 @@
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
 <head>
     <meta charset="UTF-8">
-    <title>살롱 목록</title>
+    <title>미용실 목록</title>
     <link rel="stylesheet" th:href="@{/css/salon.css}">
     <script th:src="@{/js/salon.js}" defer></script>
 </head>
 <body>
 <main>
 <div class="container salon-page salon-list-page">
-    <div class="page-header">
-        <h1>살롱 목록</h1>
-        <p>조건에 맞는 살롱을 검색하고 상세 정보를 확인할 수 있습니다.</p>
+    <div th:replace="~{fragments/message :: flashMessage}"></div>
+
+    <div class="catalog-hero">
+        <p class="catalog-hero__eyebrow">Salon Directory</p>
+        <h1 class="catalog-hero__title">미용실 목록</h1>
+        <p class="catalog-hero__subtitle">지역, 평점, 예약 가능 여부, 거리 기준을 나눠서 원하는 미용실만 검색한 뒤 결과를 깔끔하게 비교해보세요.</p>
     </div>
 
-    <form method="get" th:action="@{/salons}" class="salon-search-form">
-        <input type="text" name="keyword" placeholder="이름/주소/설명" th:value="${search.keyword}">
-        <input type="text" name="region" placeholder="지역" th:value="${search.region}">
-        <label class="salon-search-check">
-            <input type="checkbox" name="reservable" value="true"
-                   th:checked="${search.reservable != null and search.reservable}">
-            예약 가능한 살롱만 보기
-        </label>
-        <input type="number" step="0.1" name="minRating" placeholder="최소 평점" th:value="${search.minRating}">
-        <input type="number" step="0.000001" name="latitude" placeholder="위도" th:value="${search.latitude}">
-        <input type="number" step="0.000001" name="longitude" placeholder="경도" th:value="${search.longitude}">
-        <input type="number" step="0.1" name="radiusKm" placeholder="반경 km" th:value="${search.radiusKm}">
-        <select name="sort">
-            <option value="recommended" th:selected="${search.sort == 'recommended'}">추천순</option>
-            <option value="distance" th:selected="${search.sort == 'distance'}">거리순</option>
-            <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
-            <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
-        </select>
-        <button type="submit" class="btn btn-primary">검색</button>
+    <form method="get" th:action="@{/salons}" class="salon-search-form salon-search-form--primary">
+        <input type="hidden" name="searched" value="true">
+
+        <div class="salon-search-form__intro">
+            <p class="salon-search-form__eyebrow">Salon Search</p>
+            <h2>먼저 조건을 정한 뒤 미용실 결과만 확인해보세요.</h2>
+            <p>초기 화면에서는 목록을 바로 펼치지 않고, 검색을 실행했을 때만 위치와 평점, 좋아요 정보를 정리해서 보여줍니다.</p>
+        </div>
+
+        <div class="salon-search-form__controls">
+            <div class="salon-search-form__fields">
+                <input type="text" name="keyword" placeholder="이름, 주소, 설명" th:value="${search.keyword}">
+                <input type="text" name="region" placeholder="지역" th:value="${search.region}">
+                <label class="salon-search-check">
+                    <input type="checkbox" name="reservable" value="true"
+                           th:checked="${search.reservable != null and search.reservable}">
+                    예약 가능한 미용실만 보기
+                </label>
+                <input type="number" step="0.1" name="minRating" placeholder="최소 평점" th:value="${search.minRating}">
+                <input type="number" step="0.000001" name="latitude" placeholder="위도" th:value="${search.latitude}">
+                <input type="number" step="0.000001" name="longitude" placeholder="경도" th:value="${search.longitude}">
+                <input type="number" step="0.1" name="radiusKm" placeholder="반경 km" th:value="${search.radiusKm}">
+                <select name="sort">
+                    <option value="recommended" th:selected="${search.sort == 'recommended'}">추천순</option>
+                    <option value="distance" th:selected="${search.sort == 'distance'}">거리순</option>
+                    <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
+                    <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
+                </select>
+            </div>
+
+            <div class="salon-search-form__actions">
+                <button type="submit" class="btn btn-primary">검색</button>
+                <a th:href="@{/salons}" class="btn btn-outline">초기화</a>
+            </div>
+        </div>
     </form>
 
     <form method="post"
           th:action="@{/salons/sync/kakao}"
           sec:authorize="hasRole('ADMIN')"
-          class="salon-search-form">
+          class="salon-search-form salon-search-form--admin">
         <input type="text" name="keyword" placeholder="카카오 동기화 키워드">
         <input type="text" name="region" placeholder="지역">
         <div></div>
@@ -49,46 +68,80 @@
         <button type="submit" class="btn btn-outline">카카오 API 동기화</button>
     </form>
 
-    <div class="salon-grid">
-        <div class="salon-card" th:each="salon : ${salons}">
-            <div class="salon-card__image">SALON</div>
+    <div class="salon-empty-state salon-empty-state--guide" th:if="${!searched}">
+        <h2>검색 조건을 입력하면 결과가 여기에 표시됩니다.</h2>
+        <p>지역, 평점, 거리 조건을 조합해서 필요한 미용실만 먼저 좁혀보세요.</p>
+    </div>
 
-            <div class="salon-card__body">
-                <h2 class="salon-card__name">
-                    h2 class="salon-card__name">
-                    <a th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.name}">살롱</a>
-                </h2>
+    <div th:if="${searched}">
+        <div class="catalog-results-head salon-results-head">
+            <div>
+                <p class="catalog-results-head__eyebrow">Results</p>
+                <h2>미용실 <span th:text="${totalSalonCount}">0</span>곳</h2>
+            </div>
+        </div>
 
-                <span class="salon-status-badge salon-status-badge--on"
-                      th:if="${salon.reservable}">예약 가능</span>
+        <div class="salon-grid" th:if="${!#lists.isEmpty(salons)}">
+            <div class="salon-card" th:each="salon : ${salons}">
+                <div class="salon-card__image">SALON</div>
 
-                <span class="salon-status-badge salon-status-badge--off"
-                      th:unless="${salon.reservable}">예약 준비중</span>
-                </h2>
+                <div class="salon-card__body">
+                    <div class="salon-card__title-row">
+                        <h2 class="salon-card__name">
+                            <a th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.name}">미용실명</a>
+                        </h2>
 
-                <p class="salon-card__meta" th:text="${salon.address}">주소</p>
-                <p class="salon-card__meta" th:text="|평점 ${salon.averageRating} / 리뷰 ${salon.reviewCount} / 좋아요 ${salon.likeCount}|">
-                    통계
-                </p>
-                <p class="salon-card__desc"
-                   th:text="${salon.distanceKm != null ? salon.distanceKm + ' km' : '거리 정보 없음'}">
-                    거리
-                </p>
+                        <span class="salon-status-badge salon-status-badge--on"
+                              th:if="${salon.reservable}">예약 가능</span>
 
-                <div class="salon-card__footer">
-                    <a class="btn btn-outline"
-                       th:href="@{/salons/{id}(id=${salon.salonId})}">상세 보기</a>
+                        <span class="salon-status-badge salon-status-badge--off"
+                              th:unless="${salon.reservable}">예약 준비중</span>
+                    </div>
 
-                    <a class="btn btn-primary"
-                       th:if="${salon.reservable}"
-                       th:href="@{/salons/{id}(id=${salon.salonId})}">예약하러 가기</a>
+                    <p class="salon-card__meta" th:text="${salon.address}">주소</p>
+                    <p class="salon-card__meta" th:text="|평점 ${salon.averageRating} / 리뷰 ${salon.reviewCount} / 좋아요 ${salon.likeCount}|">
+                        통계
+                    </p>
+                    <p class="salon-card__desc"
+                       th:text="${salon.distanceKm != null ? salon.distanceKm + ' km' : '거리 정보 없음'}">
+                        거리
+                    </p>
 
-                    <button type="button"
-                            class="btn btn-outline"
-                            th:unless="${salon.reservable}"
-                            disabled>예약 준비중</button>
+                    <div class="salon-card__footer">
+                        <a class="btn btn-outline"
+                           th:href="@{/salons/{id}(id=${salon.salonId})}">상세 보기</a>
+
+                        <a class="btn btn-primary"
+                           th:if="${salon.reservable}"
+                           th:href="@{/reservations/new(salonId=${salon.salonId})}">예약하러 가기</a>
+
+                        <button type="button"
+                                class="btn btn-outline"
+                                th:unless="${salon.reservable}"
+                                disabled>예약 준비중</button>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <div class="salon-empty-state" th:if="${#lists.isEmpty(salons)}">
+            <h2>조건에 맞는 미용실이 없습니다.</h2>
+            <p>검색어를 줄이거나 평점, 지역, 거리 조건을 조금 완화해서 다시 찾아보세요.</p>
+            <a th:href="@{/salons}" class="btn btn-primary">검색 다시 하기</a>
+        </div>
+
+        <div class="pagination" th:if="${totalPages > 1}">
+            <a class="page-link"
+               th:classappend="${currentPage == 1 ? ' disabled' : ''}"
+               th:href="@{/salons(page=${currentPage > 1 ? currentPage - 1 : 1}, searched=true, keyword=${search.keyword}, region=${search.region}, minRating=${search.minRating}, reservable=${search.reservable}, latitude=${search.latitude}, longitude=${search.longitude}, radiusKm=${search.radiusKm}, sort=${search.sort})}">이전</a>
+            <a class="page-link"
+               th:each="pageNumber : ${pageNumbers}"
+               th:classappend="${pageNumber == currentPage ? ' active' : ''}"
+               th:href="@{/salons(page=${pageNumber}, searched=true, keyword=${search.keyword}, region=${search.region}, minRating=${search.minRating}, reservable=${search.reservable}, latitude=${search.latitude}, longitude=${search.longitude}, radiusKm=${search.radiusKm}, sort=${search.sort})}"
+               th:text="${pageNumber}">1</a>
+            <a class="page-link"
+               th:classappend="${currentPage == totalPages ? ' disabled' : ''}"
+               th:href="@{/salons(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, searched=true, keyword=${search.keyword}, region=${search.region}, minRating=${search.minRating}, reservable=${search.reservable}, latitude=${search.latitude}, longitude=${search.longitude}, radiusKm=${search.radiusKm}, sort=${search.sort})}">다음</a>
         </div>
     </div>
 </div>

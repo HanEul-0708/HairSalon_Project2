@@ -31,11 +31,13 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             select new com.hairsalonproject2.review.dto.DesignerRankingResponse(
                 r.designer.designerId,
                 r.designer.name,
+                r.designer.salon.name,
+                r.designer.careerYears,
                 avg(r.rating),
                 count(r)
             )
             from Review r
-            group by r.designer.designerId, r.designer.name
+            group by r.designer.designerId, r.designer.name, r.designer.salon.name, r.designer.careerYears
             having count(r) >= :minReviewCount
             order by avg(r.rating) desc, count(r) desc
             """)

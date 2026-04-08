@@ -39,4 +39,6 @@ public interface ReviewService {
     List<SalonRankingResponse> getTopSalons();
 
     ReviewLikeToggleResponse toggleLike(Integer reviewId, String loginMemberId);
+
+    List<ReviewResponse> getRecentReviews();
 }

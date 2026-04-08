@@ -12,7 +12,7 @@
                 <span class="topbar__sep" sec:authorize="isAnonymous()"></span>
                 <a th:href="@{/members/signup}" sec:authorize="isAnonymous()">회원가입</a>
 
-                    <span sec:authorize="isAuthenticated()" class="topbar__user">
+                <span sec:authorize="isAuthenticated()" class="topbar__user">
                     <strong sec:authentication="name"></strong> 님
                 </span>
 
@@ -54,31 +54,24 @@
                         <a th:href="@{/}" class="gnb__link">홈</a>
                     </li>
 
-                        <li class="gnb__item has-dropdown">
-                            <a href="#" class="gnb__link">
-                                미용실 <span class="gnb__arrow">▾</span>
-                            </a>
-                            <div class="dropdown-panel">
-                                <div class="dropdown-panel__group">
-                                    <h4>탐색</h4>
-                                    <a th:href="@{/salons}">미용실 전체 보기</a>
-                                    <a th:href="@{/salons/nearby}">가까운 미용실 찾기</a>
-                                    <a th:href="@{/salons/search}">미용실 검색</a>
-                                    <a th:href="@{/salons/branches}">지점 안내</a>
-                                </div>
-                                <div class="dropdown-panel__group">
-                                    <h4>비교 / 추천</h4>
-                                    <a th:href="@{/salons/price-compare}">가격 비교</a>
-                                    <a th:href="@{/salons/recommend-by-service}">시술별 추천 미용실</a>
-                                    <a th:href="@{/salons/top-rated}">평점 4점↑ 미용실</a>
-                                </div>
-                                <div class="dropdown-panel__group">
-                                    <h4>외부 검색</h4>
-                                    <a th:href="@{/salons/kakao-search}">카카오 미용실 검색</a>
-                                    <a th:href="@{/salons/map}">지도에서 보기</a>
-                                </div>
+                    <li class="gnb__item has-dropdown">
+                        <a href="#" class="gnb__link">
+                            미용실 <span class="gnb__arrow">+</span>
+                        </a>
+                        <div class="dropdown-panel dropdown-panel--medium">
+                            <div class="dropdown-panel__group">
+                                <h4>미용실</h4>
+                                <a th:href="@{/salons}">미용실 전체 보기</a>
+                                <a th:href="@{/salons/nearby}">가까운 미용실 찾기</a>
                             </div>
-                        </li>
+                            <div class="dropdown-panel__group">
+                                <h4>비교 / 추천</h4>
+                                <a th:href="@{/salons/price-compare}">가격 비교</a>
+                                <a th:href="@{/salons/recommend-by-service}">시술별 추천 미용실</a>
+                                <a th:href="@{/salons/top-rated}">평점 높은 미용실</a>
+                            </div>
+                        </div>
+                    </li>
 
                     <li class="gnb__item has-dropdown">
                         <a href="#" class="gnb__link">
@@ -87,9 +80,7 @@
                         <div class="dropdown-panel dropdown-panel--small">
                             <div class="dropdown-panel__group">
                                 <h4>디자이너</h4>
-                                <a th:href="@{/designers}">디자이너 전체 보기</a>
-                                <a th:href="@{/designers/ranking}">인기 디자이너</a>
-                                <a th:href="@{/designers/new}">신규 디자이너</a>
+                                <a th:href="@{/designers}">전체 보기</a>
                             </div>
                         </div>
                     </li>
@@ -100,10 +91,8 @@
                         </a>
                         <div class="dropdown-panel dropdown-panel--small">
                             <div class="dropdown-panel__group">
-                                <h4>시술 안내</h4>
+                                <h4>시술</h4>
                                 <a th:href="@{/salon-services}">시술 안내</a>
-                                <a th:href="@{/salon-services/popular}">인기 시술</a>
-                                <a th:href="@{/salon-services/trend}">트렌드 시술</a>
                             </div>
                         </div>
                     </li>
@@ -121,7 +110,6 @@
                                 <h4>게시판</h4>
                                 <a th:href="@{/boards/notices}">공지사항</a>
                                 <a th:href="@{/boards/qna}">문의게시판</a>
-                                <a th:href="@{/boards/qna/new}" sec:authorize="isAuthenticated()">문의 작성</a>
                             </div>
                         </div>
                     </li>
@@ -171,17 +159,17 @@
                 <a th:href="@{/members/signup}">회원가입</a>
             </div>
 
-                <div sec:authorize="isAuthenticated()">
+            <div sec:authorize="isAuthenticated()">
                 <span>
                     <strong sec:authentication="name"></strong> 님
                 </span>
-                    <a th:href="@{/members/me}">마이페이지</a>
+                <a th:href="@{/members/me}">마이페이지</a>
 
-                    <span sec:authorize="hasRole('ADMIN')">
+                <span sec:authorize="hasRole('ADMIN')">
                     <a th:href="@{/admin}">관리자</a>
                 </span>
 
-                    <span sec:authorize="hasRole('DESIGNER')">
+                <span sec:authorize="hasRole('DESIGNER')">
                     <a th:href="@{/designers/me/reservations}">예약 관리</a>
                 </span>
 
@@ -192,11 +180,7 @@
             </div>
 
             <a th:href="@{/}">홈</a>
-            <a th:href="@{/salons}">미용실 전체</a>
-            <a th:href="@{/salons/nearby}">가까운 미용실</a>
-            <a th:href="@{/salons/price-compare}">가격 비교</a>
-            <a th:href="@{/salons/top-rated}">평점 높은 미용실</a>
-            <a th:href="@{/salons/kakao-search}">카카오 검색</a>
+            <a th:href="@{/salons}">미용실</a>
             <a th:href="@{/designers}">디자이너</a>
             <a th:href="@{/salon-services}">시술 안내</a>
             <a th:href="@{/reviews}">리뷰</a>
@@ -206,6 +190,5 @@
         </nav>
     </div>
 
-        <div class="mobile-backdrop" id="mobileBackdrop"></div>
-
-    </header>
+    <div class="mobile-backdrop" id="mobileBackdrop"></div>
+</header>

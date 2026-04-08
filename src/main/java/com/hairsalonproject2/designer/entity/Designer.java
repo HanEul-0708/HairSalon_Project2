@@ -77,4 +77,8 @@ public class Designer extends BaseCreatedEntity {
     @Column(name = "career_years", nullable = false)
     @Builder.Default
     private Integer careerYears = 0;
+
+    @Column(name = "like_count", nullable = false)
+    @Builder.Default
+    private Integer likeCount = 0;
 }

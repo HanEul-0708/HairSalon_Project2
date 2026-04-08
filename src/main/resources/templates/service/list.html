@@ -6,55 +6,116 @@
 <head>
     <meta charset="UTF-8">
     <title>시술 목록</title>
-
-    <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/service.css}">
-    <script th:src="@{/js/common.js}" defer></script>
     <script th:src="@{/js/service.js}" defer></script>
 </head>
 <body>
 <main>
-    <div class="container">
-        <div class="page-header">
-            <h1 class="page-title">시술 목록</h1>
-            <p class="page-desc">원하는 시술을 검색하고 가격을 비교할 수 있습니다.</p>
+    <div class="container service-page service-list-page">
+        <div class="catalog-hero">
+            <p class="catalog-hero__eyebrow">Service Directory</p>
+            <h1 class="catalog-hero__title">시술 목록</h1>
+            <p class="catalog-hero__subtitle">시술명, 미용실, 지역, 가격, 소요 시간까지 기준을 나눠서 원하는 시술을 더 깔끔하게 찾을 수 있습니다.</p>
         </div>
 
-        <form method="get" th:action="@{/salon-services}" class="search-form">
-            <input type="text" name="keyword" placeholder="시술명" th:value="${keyword}">
-            <button type="submit" class="btn btn-primary">검색</button>
+        <form method="get" th:action="@{/salon-services}" class="service-search-form">
+            <input type="hidden" name="searched" value="true">
+
+            <div class="service-search-form__intro">
+                <p class="service-search-form__eyebrow">Service Search</p>
+                <h2>조건을 정하고 필요한 시술만 먼저 찾아보세요.</h2>
+                <p>초기 화면에서는 목록을 바로 보여주지 않고, 검색을 실행했을 때만 결과를 정리해서 보여줍니다.</p>
+            </div>
+
+            <div class="service-search-form__controls">
+                <div class="service-search-form__fields">
+                    <input type="text" name="keyword" placeholder="시술명 또는 설명" th:value="${search.keyword}">
+                    <input type="text" name="salonKeyword" placeholder="미용실명" th:value="${search.salonKeyword}">
+                    <input type="text" name="region" placeholder="지역" th:value="${search.region}">
+                    <input type="number" name="maxPrice" placeholder="최대 가격" th:value="${search.maxPrice}">
+                    <input type="number" name="maxDuration" placeholder="최대 소요시간(분)" th:value="${search.maxDuration}">
+                    <select name="sortBy">
+                        <option value="" th:selected="${search.sortBy == null or search.sortBy == ''}">가격순</option>
+                        <option value="duration" th:selected="${search.sortBy == 'duration'}">시간순</option>
+                        <option value="rating" th:selected="${search.sortBy == 'rating'}">평점순</option>
+                        <option value="name" th:selected="${search.sortBy == 'name'}">이름순</option>
+                    </select>
+                </div>
+
+                <div class="service-search-form__actions">
+                    <button type="submit" class="btn btn-primary">검색</button>
+                    <a th:href="@{/salon-services}" class="btn btn-outline">초기화</a>
+                    <a th:href="@{/salon-services/compare}" class="btn btn-outline-gold">가격 비교 화면</a>
+                </div>
+            </div>
         </form>
 
-        <div class="page-actions">
-            <a th:href="@{/salon-services/compare}" class="btn btn-outline">가격 비교 화면</a>
+        <div class="service-empty-state service-empty-state--guide" th:if="${!searched}">
+            <h2>검색 전에는 목록을 펼치지 않습니다.</h2>
+            <p>시술명, 가격, 지역, 시간 조건을 입력한 뒤 필요한 결과만 확인해보세요.</p>
         </div>
 
-        <table class="data-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>시술명</th>
-                <th>살롱</th>
-                <th>가격</th>
-                <th>시간</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="service : ${services}">
-                <td th:text="${service.serviceId}">1</td>
-                <td>
-                    <a th:href="@{/salon-services/{id}(id=${service.serviceId})}"
-                       th:text="${service.name}">시술</a>
-                </td>
-                <td th:text="${service.salonName}">살롱</td>
-                <td th:text="|${service.price}원|">0원</td>
-                <td th:text="|${service.duration}분|">0분</td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(services)}">
-                <td colspan="5">조회된 시술이 없습니다.</td>
-            </tr>
-            </tbody>
-        </table>
+        <div th:if="${searched}">
+            <div class="service-results-head catalog-results-head">
+                <div>
+                    <p class="service-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
+                    <h2>시술 <span th:text="${totalServiceCount}">0</span>건</h2>
+                </div>
+            </div>
+
+            <div class="service-grid" th:if="${!#lists.isEmpty(services)}">
+                <article class="service-card" th:each="service : ${services}">
+                    <div class="service-card__body">
+                        <div class="service-card__top">
+                            <div>
+                                <p class="service-card__salon" th:text="${service.salonName}">Salon</p>
+                                <h3 class="service-card__name">
+                                    <a th:href="@{/salon-services/{id}(id=${service.serviceId})}"
+                                       th:text="${service.name}">시술명</a>
+                                </h3>
+                            </div>
+
+                            <div class="service-card__price-box">
+                                <strong th:text="|${#numbers.formatInteger(service.price, 3, 'COMMA')}원|">30,000원</strong>
+                                <span th:text="|${service.duration}분|">60분</span>
+                            </div>
+                        </div>
+
+                        <p class="service-card__meta" th:text="${service.address}">주소</p>
+                        <p class="service-card__meta" th:text="|평점 ${service.averageRating}|">평점 0</p>
+                        <p class="service-card__desc"
+                           th:text="${service.description != null and !service.description.isBlank() ? service.description : '등록된 시술 설명이 없습니다.'}">
+                            설명
+                        </p>
+
+                        <div class="service-card__footer">
+                            <a th:href="@{/salon-services/{id}(id=${service.serviceId})}" class="btn btn-outline">상세 보기</a>
+                            <a th:href="@{/salons/{id}(id=${service.salonId})}" class="btn btn-primary">미용실 보기</a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="service-empty-state" th:if="${#lists.isEmpty(services)}">
+                <h2>조건에 맞는 시술이 없습니다.</h2>
+                <p>검색어를 줄이거나 가격, 소요 시간, 지역 조건을 완화해서 다시 찾아보세요.</p>
+                <a th:href="@{/salon-services}" class="btn btn-primary">검색 다시 하기</a>
+            </div>
+
+            <div class="pagination" th:if="${totalPages > 1}">
+                <a class="page-link"
+                   th:classappend="${currentPage == 1 ? ' disabled' : ''}"
+                   th:href="@{/salon-services(page=${currentPage > 1 ? currentPage - 1 : 1}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, region=${search.region}, maxPrice=${search.maxPrice}, maxDuration=${search.maxDuration}, sortBy=${search.sortBy})}">이전</a>
+                <a class="page-link"
+                   th:each="pageNumber : ${pageNumbers}"
+                   th:classappend="${pageNumber == currentPage ? ' active' : ''}"
+                   th:href="@{/salon-services(page=${pageNumber}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, region=${search.region}, maxPrice=${search.maxPrice}, maxDuration=${search.maxDuration}, sortBy=${search.sortBy})}"
+                   th:text="${pageNumber}">1</a>
+                <a class="page-link"
+                   th:classappend="${currentPage == totalPages ? ' disabled' : ''}"
+                   th:href="@{/salon-services(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, region=${search.region}, maxPrice=${search.maxPrice}, maxDuration=${search.maxDuration}, sortBy=${search.sortBy})}">다음</a>
+            </div>
+        </div>
     </div>
 </main>
 </body>

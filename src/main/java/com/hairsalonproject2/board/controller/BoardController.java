@@ -162,7 +162,7 @@ public class BoardController {
                            @AuthenticationPrincipal UserDetails userDetails,
                            Model model) {
         BoardType boardType = boardService.getBoardType(boardId);
-        if (!boardService.isMyBoard(boardId, userDetails.getUsername())) {
+        if (!canEditBoard(boardId, boardType, userDetails)) {
             return "redirect:" + buildDetailPath(boardId, boardType) + "?error=forbidden";
         }
         BoardDetailResponse board = boardService.getDetailOnly(boardId);
@@ -189,7 +189,7 @@ public class BoardController {
             model.addAttribute("boardUpdateRequest", request);
             return "board/edit";
         }
-        boardService.update(boardId, request, userDetails.getUsername(), files);
+        boardService.update(boardId, request, userDetails.getUsername(), files, isAdmin(userDetails));
         return "redirect:" + buildDetailPath(boardId, boardType);
     }
 
@@ -245,5 +245,18 @@ public class BoardController {
         return boardType == BoardType.NOTICE
                 ? "/boards/notices/" + boardId
                 : "/boards/qna/" + boardId;
+    }
+
+    private boolean canEditBoard(Integer boardId, BoardType boardType, UserDetails userDetails) {
+        if (boardType == BoardType.NOTICE && isAdmin(userDetails)) {
+            return true;
+        }
+
+        return boardService.isMyBoard(boardId, userDetails.getUsername());
+    }
+
+    private boolean isAdmin(UserDetails userDetails) {
+        return userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

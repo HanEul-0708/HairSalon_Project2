@@ -18,17 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * BoardCommandService
- *
- * 게시판 쓰기 작업 전용 서비스
- *
- * 담당 역할
- * 1. 글 작성
- * 2. 답글 작성
- * 3. 글 수정
- * 4. 글 삭제
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -92,11 +81,13 @@ public class BoardCommandService {
     public void update(Integer boardId,
                        BoardUpdateRequest request,
                        String memberId,
-                       List<MultipartFile> files) {
+                       List<MultipartFile> files,
+                       boolean isAdmin) {
 
         Board board = findBoard(boardId);
+        boolean canEditNoticeAsAdmin = isAdmin && board.getType() == BoardType.NOTICE;
 
-        if (!board.getMember().getMemberId().equals(memberId)) {
+        if (!canEditNoticeAsAdmin && !board.getMember().getMemberId().equals(memberId)) {
             throw new BoardException("수정 권한이 없습니다.");
         }
 
@@ -138,15 +129,15 @@ public class BoardCommandService {
 
     private void validateReplyParent(Board parent) {
         if (parent.getType() != BoardType.QNA) {
-            throw new BoardException("문의글에만 답글을 작성할 수 있습니다.");
+            throw new BoardException("문의글만 답글을 작성할 수 있습니다.");
         }
 
         if (parent.isReply()) {
-            throw new BoardException("답글에는 다시 답글을 달 수 없습니다.");
+            throw new BoardException("답글에는 다시 답글을 작성할 수 없습니다.");
         }
 
         if (parent.isHidden()) {
-            throw new BoardException("숨김 처리된 글에는 답글을 달 수 없습니다.");
+            throw new BoardException("숨김 처리된 글에는 답글을 작성할 수 없습니다.");
         }
     }
 

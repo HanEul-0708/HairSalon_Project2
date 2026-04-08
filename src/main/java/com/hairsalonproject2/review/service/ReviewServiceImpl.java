@@ -184,6 +184,15 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
+    public List<ReviewResponse> getRecentReviews() {
+        return reviewRepository.findAll().stream()
+                .map(review -> toResponse(review, null))
+                .sorted(Comparator.comparing(ReviewResponse::getCreatedAt).reversed())
+                .limit(3)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public ReviewLikeToggleResponse toggleLike(Integer reviewId, String loginMemberId) {
         Review review = reviewRepository.findById(reviewId)
@@ -254,6 +263,7 @@ public class ReviewServiceImpl implements ReviewService {
                 review.getMember().getName(),
                 review.getDesigner().getDesignerId(),
                 review.getDesigner().getName(),
+                review.getDesigner().getSalon().getName(),
                 review.getReservation().getSalonService().getName(),
                 review.getRating(),
                 review.getContent(),

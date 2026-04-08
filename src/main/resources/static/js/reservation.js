@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     setMinimumReservationDate();
     buildReservationTimeOptions();
+    bindReservationSelectionFilters();
     bindReservationFormSubmit();
     bindReservationCardFocusEffect();
     bindServicePriceSync();
@@ -53,6 +54,134 @@ function buildReservationTimeOptions() {
     } else {
         timeSelect.value = "";
     }
+}
+
+function bindReservationSelectionFilters() {
+    var salonSelect = document.getElementById("salonId");
+    var designerSelect = document.getElementById("designerId");
+    var serviceSelect = document.getElementById("salonServiceId");
+    var likedSalonOnly = document.getElementById("likedSalonOnly");
+    var likedDesignerOnly = document.getElementById("likedDesignerOnly");
+
+    if (!salonSelect || !designerSelect || !serviceSelect) {
+        return;
+    }
+
+    var salonOptions = collectOptionData(salonSelect);
+    var designerOptions = collectOptionData(designerSelect);
+    var serviceOptions = collectOptionData(serviceSelect);
+
+    function applyFilters() {
+        var selectedSalonId = salonSelect.value;
+        var likedSalonMode = likedSalonOnly && likedSalonOnly.checked;
+        var likedDesignerMode = likedDesignerOnly && likedDesignerOnly.checked;
+
+        rebuildOptions(
+            salonSelect,
+            salonOptions,
+            "미용실을 선택하세요",
+            function (option) {
+                return !likedSalonMode || option.liked;
+            }
+        );
+
+        if (selectedSalonId && !optionExists(salonSelect, selectedSalonId)) {
+            salonSelect.value = "";
+            selectedSalonId = "";
+        } else if (selectedSalonId) {
+            salonSelect.value = selectedSalonId;
+        }
+
+        var currentDesignerId = designerSelect.value;
+        rebuildOptions(
+            designerSelect,
+            designerOptions,
+            "디자이너를 선택하세요",
+            function (option) {
+                var matchesSalon = !selectedSalonId || option.salonId === selectedSalonId;
+                var matchesLiked = !likedDesignerMode || option.liked;
+                return matchesSalon && matchesLiked;
+            }
+        );
+        if (currentDesignerId && optionExists(designerSelect, currentDesignerId)) {
+            designerSelect.value = currentDesignerId;
+        }
+
+        var currentServiceId = serviceSelect.value;
+        rebuildOptions(
+            serviceSelect,
+            serviceOptions,
+            "시술을 선택하세요",
+            function (option) {
+                return !selectedSalonId || option.salonId === selectedSalonId;
+            }
+        );
+        if (currentServiceId && optionExists(serviceSelect, currentServiceId)) {
+            serviceSelect.value = currentServiceId;
+        }
+
+        serviceSelect.dispatchEvent(new Event("change"));
+    }
+
+    salonSelect.addEventListener("change", applyFilters);
+    if (likedSalonOnly) {
+        likedSalonOnly.addEventListener("change", applyFilters);
+    }
+    if (likedDesignerOnly) {
+        likedDesignerOnly.addEventListener("change", applyFilters);
+    }
+
+    applyFilters();
+}
+
+function collectOptionData(select) {
+    return Array.from(select.options)
+        .filter(function (option) {
+            return option.value !== "";
+        })
+        .map(function (option) {
+            return {
+                value: option.value,
+                text: option.textContent,
+                price: option.getAttribute("data-price"),
+                salonId: option.getAttribute("data-salon-id"),
+                liked: option.getAttribute("data-liked") === "true"
+            };
+        });
+}
+
+function rebuildOptions(select, options, placeholderText, filterFn) {
+    var previousValue = select.value;
+    select.innerHTML = "";
+
+    var defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = placeholderText;
+    select.appendChild(defaultOption);
+
+    options.filter(filterFn).forEach(function (optionData) {
+        var option = document.createElement("option");
+        option.value = optionData.value;
+        option.textContent = optionData.text;
+        if (optionData.price) {
+            option.setAttribute("data-price", optionData.price);
+        }
+        if (optionData.salonId) {
+            option.setAttribute("data-salon-id", optionData.salonId);
+        }
+        option.setAttribute("data-liked", optionData.liked ? "true" : "false");
+        select.appendChild(option);
+    });
+
+    if (previousValue && optionExists(select, previousValue)) {
+        select.value = previousValue;
+    }
+}
+
+function optionExists(select, value) {
+    return Array.from(select.options).some(function (option) {
+        return option.value === value;
+    });
 }
 
 function getMinimumSelectableTime(selectedDate) {
@@ -132,7 +261,7 @@ function bindReservationFormSubmit() {
         var paymentMethod = document.getElementById("paymentMethod");
 
         if (!designerId || !salonServiceId || !reservationDate || !reservationTime || !totalPrice || !paymentMethod) {
-            alert("예약 폼 구성이 올바르지 않습니다.");
+            alert("예약 화면 구성이 올바르지 않습니다.");
             return;
         }
 
