@@ -21,7 +21,6 @@ public class AdminSalonController {
 
     @GetMapping("/salons")
     public String salons(Model model) {
-        model.addAttribute("currentMenu", "salons");
         model.addAttribute("salons", salonQueryService.search(new SalonSearchRequest()));
         model.addAttribute("currentMenu", "salons");
         return "admin/salons";
@@ -29,7 +28,6 @@ public class AdminSalonController {
 
     @GetMapping("/designers")
     public String designers(Model model) {
-        model.addAttribute("currentMenu", "salons");
         model.addAttribute("designers", designerQueryService.search(new DesignerSearchRequest()));
         model.addAttribute("currentMenu", "designers");
         return "admin/designers";
@@ -37,7 +35,6 @@ public class AdminSalonController {
 
     @GetMapping("/salon-services")
     public String salonServices(Model model) {
-        model.addAttribute("currentMenu", "salons");
         model.addAttribute("services", salonServiceQueryService.list(null));
         model.addAttribute("currentMenu", "services");
         return "admin/salon-services";

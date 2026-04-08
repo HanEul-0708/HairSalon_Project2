@@ -58,6 +58,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/api/reservations").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/reservations/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/salons/new", "/salons/*/edit").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/salons", "/salons/sync/kakao", "/salons/*/edit").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/salons/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/salon-services/new", "/salon-services/*/edit").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/salon-services", "/salon-services/*/edit", "/salon-services/*/delete").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/salon-services/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/reviews/*/images").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/reviews/*/images/*").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/reviews").authenticated()

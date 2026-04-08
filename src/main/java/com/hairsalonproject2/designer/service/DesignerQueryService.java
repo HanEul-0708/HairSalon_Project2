@@ -59,7 +59,6 @@ public class DesignerQueryService {
                         || d.getAverageRating().compareTo(request.getMinRating()) >= 0)
                 .filter(d -> request.getMinReviewCount() == null
                         || d.getReviewCount() >= request.getMinReviewCount())
-                .filter(d -> request.getLikedOnly() == null || !request.getLikedOnly() || d.getLikeCount() > 0)
                 .sorted(
                         designerComparator(request.getSortBy())
                 )

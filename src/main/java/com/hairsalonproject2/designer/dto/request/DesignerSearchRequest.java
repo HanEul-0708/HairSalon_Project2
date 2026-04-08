@@ -14,7 +14,6 @@ public class DesignerSearchRequest {
     private Integer minCareerYears;
     private Long minReviewCount;
     private String sortBy;
-    private Boolean likedOnly;
     private boolean searched;
 
     public boolean hasSearchRequest() {

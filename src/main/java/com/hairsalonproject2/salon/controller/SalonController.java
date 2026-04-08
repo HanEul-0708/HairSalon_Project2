@@ -7,6 +7,7 @@ import com.hairsalonproject2.salon.dto.response.SalonRecommendationConditionResp
 import com.hairsalonproject2.salon.service.ExternalSalonSyncService;
 import com.hairsalonproject2.salon.service.SalonQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +36,9 @@ public class SalonController {
     private final SalonQueryService salonQueryService;
     private final ExternalSalonSyncService externalSalonSyncService;
 
+    @Value("${kakao.javascript-key:}")
+    private String kakaoJavascriptKey;
+
     @GetMapping("/new")
     public String createForm(Model model) {
         model.addAttribute("form", new SalonCreateRequest());
@@ -45,6 +49,10 @@ public class SalonController {
     public String list(@ModelAttribute SalonSearchRequest request,
                        @RequestParam(defaultValue = "1") int page,
                        Model model) {
+        if (request.hasSearchRequest()) {
+            externalSalonSyncService.syncFromSearch(request.getKeyword(), request.getRegion());
+        }
+
         Page<?> resultPage = request.hasSearchRequest()
                 ? salonQueryService.search(request, page - 1, SALONS_PER_PAGE)
                 : new PageImpl<>(java.util.Collections.emptyList(), PageRequest.of(0, SALONS_PER_PAGE), 0);
@@ -69,6 +77,16 @@ public class SalonController {
 
         model.addAttribute("salons", salonQueryService.getLikedSalons(authentication.getName()));
         return "salon/liked-list";
+    }
+
+    @GetMapping("/map")
+    public String mapSearch(@RequestParam(required = false) String keyword,
+                            @RequestParam(required = false) String region,
+                            Model model) {
+        model.addAttribute("keyword", keyword == null ? "" : keyword.trim());
+        model.addAttribute("region", region == null ? "" : region.trim());
+        model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey == null ? "" : kakaoJavascriptKey.trim());
+        return "salon/map-search";
     }
 
     @GetMapping("/{salonId}")

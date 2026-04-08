@@ -28,21 +28,69 @@ public class KakaoLocalSearchClient {
             return List.of();
         }
 
-        String query = region == null || region.isBlank() ? keyword + " 미용실" : region + " " + keyword + " 미용실";
+        String query = buildSalonQuery(keyword, region);
+        if (query.isBlank()) {
+            return List.of();
+        }
 
-        String uri = UriComponentsBuilder.fromUriString("https://dapi.kakao.com/v2/local/search/keyword.json").queryParam("query", query).queryParam("page", page).queryParam("size", size).build(true).toUriString();
+        String uri = UriComponentsBuilder
+                .fromUriString("https://dapi.kakao.com/v2/local/search/keyword.json")
+                .queryParam("query", query)
+                .queryParam("page", page)
+                .queryParam("size", size)
+                .build(true)
+                .toUriString();
 
-        String body = restClient.get().uri(uri).header(HttpHeaders.AUTHORIZATION, "KakaoAK " + restApiKey).accept(MediaType.APPLICATION_JSON).retrieve().body(String.class);
+        String body = restClient.get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + restApiKey)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .body(String.class);
 
         try {
             JsonNode root = objectMapper.readTree(body);
             List<KakaoPlaceSearchResult> results = new ArrayList<>();
+
             for (JsonNode node : root.path("documents")) {
-                results.add(KakaoPlaceSearchResult.builder().externalId(node.path("id").asText()).placeName(node.path("place_name").asText()).addressName(node.path("address_name").asText()).roadAddressName(node.path("road_address_name").asText()).phone(node.path("phone").asText()).placeUrl(node.path("place_url").asText()).longitude(new BigDecimal(node.path("x").asText("0"))).latitude(new BigDecimal(node.path("y").asText("0"))).build());
+                results.add(KakaoPlaceSearchResult.builder()
+                        .externalId(node.path("id").asText())
+                        .placeName(node.path("place_name").asText())
+                        .addressName(node.path("address_name").asText())
+                        .roadAddressName(node.path("road_address_name").asText())
+                        .phone(node.path("phone").asText())
+                        .placeUrl(node.path("place_url").asText())
+                        .longitude(new BigDecimal(node.path("x").asText("0")))
+                        .latitude(new BigDecimal(node.path("y").asText("0")))
+                        .build());
             }
+
             return results;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse Kakao API response", e);
         }
+    }
+
+    String buildSalonQuery(String keyword, String region) {
+        String normalizedKeyword = normalize(keyword);
+        String normalizedRegion = normalize(region);
+
+        if (normalizedKeyword.isBlank() && normalizedRegion.isBlank()) {
+            return "";
+        }
+
+        if (normalizedKeyword.isBlank()) {
+            return normalizedRegion + " 미용실";
+        }
+
+        if (normalizedRegion.isBlank()) {
+            return normalizedKeyword + " 미용실";
+        }
+
+        return normalizedRegion + " " + normalizedKeyword + " 미용실";
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

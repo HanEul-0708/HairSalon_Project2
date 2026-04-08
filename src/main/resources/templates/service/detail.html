@@ -17,7 +17,7 @@
         <div class="catalog-hero">
             <p class="catalog-hero__eyebrow">Service Detail</p>
             <h1 class="catalog-hero__title" th:text="${serviceItem.name}">시술명</h1>
-            <p class="catalog-hero__subtitle">시술 가격과 소요 시간, 설명, 연결된 미용실 정보를 한눈에 확인할 수 있습니다.</p>
+            <p class="catalog-hero__subtitle">시술 가격과 소요 시간, 설명, 연결된 미용실 정보를 한 화면에서 확인할 수 있습니다.</p>
         </div>
 
         <div class="service-detail-card">
@@ -36,18 +36,18 @@
                 </div>
             </div>
 
-            <p class="service-detail-card__desc" th:text="${serviceItem.description}">설명</p>
+            <p class="service-detail-card__desc" th:text="${serviceItem.description}">시술 설명</p>
 
             <div class="service-actions">
                 <a th:href="@{/salons/{id}(id=${serviceItem.salonId})}" class="btn btn-primary">미용실 보기</a>
                 <a th:href="@{/salon-services/{id}/edit(id=${serviceItem.serviceId})}"
                    class="btn btn-outline"
-                   sec:authorize="hasAnyRole('ADMIN','DESIGNER')">수정</a>
+                   sec:authorize="hasRole('ADMIN')">수정</a>
 
                 <form method="post"
                       th:action="@{/salon-services/{id}/delete(id=${serviceItem.serviceId})}"
                       data-service-delete
-                      sec:authorize="hasAnyRole('ADMIN','DESIGNER')">
+                      sec:authorize="hasRole('ADMIN')">
                     <input type="hidden" name="_method" value="delete">
                     <button type="submit" class="btn btn-outline">삭제</button>
                 </form>
