@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리뷰 목록</title>
+    <link rel="stylesheet" th:href="@{/css/review.css}">
+    <script th:src="@{/js/review.js}" defer></script>
+</head>
+<body>
+<main>
+<div class="container review-page review-list-page">
+    <div class="page-header">
+        <h1 class="page-title">리뷰 목록</h1>
+        <p class="page-desc">사용자가 작성한 리뷰를 확인할 수 있는 화면입니다.</p>
+    </div>
+
+    <div class="review-list">
+        <div class="review-card">
+            <div class="review-card__header">
+                <div class="review-card__meta">
+                    <div class="review-card__name">홍길동</div>
+                    <p class="review-card__info">HairSalon 강남점 · 커트</p>
+                </div>
+                <div class="review-card__rating">★★★★★</div>
+            </div>
+            <div class="review-card__content">디자이너분이 친절했고 스타일도 만족스러웠습니다.</div>
+            <div class="review-card__footer"><p class="review-card__date">작성일 : 2026-04-02</p></div>
+        </div>
+
+        <div class="review-card">
+            <div class="review-card__header">
+                <div class="review-card__meta">
+                    <div class="review-card__name">김민수</div>
+                    <p class="review-card__info">HairSalon 홍대점 · 펌</p>
+                </div>
+                <div class="review-card__rating">★★★★☆</div>
+            </div>
+            <div class="review-card__content">전체적으로 만족합니다. 다음에도 방문하고 싶습니다.</div>
+            <div class="review-card__footer"><p class="review-card__date">작성일 : 2026-04-01</p></div>
+        </div>
+    </div>
+</div>
+</main>
+</body>
+</html>

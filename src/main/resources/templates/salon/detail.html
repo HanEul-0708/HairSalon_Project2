@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>살롱 상세</title>
+    <link rel="stylesheet" th:href="@{/css/salon.css}">
+    <script th:src="@{/js/salon.js}" defer></script>
+</head>
+<body>
+<main>
+<div class="container salon-page salon-detail-page">
+    <div class="page-header">
+        <h1 th:text="${salon.name}">살롱명</h1>
+        <p>살롱 상세 정보와 디자이너, 시술 정보를 확인할 수 있습니다.</p>
+    </div>
+
+    <div class="salon-detail">
+        <section class="salon-detail__main">
+            <div class="salon-detail__image"></div>
+
+            <h2 th:text="${salon.name}">살롱명</h2>
+
+            <div class="salon-info-list">
+                <div class="salon-info-item">
+                    <strong>주소</strong>
+                    <span th:text="${salon.address}">주소</span>
+                </div>
+                <div class="salon-info-item">
+                    <strong>도로명</strong>
+                    <span th:text="${salon.roadAddress}">도로명</span>
+                </div>
+                <div class="salon-info-item">
+                    <strong>전화</strong>
+                    <span th:text="${salon.phone}">전화</span>
+                </div>
+                <div class="salon-info-item">
+                    <strong>설명</strong>
+                    <span th:text="${salon.description}">설명</span>
+                </div>
+                <div class="salon-info-item">
+                    <strong>통계</strong>
+                    <span th:text="|평점 ${salon.averageRating} / 리뷰 ${salon.reviewCount} / 좋아요 ${salon.likeCount}|">
+                        통계
+                    </span>
+                </div>
+                <div class="salon-info-item">
+                    <strong>예약 가능 여부</strong>
+                    <span th:if="${salon.reservable}">예약 가능</span>
+                    <span th:unless="${salon.reservable}">예약 준비중</span>
+                </div>
+                <div class="salon-info-item" th:if="${salon.placeUrl != null}">
+                    <strong>장소 링크</strong>
+                    <a th:href="${salon.placeUrl}" target="_blank">카카오 장소 링크</a>
+                </div>
+            </div>
+
+            <div class="designer-actions" style="margin-top: 24px;">
+                <a th:if="${salon.reservable and !#lists.isEmpty(salon.designers) and !#lists.isEmpty(salon.services)}"
+                   th:href="@{/reservations/new}"
+                   class="btn btn-primary">예약하기</a>
+
+                <button type="button"
+                        class="btn btn-outline"
+                        th:unless="${salon.reservable and !#lists.isEmpty(salon.designers) and !#lists.isEmpty(salon.services)}"
+                        disabled>예약 준비중</button>
+
+                <form method="post" th:action="@{/salons/{id}/likes(id=${salon.salonId})}">
+                    <button type="submit" class="btn btn-primary">찜하기</button>
+                </form>
+
+                <form method="post" th:action="@{/salons/{id}/likes(id=${salon.salonId})}">
+                    <input type="hidden" name="_method" value="delete">
+                    <button type="submit" class="btn btn-outline">찜 취소</button>
+                </form>
+
+                <a th:href="@{/salons/{id}/edit(id=${salon.salonId})}"
+                   class="btn btn-outline"
+                   sec:authorize="hasRole('ADMIN')">수정</a>
+
+                <form method="post"
+                      th:action="@{/salons/{id}(id=${salon.salonId})}"
+                      sec:authorize="hasRole('ADMIN')">
+                    <input type="hidden" name="_method" value="delete">
+                    <button type="submit" class="btn btn-outline">삭제</button>
+                </form>
+            </div>
+        </section>
+
+        <aside class="salon-detail__side">
+            <h3>디자이너</h3>
+            <div class="salon-designer-list">
+                <div class="salon-designer-item" th:each="designer : ${salon.designers}">
+                    <a th:href="@{/designers/{id}(id=${designer.designerId})}"
+                       th:text="${designer.name}">디자이너</a>
+                </div>
+
+                <p th:if="${#lists.isEmpty(salon.designers)}">등록된 디자이너가 없습니다.</p>
+            </div>
+
+            <h3 style="margin-top: 24px;">시술</h3>
+            <div class="salon-service-list">
+                <div class="salon-service-item" th:each="service : ${salon.services}">
+                    <a th:href="@{/salon-services/{id}(id=${service.serviceId})}"
+                       th:text="${service.name}">시술</a>
+                    <p th:text="|${service.price}원 / ${service.duration}분|">가격</p>
+                </div>
+
+                <p th:if="${#lists.isEmpty(salon.services)}">등록된 시술이 없습니다.</p>
+            </div>
+        </aside>
+    </div>
+</div>
+</main>
+</body>
+</html>
