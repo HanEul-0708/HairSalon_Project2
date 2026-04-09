@@ -1,15 +1,15 @@
 package com.hairsalonproject2.common.config;
 
-import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import com.hairsalonproject2.member.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -56,17 +56,36 @@ public class SecurityConfig {
                 // 브라우저 기본 로그인 팝업 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/api/reservations").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/reservations/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/salons/new", "/salons/*/edit").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/salons", "/salons/sync/kakao", "/salons/*/edit").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/salons/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/salon-services/new", "/salon-services/*/edit").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/salon-services", "/salon-services/*/edit", "/salon-services/*/delete").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/salon-services/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/reviews/*/images").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/reviews/*/images/*").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/reviews").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/reviews/*").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").authenticated()
                         .requestMatchers(
                                 "/",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
                                 "/upload/**",
+                                "/uploads/**",
+                                "/files/images/**",
+                                "/files/download/**",
                                 "/error/**",
 
                                 // 회원
                                 "/members/signup",
                                 "/members/login",
+                                "/members/check-id",
+                                "/members/check-email",
+                                "/members/check-phone",
 
                                 // 메인/살롱/디자이너/리뷰/게시판 테스트용 공개
                                 "/salons",
@@ -100,7 +119,7 @@ public class SecurityConfig {
                         .deleteCookies("JSESSIONID")
                         .permitAll()
                 )
-                // ✅ 권한 없는 사용자가 접근했을 때 이동할 페이지
+                // 권한이 없는 사용자가 접근했을 때 이동할 페이지
                 .exceptionHandling(exception -> exception
                         .accessDeniedPage("/access-denied")
                 );

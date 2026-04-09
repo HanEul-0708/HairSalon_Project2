@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -13,11 +14,10 @@ public class SalonSummaryResponse {
     private String address;
     private String phone;
     private String imageUrl;
-    private BigDecimal latitude;
-    private BigDecimal longitude;
     private BigDecimal averageRating;
     private Integer reviewCount;
     private Integer likeCount;
     private Boolean reservable;
     private Double distanceKm;
+    private LocalDateTime createdAt;
 }

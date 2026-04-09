@@ -9,7 +9,10 @@ public class SalonServiceSummaryResponse {
     private Integer serviceId;
     private Integer salonId;
     private String salonName;
+    private String address;
     private String name;
     private Integer price;
     private Integer duration;
+    private Integer averageRating;
+    private String description;
 }

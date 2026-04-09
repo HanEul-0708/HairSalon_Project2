@@ -1,113 +1,95 @@
 package com.hairsalonproject2.reservation.controller;
 
+import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.reservation.dto.ReservationCreateRequest;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
-import com.hairsalonproject2.reservation.service.ReservationService;
 import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
+import com.hairsalonproject2.reservation.dto.ReservationUpdateRequest;
+import com.hairsalonproject2.reservation.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * ReservationController
- *
- * 예약 관련 API 처리 컨트롤러
- *
- * 클라이언트 요청 → Service 호출 → 결과 반환
- */
 @RestController
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
 public class ReservationController {
 
-    /**
-     * ReservationService 주입
-     */
     private final ReservationService reservationService;
 
-    /**
-     * 예약 생성 API
-     *
-     * 기존 방식:
-     * Reservation 엔티티 직접 받음
-     *
-     * 수정 방식:
-     * ReservationCreateRequest DTO로 받음
-     */
     @PostMapping
-    public ReservationResponse createReservation(
-            @Valid @RequestBody ReservationCreateRequest request
-    ) {
-        return reservationService.createReservation(request);
+    public ReservationResponse createReservation(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                 @Valid @RequestBody ReservationCreateRequest request) {
+        return reservationService.createReservation(userDetails.getMember().getMemberId(), request);
     }
 
-    /**
-     * 예약 1건 조회
-     */
+    @PutMapping("/{id}")
+    public ReservationResponse updateReservation(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                 @PathVariable Integer id,
+                                                 @Valid @RequestBody ReservationUpdateRequest request) {
+        validateReservationAccess(userDetails, id);
+        return reservationService.updateReservation(id, request);
+    }
+
     @GetMapping("/{id}")
-    public ReservationResponse getReservation(@PathVariable Integer id) {
+    public ReservationResponse getReservation(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                              @PathVariable Integer id) {
+        validateReservationAccess(userDetails, id);
         return reservationService.getReservation(id);
     }
 
-    /**
-     * 전체 예약 목록 조회
-     */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<ReservationResponse> getAllReservations() {
         return reservationService.getAllReservations();
     }
 
-    /**
-     * 특정 회원 예약 목록 조회
-     */
     @GetMapping("/member/{memberId}")
-    public List<ReservationResponse> getReservationsByMember(@PathVariable String memberId) {
+    public List<ReservationResponse> getReservationsByMember(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                             @PathVariable String memberId) {
+        validateMemberAccess(userDetails, memberId);
         return reservationService.getReservationsByMember(memberId);
     }
 
-    /**
-     * 내 예약 목록 조회
-     *
-     * 현재는 로그인 기능이 완전히 연결되지 않았으므로
-     * 요청 파라미터로 memberId를 받아서 사용한다.
-     *
-     * 예:
-     * GET /reservations/my?memberId=user1
-     */
     @GetMapping("/my")
-    public List<ReservationResponse> getMyReservations(@RequestParam String memberId) {
-        return reservationService.getMyReservations(memberId);
+    public List<ReservationResponse> getMyReservations(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        return reservationService.getMyReservations(userDetails.getMember().getMemberId());
     }
 
-    /**
-     * 예약 취소
-     */
     @DeleteMapping("/{id}")
-    public String cancelReservation(@PathVariable Integer id) {
-
+    public String cancelReservation(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                    @PathVariable Integer id) {
+        validateReservationAccess(userDetails, id);
         reservationService.cancelReservation(id);
-
         return "예약이 취소되었습니다.";
     }
 
-    /**
-     * 예약 상태 변경 API
-     *
-     * 예시:
-     * PATCH /reservations/1/status
-     *
-     * 요청 body:
-     * {
-     *   "status": "COMPLETED"
-     * }
-     */
     @PatchMapping("/{id}/status")
-    public ReservationResponse updateReservationStatus(
-            @PathVariable Integer id,
-            @Valid @RequestBody ReservationStatusUpdateRequest request
-    ) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ReservationResponse updateReservationStatus(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                       @PathVariable Integer id,
+                                                       @Valid @RequestBody ReservationStatusUpdateRequest request) {
         return reservationService.updateReservationStatus(id, request);
+    }
+
+    private void validateReservationAccess(CustomUserDetails userDetails, Integer reservationId) {
+        ReservationResponse reservation = reservationService.getReservation(reservationId);
+        if (!isAdmin(userDetails) && !reservation.getMemberId().equals(userDetails.getMember().getMemberId())) {
+            throw new org.springframework.security.access.AccessDeniedException("You can only access your own reservation.");
+        }
+    }
+
+    private boolean isAdmin(CustomUserDetails userDetails) {
+        return userDetails.getMember().getRole().name().equals("ADMIN");
+    }
+
+    private void validateMemberAccess(CustomUserDetails userDetails, String memberId) {
+        if (!isAdmin(userDetails) && !memberId.equals(userDetails.getMember().getMemberId())) {
+            throw new org.springframework.security.access.AccessDeniedException("You can only access your own reservations.");
+        }
     }
 }

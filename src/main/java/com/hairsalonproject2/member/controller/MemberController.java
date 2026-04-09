@@ -5,17 +5,25 @@ import com.hairsalonproject2.member.dto.request.MemberLoginRequest;
 import com.hairsalonproject2.member.dto.request.MemberPasswordChangeRequest;
 import com.hairsalonproject2.member.dto.request.MemberSignupRequest;
 import com.hairsalonproject2.member.dto.request.MemberUpdateRequest;
+import com.hairsalonproject2.member.dto.response.AvailabilityResponse;
 import com.hairsalonproject2.member.dto.response.MemberDetailResponse;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.function.Consumer;
 
 /**
  * 회원 컨트롤러
@@ -44,8 +52,6 @@ public class MemberController {
     public String signup(@Valid @ModelAttribute MemberSignupRequest memberSignupRequest,
                          BindingResult bindingResult,
                          Model model) {
-
-        // Bean Validation 실패 시 회원가입 화면으로 복귀
         if (bindingResult.hasErrors()) {
             return "member/signup";
         }
@@ -53,8 +59,6 @@ public class MemberController {
         try {
             memberService.signup(memberSignupRequest);
         } catch (BusinessException e) {
-            // 중복 아이디 / 중복 이메일 / 비밀번호 확인 불일치 등을
-            // 에러 페이지가 아니라 회원가입 화면에서 바로 보여주기 위한 처리
             model.addAttribute("signupErrorMessage", e.getErrorCode().getMessage());
             return "member/signup";
         }
@@ -65,10 +69,8 @@ public class MemberController {
     @GetMapping("/login")
     public String loginForm(Model model,
                             @AuthenticationPrincipal CustomUserDetails userDetails) {
-
-        // 이미 로그인된 상태면 로그인 페이지 못 들어오게 막기
         if (userDetails != null) {
-            return "redirect:/members/me"; // 또는 "/" 가능
+            return "redirect:/members/me";
         }
 
         if (!model.containsAttribute("memberLoginRequest")) {
@@ -78,39 +80,49 @@ public class MemberController {
         return "member/login";
     }
 
+    @GetMapping("/check-id")
+    @ResponseBody
+    public AvailabilityResponse checkMemberId(@RequestParam String memberId) {
+        return AvailabilityResponse.from(memberService.isMemberIdAvailable(memberId));
+    }
+
+    @GetMapping("/check-email")
+    @ResponseBody
+    public AvailabilityResponse checkEmail(@RequestParam String email) {
+        return AvailabilityResponse.from(memberService.isEmailAvailable(email));
+    }
+
+    @GetMapping("/check-phone")
+    @ResponseBody
+    public AvailabilityResponse checkPhone(@RequestParam String phone) {
+        return AvailabilityResponse.from(memberService.isPhoneAvailable(phone));
+    }
+
+    @GetMapping("/me/check-email")
+    @ResponseBody
+    public AvailabilityResponse checkMyEmail(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                             @RequestParam String email) {
+        return AvailabilityResponse.from(memberService.isEmailAvailableForUpdate(userDetails.getUsername(), email));
+    }
+
+    @GetMapping("/me/check-phone")
+    @ResponseBody
+    public AvailabilityResponse checkMyPhone(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                             @RequestParam String phone) {
+        return AvailabilityResponse.from(memberService.isPhoneAvailableForUpdate(userDetails.getUsername(), phone));
+    }
+
     @GetMapping("/me")
     public String myPage(@AuthenticationPrincipal CustomUserDetails userDetails,
                          Model model) {
-
-        MemberDetailResponse member = memberService.getMyDetail(userDetails.getUsername());
-
-        MemberUpdateRequest memberUpdateRequest = new MemberUpdateRequest();
-        memberUpdateRequest.setName(member.getName());
-        memberUpdateRequest.setPhone(member.getPhone());
-        memberUpdateRequest.setEmail(member.getEmail());
-
-        model.addAttribute("member", member);
-        model.addAttribute("memberUpdateRequest", memberUpdateRequest);
-        model.addAttribute("memberPasswordChangeRequest", new MemberPasswordChangeRequest());
-
+        prepareMyPageModel(model, userDetails.getUsername(), currentModel -> { });
         return "member/mypage";
     }
 
     @GetMapping("/me/edit")
     public String myEditPage(@AuthenticationPrincipal CustomUserDetails userDetails,
                              Model model) {
-
-        MemberDetailResponse member = memberService.getMyDetail(userDetails.getUsername());
-
-        MemberUpdateRequest memberUpdateRequest = new MemberUpdateRequest();
-        memberUpdateRequest.setName(member.getName());
-        memberUpdateRequest.setPhone(member.getPhone());
-        memberUpdateRequest.setEmail(member.getEmail());
-
-        model.addAttribute("member", member);
-        model.addAttribute("memberUpdateRequest", memberUpdateRequest);
-        model.addAttribute("memberPasswordChangeRequest", new MemberPasswordChangeRequest());
-
+        prepareMyPageModel(model, userDetails.getUsername(), currentModel -> { });
         return "member/mypage";
     }
 
@@ -120,33 +132,23 @@ public class MemberController {
                                   BindingResult bindingResult,
                                   Model model,
                                   RedirectAttributes redirectAttributes) {
-
-        // 1. Bean Validation 오류가 있으면 다시 마이페이지로
         if (bindingResult.hasErrors()) {
-            MemberDetailResponse member = memberService.getMyDetail(userDetails.getUsername());
-            model.addAttribute("member", member);
-            model.addAttribute("memberPasswordChangeRequest", new MemberPasswordChangeRequest());
+            prepareMyPageModel(model, userDetails.getUsername(),
+                    currentModel -> currentModel.addAttribute("memberUpdateRequest", memberUpdateRequest));
             return "member/mypage";
         }
 
         try {
-            // 2. 로그인한 회원 기준으로 내 정보 수정
             memberService.updateMyProfile(userDetails.getUsername(), memberUpdateRequest);
-
         } catch (BusinessException e) {
-            // 3. 서비스 검증 예외(예: 이메일 중복)가 발생하면
-            //    마이페이지에서 메시지를 보여주고 다시 렌더링
-            MemberDetailResponse member = memberService.getMyDetail(userDetails.getUsername());
-            model.addAttribute("member", member);
-            model.addAttribute("memberUpdateRequest", memberUpdateRequest);
-            model.addAttribute("memberPasswordChangeRequest", new MemberPasswordChangeRequest());
-
-            // 공통 메시지 fragment 와 이름 통일
-            model.addAttribute("errorMessage", e.getErrorCode().getMessage());
+            prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
+                currentModel.addAttribute("memberUpdateRequest", memberUpdateRequest);
+                currentModel.addAttribute("errorMessage", e.getErrorCode().getMessage());
+            });
             return "member/mypage";
         }
 
-        redirectAttributes.addFlashAttribute("successMessage", "회원정보가 수정되었습니다.");
+        redirectAttributes.addFlashAttribute("successMessage", "회원 정보가 수정되었습니다.");
         return "redirect:/members/me";
     }
 
@@ -156,40 +158,19 @@ public class MemberController {
                                  BindingResult bindingResult,
                                  Model model,
                                  RedirectAttributes redirectAttributes) {
-
-        // 1. Bean Validation 오류가 있으면 다시 마이페이지로
         if (bindingResult.hasErrors()) {
-            MemberDetailResponse member = memberService.getMyDetail(userDetails.getUsername());
-
-            MemberUpdateRequest memberUpdateRequest = new MemberUpdateRequest();
-            memberUpdateRequest.setName(member.getName());
-            memberUpdateRequest.setPhone(member.getPhone());
-            memberUpdateRequest.setEmail(member.getEmail());
-
-            model.addAttribute("member", member);
-            model.addAttribute("memberUpdateRequest", memberUpdateRequest);
+            prepareMyPageModel(model, userDetails.getUsername(),
+                    currentModel -> currentModel.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest));
             return "member/mypage";
         }
 
         try {
-            // 2. 로그인한 회원 기준으로 비밀번호 변경
             memberService.changePassword(userDetails.getUsername(), memberPasswordChangeRequest);
-
         } catch (BusinessException e) {
-            // 3. 현재 비밀번호 불일치 등의 예외를 마이페이지에서 처리
-            MemberDetailResponse member = memberService.getMyDetail(userDetails.getUsername());
-
-            MemberUpdateRequest memberUpdateRequest = new MemberUpdateRequest();
-            memberUpdateRequest.setName(member.getName());
-            memberUpdateRequest.setPhone(member.getPhone());
-            memberUpdateRequest.setEmail(member.getEmail());
-
-            model.addAttribute("member", member);
-            model.addAttribute("memberUpdateRequest", memberUpdateRequest);
-            model.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest);
-
-            // 공통 메시지 fragment 와 이름 통일
-            model.addAttribute("errorMessage", e.getErrorCode().getMessage());
+            prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
+                currentModel.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest);
+                currentModel.addAttribute("errorMessage", e.getErrorCode().getMessage());
+            });
             return "member/mypage";
         }
 
@@ -199,12 +180,26 @@ public class MemberController {
 
     @PostMapping("/me/delete")
     public String deleteMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
-
-        // 현재 로그인한 사용자 ID 가져오기
         String memberId = userDetails.getMember().getMemberId();
-
-        memberService.delete(memberId);
-
+        memberService.softDeleteSelf(memberId);
         return "redirect:/members/logout";
+    }
+
+    private void prepareMyPageModel(Model model,
+                                    String memberId,
+                                    Consumer<Model> customizer) {
+        MemberDetailResponse member = memberService.getMyDetail(memberId);
+        model.addAttribute("member", member);
+        model.addAttribute("memberUpdateRequest", createMemberUpdateRequest(member));
+        model.addAttribute("memberPasswordChangeRequest", new MemberPasswordChangeRequest());
+        customizer.accept(model);
+    }
+
+    private MemberUpdateRequest createMemberUpdateRequest(MemberDetailResponse member) {
+        MemberUpdateRequest request = new MemberUpdateRequest();
+        request.setName(member.getName());
+        request.setPhone(member.getPhone());
+        request.setEmail(member.getEmail());
+        return request;
     }
 }

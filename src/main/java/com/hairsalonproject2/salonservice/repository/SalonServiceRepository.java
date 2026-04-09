@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface SalonServiceRepository extends JpaRepository<SalonService, Integer> {
     List<SalonService> findBySalonSalonId(Integer salonId);
+    boolean existsBySalonSalonId(Integer salonId);
 
     @Query("""
             select distinct ss.salon.salonId from SalonService ss
@@ -24,6 +25,26 @@ public interface SalonServiceRepository extends JpaRepository<SalonService, Inte
             order by ss.price asc, ss.serviceId asc
             """)
     List<SalonService> searchByName(@Param("keyword") String keyword);
+
+    @Query("""
+            select ss
+            from SalonService ss
+            join ss.salon s
+            where (:keyword is null
+                    or lower(ss.name) like lower(concat('%', :keyword, '%'))
+                    or lower(coalesce(ss.description, '')) like lower(concat('%', :keyword, '%')))
+              and (:salonKeyword is null or lower(s.name) like lower(concat('%', :salonKeyword, '%')))
+              and (:region is null
+                    or lower(s.address) like lower(concat('%', :region, '%'))
+                    or lower(coalesce(s.roadAddress, '')) like lower(concat('%', :region, '%')))
+              and (:maxPrice is null or ss.price <= :maxPrice)
+              and (:maxDuration is null or ss.duration <= :maxDuration)
+            """)
+    List<SalonService> searchServices(@Param("keyword") String keyword,
+                                      @Param("salonKeyword") String salonKeyword,
+                                      @Param("region") String region,
+                                      @Param("maxPrice") Integer maxPrice,
+                                      @Param("maxDuration") Integer maxDuration);
 
     @Query(value = """
             SELECT ss.service_id AS serviceId,

@@ -37,7 +37,8 @@
 
                         <form th:action="@{/members/signup}"
                               th:object="${memberSignupRequest}"
-                              method="post">
+                              method="post"
+                              data-signup-form>
 
                             <input type="hidden"
                                    th:name="${_csrf.parameterName}"
@@ -45,54 +46,95 @@
 
                             <div class="mb-3">
                                 <label for="memberId" class="form-label">아이디</label>
-                                <input type="text" id="memberId" th:field="*{memberId}" class="form-control">
+                                <input type="text"
+                                       id="memberId"
+                                       th:field="*{memberId}"
+                                       class="form-control"
+                                       autocomplete="username"
+                                       data-required-message="아이디를 입력해 주세요."
+                                       data-invalid-message="아이디는 영문 소문자와 숫자를 포함해 4~30자여야 합니다.">
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('memberId')}"
                                      th:errors="*{memberId}"></div>
+                                <div class="small mt-1" data-feedback-for="memberId"></div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="password" class="form-label">비밀번호</label>
-                                <input type="password" id="password" th:field="*{password}" class="form-control">
+                                <input type="password"
+                                       id="password"
+                                       th:field="*{password}"
+                                       class="form-control"
+                                       autocomplete="new-password"
+                                       data-required-message="비밀번호를 입력해 주세요."
+                                       data-invalid-message="비밀번호는 8자 이상이어야 합니다.">
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('password')}"
                                      th:errors="*{password}"></div>
+                                <div class="small mt-1" data-feedback-for="password"></div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="passwordConfirm" class="form-label">비밀번호 확인</label>
-                                <input type="password" id="passwordConfirm" th:field="*{passwordConfirm}" class="form-control">
+                                <input type="password"
+                                       id="passwordConfirm"
+                                       th:field="*{passwordConfirm}"
+                                       class="form-control"
+                                       autocomplete="new-password"
+                                       data-required-message="비밀번호 확인을 입력해 주세요."
+                                       data-invalid-message="비밀번호가 일치하지 않습니다.">
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('passwordConfirm')}"
                                      th:errors="*{passwordConfirm}"></div>
+                                <div class="small mt-1" data-feedback-for="passwordConfirm"></div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="name" class="form-label">이름</label>
-                                <input type="text" id="name" th:field="*{name}" class="form-control">
+                                <input type="text"
+                                       id="name"
+                                       th:field="*{name}"
+                                       class="form-control"
+                                       data-required-message="이름을 입력해 주세요."
+                                       data-invalid-message="이름은 50자 이하로 입력해 주세요.">
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('name')}"
                                      th:errors="*{name}"></div>
+                                <div class="small mt-1" data-feedback-for="name"></div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="phone" class="form-label">전화번호</label>
-                                <input type="text" id="phone" th:field="*{phone}" class="form-control">
+                                <input type="text"
+                                       id="phone"
+                                       th:field="*{phone}"
+                                       class="form-control"
+                                       placeholder="010-1234-5678"
+                                       data-required-message="전화번호를 입력해 주세요."
+                                       data-invalid-message="전화번호 형식이 올바르지 않습니다.">
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('phone')}"
                                      th:errors="*{phone}"></div>
+                                <div class="small mt-1" data-feedback-for="phone"></div>
                             </div>
 
                             <div class="mb-3">
                                 <label for="email" class="form-label">이메일</label>
-                                <input type="text" id="email" th:field="*{email}" class="form-control">
+                                <input type="text"
+                                       id="email"
+                                       th:field="*{email}"
+                                       class="form-control"
+                                       placeholder="example@email.com"
+                                       data-required-message="이메일을 입력해 주세요."
+                                       data-invalid-message="이메일 형식이 올바르지 않습니다.">
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('email')}"
                                      th:errors="*{email}"></div>
+                                <div class="small mt-1" data-feedback-for="email"></div>
                             </div>
 
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-dark">회원가입</button>
+                                <button type="submit" class="btn btn-dark" data-signup-submit disabled>회원가입</button>
                             </div>
                         </form>
 

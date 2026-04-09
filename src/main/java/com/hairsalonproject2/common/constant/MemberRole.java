@@ -1,5 +1,7 @@
 package com.hairsalonproject2.common.constant;
 
+import lombok.Getter;
+
 /*
  * MemberRole
  *
@@ -8,20 +10,16 @@ package com.hairsalonproject2.common.constant;
  * DB:
  * ENUM('USER', 'DESIGNER', 'ADMIN')
  */
+@Getter
 public enum MemberRole {
 
-    /*
-     * 일반 사용자
-     */
-    USER,
+    USER("일반 회원"),
+    DESIGNER("디자이너"),
+    ADMIN("관리자");
 
-    /*
-     * 디자이너 계정
-     */
-    DESIGNER,
+    private final String description;
 
-    /*
-     * 관리자
-     */
-    ADMIN
+    MemberRole(String description) {
+        this.description = description;
+    }
 }

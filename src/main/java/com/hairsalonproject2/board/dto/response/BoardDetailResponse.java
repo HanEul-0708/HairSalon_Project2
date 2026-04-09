@@ -3,117 +3,106 @@ package com.hairsalonproject2.board.dto.response;
 import com.hairsalonproject2.board.entity.Board;
 import com.hairsalonproject2.board.entity.BoardFile;
 import com.hairsalonproject2.board.entity.BoardImage;
+import com.hairsalonproject2.common.constant.BoardType;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Locale;
+import java.util.Set;
 
-/**
- * BoardDetailResponse
- * 게시글 상세 화면 전용 DTO
- */
 @Getter
 public class BoardDetailResponse {
 
-    /** 게시글 번호 (board 테이블은 INT) */
     private Integer boardId;
-
-    /** 게시판 타입 */
     private String type;
-
-    /** 제목 */
     private String title;
-
-    /** 본문 */
     private String content;
-
-    /** 작성자 회원 ID */
     private String memberId;
-
-    /** 조회수 */
     private Integer viewCount;
-
-    /** 부모 글 번호 (board 테이블은 INT) */
     private Integer parentBoardId;
-
-    /** 작성일시 */
     private LocalDateTime createdAt;
-
-    /** 수정일시 */
     private LocalDateTime updatedAt;
-
-    /** 본문 이미지 목록 */
     private List<ImageInfo> images;
-
-    /** 첨부파일 목록 */
     private List<FileInfo> files;
-
-    /** 답글 목록 */
     private List<BoardReplyResponse> replies;
-
-    /** 숨김 여부 */
     private boolean hidden;
-
-    /** 숨김 사유 */
     private String hiddenReason;
-
-    /** 신고 수 */
     private int reportCount;
-
-    /** 답변 완료 여부 */
     private boolean answered;
 
+    public BoardDetailResponse() {
+        this.images = List.of();
+        this.files = List.of();
+        this.replies = List.of();
+    }
+
+    public BoardDetailResponse(Integer boardId,
+                               BoardType type,
+                               String title,
+                               String content,
+                               String memberId,
+                               Integer viewCount,
+                               Integer parentBoardId,
+                               LocalDateTime createdAt,
+                               LocalDateTime updatedAt,
+                               boolean hidden,
+                               String hiddenReason,
+                               Integer reportCount) {
+        this();
+        this.boardId = boardId;
+        this.type = type != null ? type.name() : null;
+        this.title = title;
+        this.content = content;
+        this.memberId = memberId;
+        this.viewCount = viewCount;
+        this.parentBoardId = parentBoardId;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.hidden = hidden;
+        this.hiddenReason = hiddenReason;
+        this.reportCount = reportCount == null ? 0 : reportCount;
+    }
+
     public static BoardDetailResponse from(Board board) {
-        BoardDetailResponse response = new BoardDetailResponse();
-
-        response.boardId = board.getBoardId();
-        response.type = board.getType().name();
-        response.title = board.getTitle();
-        response.content = board.getContent();
-        response.memberId = board.getMember().getMemberId();
-        response.viewCount = board.getViewCount();
-        response.parentBoardId = (board.getParent() != null)
-                ? board.getParent().getBoardId()
-                : null;
-        response.createdAt = board.getCreatedAt();
-        response.updatedAt = board.getUpdatedAt();
-        response.hidden = board.isHidden();
-        response.hiddenReason = board.getHiddenReason();
-        response.reportCount = board.getReportCount() == null ? 0 : board.getReportCount();
-        response.answered = !board.getChildren().isEmpty();
-
-        response.images = board.getBoardImages().stream()
-                .map(ImageInfo::from)
-                .collect(Collectors.toList());
-
-        response.files = board.getBoardFiles().stream()
-                .map(FileInfo::from)
-                .collect(Collectors.toList());
-
-        return response;
+        return new BoardDetailResponse(
+                board.getBoardId(),
+                board.getType(),
+                board.getTitle(),
+                board.getContent(),
+                board.getMember().getMemberId(),
+                board.getViewCount(),
+                board.getParent() != null ? board.getParent().getBoardId() : null,
+                board.getCreatedAt(),
+                board.getUpdatedAt(),
+                board.isHidden(),
+                board.getHiddenReason(),
+                board.getReportCount()
+        );
     }
 
     public void setReplies(List<BoardReplyResponse> replies) {
         this.replies = replies;
     }
 
-    /* =============================================
-       본문 이미지 정보
-       ============================================= */
+    public void setAnswered(boolean answered) {
+        this.answered = answered;
+    }
+
+    public void setImages(List<ImageInfo> images) {
+        this.images = images;
+    }
+
+    public void setFiles(List<FileInfo> files) {
+        this.files = files;
+    }
+
     @Getter
     public static class ImageInfo {
 
-        /** board_image.image_id = BIGINT */
         private Long imageId;
-
-        /** 화면 출력용 URL */
         private String imageUrl;
-
-        /** 저장된 파일명 */
         private String savedName;
-
-        /** 원본 파일명 */
         private String originalName;
 
         public static ImageInfo from(BoardImage image) {
@@ -126,31 +115,18 @@ public class BoardDetailResponse {
         }
     }
 
-    /* =============================================
-       첨부파일 정보
-       ============================================= */
     @Getter
     public static class FileInfo {
 
-        /** board_file.file_id = BIGINT */
+        private static final Set<String> IMAGE_EXTENSIONS = Set.of(
+                "jpg", "jpeg", "png", "gif", "webp", "bmp"
+        );
+
         private Long fileId;
-
-        /** 원본 파일명 */
         private String originalName;
-
-        /**
-         * 기존 템플릿 호환용
-         * qna-detail / notice-detail 에서 originalFilename 쓸 수 있으므로 유지
-         */
         private String originalFilename;
-
-        /** 저장된 파일명 */
         private String storedFilename;
-
-        /** 파일 크기 */
         private Long fileSize;
-
-        /** 파일 확장자 */
         private String fileExtension;
 
         public static FileInfo from(BoardFile file) {
@@ -162,6 +138,11 @@ public class BoardDetailResponse {
             info.fileSize = file.getFileSize();
             info.fileExtension = file.getFileExtension();
             return info;
+        }
+
+        public boolean isImage() {
+            return fileExtension != null
+                    && IMAGE_EXTENSIONS.contains(fileExtension.toLowerCase(Locale.ROOT));
         }
     }
 }

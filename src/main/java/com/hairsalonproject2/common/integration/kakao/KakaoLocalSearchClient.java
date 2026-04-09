@@ -8,7 +8,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
@@ -18,42 +17,40 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class KakaoLocalSearchClient {
-
     private final ObjectMapper objectMapper;
     private final RestClient restClient = RestClient.create();
 
     @Value("${kakao.rest-api-key:}")
     private String restApiKey;
 
-    public boolean isConfigured() {
-        return restApiKey != null && !restApiKey.isBlank();
-    }
-
     public List<KakaoPlaceSearchResult> searchSalons(String keyword, String region, int page, int size) {
-        if (keyword == null || keyword.isBlank()) {
-            return List.of();
-        }
-        if (!isConfigured()) {
+        if (restApiKey == null || restApiKey.isBlank()) {
             return List.of();
         }
 
-        String query = (region == null || region.isBlank() ? keyword : region + " " + keyword) + " 미용실";
+        String query = buildSalonQuery(keyword, region);
+        if (query.isBlank()) {
+            return List.of();
+        }
+
+        String uri = UriComponentsBuilder
+                .fromUriString("https://dapi.kakao.com/v2/local/search/keyword.json")
+                .queryParam("query", query)
+                .queryParam("page", page)
+                .queryParam("size", size)
+                // query 값(한글 포함)을 제대로 percent-encoding 해야 합니다.
+                // build(true)는 "이미 인코딩된 URI"로 취급해서 한글이 그대로 들어갈 수 있습니다.
+                .build(false)
+                .toUriString();
+
+        String body = restClient.get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + restApiKey)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .body(String.class);
 
         try {
-            String uri = UriComponentsBuilder.fromUriString("https://dapi.kakao.com/v2/local/search/keyword.json")
-                    .queryParam("query", query)
-                    .queryParam("page", page)
-                    .queryParam("size", size)
-                    .build(true)
-                    .toUriString();
-
-            String body = restClient.get()
-                    .uri(uri)
-                    .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + restApiKey)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .body(String.class);
-
             JsonNode root = objectMapper.readTree(body);
             List<KakaoPlaceSearchResult> results = new ArrayList<>();
 
@@ -71,10 +68,31 @@ public class KakaoLocalSearchClient {
             }
 
             return results;
-        } catch (RestClientException e) {
-            throw new IllegalStateException("Failed to call Kakao API", e);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse Kakao API response", e);
         }
+    }
+
+    String buildSalonQuery(String keyword, String region) {
+        String normalizedKeyword = normalize(keyword);
+        String normalizedRegion = normalize(region);
+
+        if (normalizedKeyword.isBlank() && normalizedRegion.isBlank()) {
+            return "";
+        }
+
+        if (normalizedKeyword.isBlank()) {
+            return normalizedRegion + " 미용실";
+        }
+
+        if (normalizedRegion.isBlank()) {
+            return normalizedKeyword + " 미용실";
+        }
+
+        return normalizedRegion + " " + normalizedKeyword + " 미용실";
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

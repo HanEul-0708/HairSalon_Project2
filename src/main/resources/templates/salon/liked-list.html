@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>좋아요한 미용실</title>
+    <link rel="stylesheet" th:href="@{/css/salon.css}">
+</head>
+<body>
+<main>
+<div class="container salon-page salon-list-page">
+    <div th:replace="~{fragments/message :: flashMessage}"></div>
+
+    <div class="page-header">
+        <h1>좋아요한 미용실</h1>
+        <p>나중에 다시 보고 싶은 미용실을 한곳에서 확인할 수 있습니다.</p>
+    </div>
+
+    <div class="salon-page__actions">
+        <a th:href="@{/salons}" class="btn btn-outline">전체 미용실 보기</a>
+    </div>
+
+    <div class="salon-grid" th:if="${!#lists.isEmpty(salons)}">
+        <div class="salon-card" th:each="salon : ${salons}">
+            <div class="salon-card__image">SALON</div>
+
+            <div class="salon-card__body">
+                <h2 class="salon-card__name">
+                    <a th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.name}">살롱</a>
+                </h2>
+
+                <span class="salon-status-badge salon-status-badge--on"
+                      th:if="${salon.reservable}">예약 가능</span>
+
+                <span class="salon-status-badge salon-status-badge--off"
+                      th:unless="${salon.reservable}">예약 준비중</span>
+
+                <p class="salon-card__meta" th:text="${salon.address}">주소</p>
+                <p class="salon-card__meta" th:text="|평점 ${salon.averageRating} / 리뷰 ${salon.reviewCount} / 좋아요 ${salon.likeCount}|">
+                    통계
+                </p>
+
+                <div class="salon-card__footer">
+                    <a class="btn btn-outline"
+                       th:href="@{/salons/{id}(id=${salon.salonId})}">상세 보기</a>
+
+                    <a class="btn btn-primary"
+                       th:if="${salon.reservable}"
+                       th:href="@{/salons/{id}(id=${salon.salonId})}">예약하러 가기</a>
+
+                    <button type="button"
+                            class="btn btn-outline"
+                            th:unless="${salon.reservable}"
+                            disabled>예약 준비중</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="salon-empty-state" th:if="${#lists.isEmpty(salons)}">
+        <h2>아직 좋아요한 미용실이 없습니다.</h2>
+        <p>마음에 드는 미용실에 좋아요를 눌러두면 여기서 다시 확인할 수 있습니다.</p>
+        <a th:href="@{/salons}" class="btn btn-primary">미용실 둘러보기</a>
+    </div>
+</div>
+</main>
+</body>
+</html>

@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
     bindDesignerSearchForm();
-    bindDesignerCardFocusEffect();
     bindDesignerDeleteConfirm();
 });
 
@@ -9,35 +8,13 @@ function bindDesignerSearchForm() {
     if (!forms.length) return;
 
     forms.forEach(function (form) {
-        var inputs = form.querySelectorAll("input");
-        inputs.forEach(function (input) {
-            input.addEventListener("keypress", function (event) {
+        form.querySelectorAll("input, select").forEach(function (field) {
+            field.addEventListener("keypress", function (event) {
                 if (event.key === "Enter") {
                     event.preventDefault();
                     form.submit();
                 }
             });
-        });
-    });
-}
-
-function bindDesignerCardFocusEffect() {
-    var links = document.querySelectorAll(".designer-card a, .designer-table a");
-    links.forEach(function (link) {
-        link.addEventListener("focus", function () {
-            var card = link.closest(".designer-card");
-            if (card) {
-                card.style.transform = "translateY(-4px)";
-                card.style.boxShadow = "var(--shadow-md)";
-            }
-        });
-
-        link.addEventListener("blur", function () {
-            var card = link.closest(".designer-card");
-            if (card) {
-                card.style.transform = "";
-                card.style.boxShadow = "";
-            }
         });
     });
 }

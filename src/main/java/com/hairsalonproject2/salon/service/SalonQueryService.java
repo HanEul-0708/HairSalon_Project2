@@ -10,16 +10,20 @@ import com.hairsalonproject2.salon.dto.request.SalonCreateRequest;
 import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
 import com.hairsalonproject2.salon.dto.request.SalonUpdateRequest;
 import com.hairsalonproject2.salon.dto.response.SalonDetailResponse;
+import com.hairsalonproject2.salon.dto.response.SalonRecommendationConditionResponse;
 import com.hairsalonproject2.salon.dto.response.SalonRankResponse;
 import com.hairsalonproject2.salon.dto.response.SalonSummaryResponse;
 import com.hairsalonproject2.salon.entity.Salon;
 import com.hairsalonproject2.salon.entity.SalonLike;
 import com.hairsalonproject2.salon.repository.SalonLikeRepository;
 import com.hairsalonproject2.salon.repository.SalonRepository;
+import com.hairsalonproject2.review.repository.ReviewRepository;
 import com.hairsalonproject2.salonservice.dto.response.SalonServiceSummaryResponse;
 import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,30 +48,44 @@ public class SalonQueryService {
     private final SalonServiceRepository salonServiceRepository;
     private final SalonLikeRepository salonLikeRepository;
     private final MemberRepository memberRepository;
+    private final ReviewRepository reviewRepository;
 
     public List<SalonSummaryResponse> search(SalonSearchRequest request) {
-        List<Integer> keywordMatchedSalonIds = resolveKeywordMatchedSalonIds(request.getKeyword());
-        List<Salon> salons = salonRepository.findAll(SalonSpecifications.bySearch(request, keywordMatchedSalonIds));
+        SalonSearchRequest safeRequest = request == null ? new SalonSearchRequest() : request;
+        return search(safeRequest, 0, Integer.MAX_VALUE).getContent();
+    }
+
+    public Page<SalonSummaryResponse> search(SalonSearchRequest request, int page, int size) {
+        SalonSearchRequest safeRequest = request == null ? new SalonSearchRequest() : request;
+        List<SalonSummaryResponse> responses = searchInternal(safeRequest);
+        int safeSize = Math.max(size, 1);
+        int maxPage = responses.isEmpty() ? 0 : (responses.size() - 1) / safeSize;
+        int safePage = Math.min(Math.max(page, 0), maxPage);
+        int fromIndex = Math.min(safePage * safeSize, responses.size());
+        int toIndex = Math.min(fromIndex + safeSize, responses.size());
+
+        return new PageImpl<>(
+                responses.subList(fromIndex, toIndex),
+                PageRequest.of(safePage, safeSize),
+                responses.size()
+        );
+    }
+
+    private List<SalonSummaryResponse> searchInternal(SalonSearchRequest request) {
+        List<Salon> salons = salonRepository.findAll(SalonSpecifications.bySearch(request));
         List<SalonSummaryResponse> responses = new ArrayList<>();
-        boolean requiresDistanceFiltering = request.getLatitude() != null
-                && request.getLongitude() != null
-                && (request.getRadiusKm() != null || "distance".equalsIgnoreCase(resolveSort(request)));
 
         for (Salon salon : salons) {
             Double distance = resolveDistanceKm(request, salon);
-            if (requiresDistanceFiltering && distance == null) {
-                continue;
-            }
             if (request.getRadiusKm() != null && distance != null && distance > request.getRadiusKm()) {
                 continue;
             }
             responses.add(toSummary(salon, distance));
         }
 
-        String sort = resolveSort(request);
-        if ("distance".equalsIgnoreCase(sort)) {
+        if ("distance".equalsIgnoreCase(request.getSort())) {
             responses.sort(Comparator.comparing(r -> r.getDistanceKm() == null ? Double.MAX_VALUE : r.getDistanceKm()));
-        } else if ("rating".equalsIgnoreCase(sort)) {
+        } else if ("rating".equalsIgnoreCase(request.getSort())) {
             responses.sort(
                     Comparator.comparing(
                                     SalonSummaryResponse::getAverageRating,
@@ -75,7 +94,7 @@ public class SalonQueryService {
                                     SalonSummaryResponse::getReviewCount,
                                     Comparator.nullsLast(Comparator.reverseOrder()))
             );
-        } else if ("likes".equalsIgnoreCase(sort)) {
+        } else if ("likes".equalsIgnoreCase(request.getSort())) {
             responses.sort(Comparator.comparing(
                     SalonSummaryResponse::getLikeCount,
                     Comparator.nullsLast(Comparator.reverseOrder()))
@@ -95,20 +114,6 @@ public class SalonQueryService {
         }
 
         return responses;
-    }
-
-    private List<Integer> resolveKeywordMatchedSalonIds(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return List.of();
-        }
-        return salonServiceRepository.findDistinctSalonIdsByKeyword(keyword);
-    }
-
-    private String resolveSort(SalonSearchRequest request) {
-        if (request.getSort() == null || request.getSort().isBlank()) {
-            return "recommended";
-        }
-        return request.getSort();
     }
 
     public SalonDetailResponse getDetail(Integer salonId) {
@@ -170,6 +175,27 @@ public class SalonQueryService {
                 .build();
     }
 
+    public List<SalonSummaryResponse> getLikedSalons(String memberId) {
+        return salonLikeRepository.findAllByMember_MemberIdOrderByCreatedAtDesc(memberId).stream()
+                .map(SalonLike::getSalon)
+                .map(salon -> toSummary(salon, null))
+                .toList();
+    }
+
+    public List<Integer> getLikedSalonIds(String memberId) {
+        return salonLikeRepository.findAllByMember_MemberIdOrderByCreatedAtDesc(memberId).stream()
+                .map(like -> like.getSalon().getSalonId())
+                .toList();
+    }
+
+    public boolean isLikedByMember(Integer salonId, String memberId) {
+        if (memberId == null || memberId.isBlank()) {
+            return false;
+        }
+
+        return salonLikeRepository.existsByMember_MemberIdAndSalon_SalonId(memberId, salonId);
+    }
+
     public List<SalonRankResponse> recommendedTop3() {
         List<Salon> salons = salonRepository.findRecommendedSalons(PageRequest.of(0, 3));
         List<SalonRankResponse> result = new ArrayList<>();
@@ -187,6 +213,22 @@ public class SalonQueryService {
         }
 
         return result;
+    }
+
+    public SalonRecommendationConditionResponse getRecommendationCondition(Integer salonId) {
+        Salon salon = salonRepository.findById(salonId)
+                .orElseThrow(() -> new EntityNotFoundException("Salon not found: " + salonId));
+
+        List<String> keywords = extractReviewKeywords(salonId);
+
+        return SalonRecommendationConditionResponse.builder()
+                .salonId(salon.getSalonId())
+                .salonName(salon.getName())
+                .averageRating(salon.getAverageRating())
+                .reviewCount(salon.getReviewCount())
+                .likeCount(salon.getLikeCount())
+                .reviewKeywords(keywords)
+                .build();
     }
 
     @Transactional
@@ -275,13 +317,12 @@ public class SalonQueryService {
                 .address(salon.getAddress())
                 .phone(salon.getPhone())
                 .imageUrl(salon.getImageUrl())
-                .latitude(salon.getLatitude())
-                .longitude(salon.getLongitude())
                 .averageRating(salon.getAverageRating())
                 .reviewCount(salon.getReviewCount())
                 .likeCount(salon.getLikeCount())
                 .reservable(salon.getReservable())
                 .distanceKm(distanceKm)
+                .createdAt(salon.getCreatedAt())
                 .build();
     }
 
@@ -303,5 +344,39 @@ public class SalonQueryService {
         return BigDecimal.valueOf(distance)
                 .setScale(2, RoundingMode.HALF_UP)
                 .doubleValue();
+    }
+
+    private List<String> extractReviewKeywords(Integer salonId) {
+        List<String> reviewContents = reviewRepository.findByDesigner_Salon_SalonId(salonId).stream()
+                .map(review -> review.getContent() == null ? "" : review.getContent().toLowerCase())
+                .toList();
+
+        if (reviewContents.isEmpty()) {
+            return List.of();
+        }
+
+        String[] candidateKeywords = {
+                "커트", "컷", "레이어드", "펌", "염색", "탈색", "볼륨", "스타일",
+                "트렌디", "자연스러", "꼼꼼", "친절", "만족", "추천", "재방문", "깔끔"
+        };
+
+        Map<String, Integer> keywordCounts = new LinkedHashMap<>();
+        for (String keyword : candidateKeywords) {
+            int count = 0;
+            for (String content : reviewContents) {
+                if (content.contains(keyword.toLowerCase())) {
+                    count++;
+                }
+            }
+            if (count > 0) {
+                keywordCounts.put(keyword, count);
+            }
+        }
+
+        return keywordCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(5)
+                .map(Map.Entry::getKey)
+                .toList();
     }
 }

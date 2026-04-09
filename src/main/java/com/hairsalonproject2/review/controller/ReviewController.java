@@ -4,11 +4,12 @@ import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.review.dto.DesignerRankingResponse;
 import com.hairsalonproject2.review.dto.MonthlyReviewStatResponse;
 import com.hairsalonproject2.review.dto.ReviewCreateRequest;
+import com.hairsalonproject2.review.dto.ReviewDetailResponse;
+import com.hairsalonproject2.review.dto.ReviewLikeToggleResponse;
 import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.dto.ReviewUpdateRequest;
 import com.hairsalonproject2.review.dto.SalonRankingResponse;
 import com.hairsalonproject2.review.service.ReviewService;
-import com.hairsalonproject2.review.dto.ReviewDetailResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,11 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * ReviewController
- *
- * 리뷰 관련 API 요청을 처리하는 컨트롤러
- */
 @RestController
 @RequestMapping("/api/reviews")
 @RequiredArgsConstructor
@@ -29,106 +25,96 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    /**
-     * 리뷰 작성
-     */
     @PostMapping
     public ReviewResponse createReview(@AuthenticationPrincipal CustomUserDetails userDetails,
                                        @Valid @RequestBody ReviewCreateRequest request) {
         return reviewService.createReview(userDetails.getMember().getMemberId(), request);
     }
 
-    /**
-     * 리뷰 1건 조회
-     */
     @GetMapping("/{reviewId}")
-    public ReviewResponse getReview(@PathVariable Integer reviewId) {
-        return reviewService.getReview(reviewId);
+    public ReviewResponse getReview(@PathVariable Integer reviewId,
+                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return reviewService.getReview(reviewId, getLoginMemberId(userDetails));
     }
 
-    /**
-     * 전체 리뷰 목록 조회
-     */
     @GetMapping
-    public List<ReviewResponse> getAllReviews() {
-        return reviewService.getAllReviews();
+    public List<ReviewResponse> getAllReviews(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                              @RequestParam(required = false) Integer designerId,
+                                              @RequestParam(defaultValue = "latest") String sortBy) {
+        return reviewService.getAllReviews(getLoginMemberId(userDetails), designerId, sortBy);
     }
 
-    /**
-     * 회원별 리뷰 목록 조회
-     */
     @GetMapping("/member/{memberId}")
-    public List<ReviewResponse> getReviewsByMember(@PathVariable String memberId) {
-        return reviewService.getReviewsByMember(memberId);
+    public List<ReviewResponse> getReviewsByMember(@PathVariable String memberId,
+                                                   @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return reviewService.getReviewsByMember(memberId, getLoginMemberId(userDetails));
     }
 
-    /**
-     * 리뷰 수정
-     */
     @PutMapping("/{reviewId}")
-    public ReviewResponse updateReview(@PathVariable Integer reviewId,
+    public ReviewResponse updateReview(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                       @PathVariable Integer reviewId,
                                        @Valid @RequestBody ReviewUpdateRequest request) {
-        return reviewService.updateReview(reviewId, request);
+        return reviewService.updateReview(
+                userDetails.getMember().getMemberId(),
+                isAdmin(userDetails),
+                reviewId,
+                request
+        );
     }
 
-    /**
-     * 리뷰 삭제
-     */
     @DeleteMapping("/{reviewId}")
-    public void deleteReview(@PathVariable Integer reviewId) {
-        reviewService.deleteReview(reviewId);
+    public void deleteReview(@AuthenticationPrincipal CustomUserDetails userDetails,
+                             @PathVariable Integer reviewId) {
+        reviewService.deleteReview(
+                userDetails.getMember().getMemberId(),
+                isAdmin(userDetails),
+                reviewId
+        );
     }
 
-    /**
-     * 특정 디자이너 평균 평점 조회
-     */
+    @PostMapping("/{reviewId}/likes")
+    public ReviewLikeToggleResponse toggleLike(@PathVariable Integer reviewId,
+                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return reviewService.toggleLike(reviewId, userDetails.getMember().getMemberId());
+    }
+
     @GetMapping("/designer/{designerId}/average-rating")
     public Double getAverageRatingByDesigner(@PathVariable Integer designerId) {
         return reviewService.getAverageRatingByDesigner(designerId);
     }
 
-    /**
-     * 평균 평점 기준 디자이너 TOP3 조회
-     */
     @GetMapping("/designer/top3")
     public List<DesignerRankingResponse> getTop3Designers() {
         return reviewService.getTop3Designers();
     }
 
-    /**
-     * 월별 리뷰 수 / 평균 평점 집계 조회
-     */
     @GetMapping("/stats/monthly")
     public List<MonthlyReviewStatResponse> getMonthlyReviewStats() {
         return reviewService.getMonthlyReviewStats();
     }
 
-    /**
-     * 특정 기간 월별 리뷰 수 / 평균 평점 집계 조회
-     */
     @GetMapping("/stats/monthly/period")
-    public List<MonthlyReviewStatResponse> getMonthlyReviewStatsByPeriod(
-            @RequestParam LocalDate startDate,
-            @RequestParam LocalDate endDate) {
-
+    public List<MonthlyReviewStatResponse> getMonthlyReviewStatsByPeriod(@RequestParam LocalDate startDate,
+                                                                         @RequestParam LocalDate endDate) {
         return reviewService.getMonthlyReviewStatsByPeriod(startDate, endDate);
     }
 
-    /**
-     * 미용실 TOP3 랭킹 조회
-     */
     @GetMapping("/salon/top3")
     public List<SalonRankingResponse> getTopSalons() {
         return reviewService.getTopSalons();
     }
 
-    /**
-     * 리뷰 상세 조회
-     *
-     * 리뷰 기본 정보 + 이미지 목록 함께 반환
-     */
     @GetMapping("/{reviewId}/detail")
-    public ReviewDetailResponse getReviewDetail(@PathVariable Integer reviewId) {
-        return reviewService.getReviewDetail(reviewId);
+    public ReviewDetailResponse getReviewDetail(@PathVariable Integer reviewId,
+                                                @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails));
+    }
+
+    private boolean isAdmin(CustomUserDetails userDetails) {
+        return userDetails.getMember().getRole().name().equals("ADMIN");
+    }
+
+    private String getLoginMemberId(CustomUserDetails userDetails) {
+        return userDetails == null ? null : userDetails.getMember().getMemberId();
     }
 }

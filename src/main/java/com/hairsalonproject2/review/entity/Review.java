@@ -89,6 +89,9 @@ public class Review extends BaseCreatedEntity {
     @Column(name = "reply_created_at")
     private LocalDateTime replyCreatedAt;
 
+    @Column(name = "like_count")
+    private Integer likeCount;
+
     // ==============================
     // 연관관계
     // ==============================
@@ -100,6 +103,11 @@ public class Review extends BaseCreatedEntity {
             cascade = CascadeType.ALL,
             orphanRemoval = true)
     private List<ReviewImage> reviewImages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "review",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<ReviewLike> reviewLikes = new ArrayList<>();
 
     // ==============================
     // 생성자
@@ -116,6 +124,7 @@ public class Review extends BaseCreatedEntity {
         this.content = content;
         this.replyContent = replyContent;
         this.replyCreatedAt = replyCreatedAt;
+        this.likeCount = 0;
     }
 
     // ==============================
@@ -146,5 +155,20 @@ public class Review extends BaseCreatedEntity {
     public void addReviewImage(ReviewImage reviewImage) {
         this.reviewImages.add(reviewImage);
         reviewImage.changeReview(this);
+    }
+
+    public void increaseLikeCount() {
+        if (this.likeCount == null) {
+            this.likeCount = 0;
+        }
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount == null || this.likeCount <= 0) {
+            this.likeCount = 0;
+            return;
+        }
+        this.likeCount--;
     }
 }

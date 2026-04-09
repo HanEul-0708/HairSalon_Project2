@@ -16,4 +16,9 @@ public class SalonSearchRequest {
     private BigDecimal longitude;
     private Double radiusKm;
     private String sort = "recommended";
+    private boolean searched;
+
+    public boolean hasSearchRequest() {
+        return searched;
+    }
 }

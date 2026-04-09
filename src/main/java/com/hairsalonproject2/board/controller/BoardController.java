@@ -7,8 +7,8 @@ import com.hairsalonproject2.board.dto.request.BoardUpdateRequest;
 import com.hairsalonproject2.board.dto.response.BoardDetailResponse;
 import com.hairsalonproject2.board.dto.response.BoardResponse;
 import com.hairsalonproject2.board.service.BoardService;
+import com.hairsalonproject2.board.service.BoardViewGuard;
 import com.hairsalonproject2.common.constant.BoardType;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -20,13 +20,15 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -38,11 +40,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BoardController {
 
-    private static final String VIEW_COOKIE_NAME = "board_view_history";
-    private static final int VIEW_COOKIE_MAX_AGE = 60 * 60 * 24;
-    private static final int MAX_VIEW_HISTORY_COUNT = 50;
-
     private final BoardService boardService;
+    private final BoardViewGuard boardViewGuard;
 
     @GetMapping("/notices")
     public String noticeList(BoardSearchRequest request,
@@ -162,8 +161,9 @@ public class BoardController {
     public String editForm(@PathVariable Integer boardId,
                            @AuthenticationPrincipal UserDetails userDetails,
                            Model model) {
-        if (!boardService.isMyBoard(boardId, userDetails.getUsername())) {
-            return "redirect:/boards/qna/" + boardId + "?error=forbidden";
+        BoardType boardType = boardService.getBoardType(boardId);
+        if (!canEditBoard(boardId, boardType, userDetails)) {
+            return "redirect:" + buildDetailPath(boardId, boardType) + "?error=forbidden";
         }
         BoardDetailResponse board = boardService.getDetailOnly(boardId);
         BoardUpdateRequest request = new BoardUpdateRequest();
@@ -182,15 +182,15 @@ public class BoardController {
                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
                        @AuthenticationPrincipal UserDetails userDetails,
                        Model model) {
+        BoardType boardType = boardService.getBoardType(boardId);
         if (bindingResult.hasErrors()) {
             BoardDetailResponse board = boardService.getDetailOnly(boardId);
             model.addAttribute("board", board);
             model.addAttribute("boardUpdateRequest", request);
             return "board/edit";
         }
-        boardService.update(boardId, request, userDetails.getUsername(), files);
-        BoardType type = boardService.getBoardType(boardId);
-        return type == BoardType.NOTICE ? "redirect:/boards/notices/" + boardId : "redirect:/boards/qna/" + boardId;
+        boardService.update(boardId, request, userDetails.getUsername(), files, isAdmin(userDetails));
+        return "redirect:" + buildDetailPath(boardId, boardType);
     }
 
     @DeleteMapping("/{boardId}")
@@ -235,68 +235,28 @@ public class BoardController {
                                                             BoardType boardType,
                                                             HttpServletRequest request,
                                                             HttpServletResponse response) {
-        if (alreadyViewed(boardId, boardType, request)) {
+        if (!boardViewGuard.shouldIncreaseView(boardId, boardType, request, response)) {
             return boardService.getPublicDetail(boardId, boardType);
         }
-        appendViewCookie(boardId, boardType, request, response);
         return boardService.getPublicDetailAndIncreaseView(boardId, boardType);
     }
 
-    private boolean alreadyViewed(Integer boardId, BoardType boardType, HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
-            return false;
-        }
-        String target = makeBoardCookieToken(boardId, boardType);
-        for (Cookie cookie : cookies) {
-            if (VIEW_COOKIE_NAME.equals(cookie.getName()) && cookie.getValue() != null) {
-                String decodedValue = java.net.URLDecoder.decode(cookie.getValue(), StandardCharsets.UTF_8);
-                for (String token : decodedValue.split("\\|")) {
-                    if (target.equals(token)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+    private String buildDetailPath(Integer boardId, BoardType boardType) {
+        return boardType == BoardType.NOTICE
+                ? "/boards/notices/" + boardId
+                : "/boards/qna/" + boardId;
     }
 
-    private void appendViewCookie(Integer boardId,
-                                  BoardType boardType,
-                                  HttpServletRequest request,
-                                  HttpServletResponse response) {
-        String target = makeBoardCookieToken(boardId, boardType);
-        List<String> tokens = new ArrayList<>();
-        tokens.add(target);
-
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (VIEW_COOKIE_NAME.equals(cookie.getName()) && cookie.getValue() != null) {
-                    String decodedValue = java.net.URLDecoder.decode(cookie.getValue(), StandardCharsets.UTF_8);
-                    if (!decodedValue.isBlank()) {
-                        tokens.addAll(Arrays.stream(decodedValue.split("\\|"))
-                                .filter(token -> !token.isBlank())
-                                .filter(token -> !target.equals(token))
-                                .toList());
-                    }
-                }
-            }
+    private boolean canEditBoard(Integer boardId, BoardType boardType, UserDetails userDetails) {
+        if (boardType == BoardType.NOTICE && isAdmin(userDetails)) {
+            return true;
         }
 
-        if (tokens.size() > MAX_VIEW_HISTORY_COUNT) {
-            tokens = new ArrayList<>(tokens.subList(0, MAX_VIEW_HISTORY_COUNT));
-        }
-
-        String encodedValue = URLEncoder.encode(String.join("|", tokens), StandardCharsets.UTF_8);
-        Cookie cookie = new Cookie(VIEW_COOKIE_NAME, encodedValue);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(VIEW_COOKIE_MAX_AGE);
-        response.addCookie(cookie);
+        return boardService.isMyBoard(boardId, userDetails.getUsername());
     }
 
-    private String makeBoardCookieToken(Integer boardId, BoardType boardType) {
-        return boardType.name() + "_" + boardId;
+    private boolean isAdmin(UserDetails userDetails) {
+        return userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

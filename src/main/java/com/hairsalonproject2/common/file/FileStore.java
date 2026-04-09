@@ -7,6 +7,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 
 /**
@@ -48,6 +50,8 @@ public class FileStore {
         // 서버 저장용 이름 생성 (UUID + 확장자)
         String storedFilename = createStoredFilename(originalFilename);
 
+        ensureUploadDirectoryExists();
+
         // 실제 저장 — transferTo가 파일을 디스크에 씀
         multipartFile.transferTo(new File(getFullPath(storedFilename)));
 
@@ -75,6 +79,13 @@ public class FileStore {
      */
     public String getFullPath(String storedFilename) {
         return uploadPath + storedFilename;
+    }
+
+    private void ensureUploadDirectoryExists() throws IOException {
+        Path uploadDirectory = Path.of(uploadPath);
+        if (Files.notExists(uploadDirectory)) {
+            Files.createDirectories(uploadDirectory);
+        }
     }
 
     /**

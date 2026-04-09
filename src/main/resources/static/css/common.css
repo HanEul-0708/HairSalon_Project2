@@ -46,6 +46,9 @@
    ============================================= */
 
 :root {
+    --font-body        : "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+    --font-heading     : "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+    --font-display     : Georgia, "Times New Roman", serif;
     /* ── 메인 컬러 ── */
     --primary         : #1c1c1e;   /* 거의 검정 */
     --primary-hover   : #000000;
@@ -123,11 +126,11 @@ html {
 }
 
 body {
-    font-family: "Malgun Gothic", "Apple SD Gothic Neo", -apple-system,
-    BlinkMacSystemFont, sans-serif;
-    font-size: 15px;
+    font-family: var(--font-body);
+    font-size: 16px;
     font-weight: 400;
-    line-height: 1.7;
+    line-height: 1.68;
+    letter-spacing: -0.012em;
     color: var(--text-main);
     background-color: var(--bg-soft);
     /* 고정 헤더 높이만큼 위에 여백 */
@@ -137,19 +140,44 @@ body {
 
 /* 제목 — 세리프체로 고급감 */
 h1, h2, h3, h4, h5, h6 {
-    font-family: Georgia, "Times New Roman", serif;
+    font-family: var(--font-heading);
     font-weight: 700;
-    line-height: 1.35;
+    line-height: 1.32;
+    letter-spacing: -0.03em;
+    word-break: keep-all;
+    text-wrap: balance;
     color: var(--text-main);
     margin-bottom: var(--spacing-sm);
 }
 
-h1 { font-size: 2rem;   }
-h2 { font-size: 1.6rem; }
-h3 { font-size: 1.3rem; }
+h1 { font-size: 2.05rem; }
+h2 { font-size: 1.62rem; }
+h3 { font-size: 1.32rem; }
 h4 { font-size: 1.1rem; }
 h5 { font-size: 1rem;   }
 h6 { font-size: 0.9rem; }
+
+p,
+li,
+label,
+button,
+.btn,
+input,
+select,
+textarea,
+.page-header p,
+.catalog-hero__subtitle,
+.catalog-results-head h2 {
+    word-break: keep-all;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    letter-spacing: inherit;
+}
 
 a {
     color: var(--gold);
@@ -206,6 +234,59 @@ hr {
 }
 .page-header h1 { font-size: 1.5rem; margin-bottom: 4px; }
 .page-header p  { color: var(--text-sub); font-size: 0.9rem; margin: 0; }
+
+.catalog-hero {
+    max-width: 920px;
+    margin: 0 auto 32px;
+    padding: 0 0 24px;
+    text-align: center;
+    border-bottom: 2px solid var(--gold);
+}
+
+.catalog-hero__eyebrow,
+.catalog-results-head__eyebrow {
+    display: inline-block;
+    margin-bottom: 10px;
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.catalog-hero__title {
+    margin: 0 0 8px;
+    color: var(--gold);
+    font-size: clamp(1.9rem, 2.8vw, 2.3rem);
+    line-height: 1.24;
+    letter-spacing: -0.03em;
+}
+
+.catalog-hero__subtitle {
+    margin: 0 auto;
+    max-width: 700px;
+    color: #7b6e56;
+    font-size: 1rem;
+    line-height: 1.72;
+}
+
+.catalog-results-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.catalog-results-head h2 {
+    margin: 0;
+    color: #2d261b;
+    font-size: 1.46rem;
+}
+
+.catalog-results-head h2 span {
+    color: var(--gold);
+}
 
 /* =============================================
    본문 중앙 정렬 보강
@@ -567,6 +648,11 @@ main > .container {
     grid-template-columns: 1fr;
     left: 0;
     transform: translateY(8px);
+}
+
+.dropdown-panel--medium {
+    min-width: 360px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 /* 호버 시 드롭다운 표시 */

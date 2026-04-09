@@ -9,7 +9,10 @@ public final class DesignerSpecifications {
     }
 
     public static Specification<Designer> bySearch(DesignerSearchRequest request) {
-        return Specification.<Designer>unrestricted().and(keywordContains(request.getKeyword())).and(salonEquals(request.getSalonId())).and(minCareerYears(request.getMinCareerYears()));
+        return Specification.<Designer>unrestricted()
+                .and(keywordContains(request.getKeyword()))
+                .and(salonNameContains(request.getSalonKeyword()))
+                .and(minCareerYears(request.getMinCareerYears()));
     }
 
     private static Specification<Designer> keywordContains(String keyword) {
@@ -22,11 +25,14 @@ public final class DesignerSpecifications {
         };
     }
 
-    private static Specification<Designer> salonEquals(Integer salonId) {
-        if (salonId == null) {
+    private static Specification<Designer> salonNameContains(String salonKeyword) {
+        if (salonKeyword == null || salonKeyword.isBlank()) {
             return null;
         }
-        return (root, query, cb) -> cb.equal(root.get("salon").get("salonId"), salonId);
+        return (root, query, cb) -> cb.like(
+                cb.lower(root.get("salon").get("name")),
+                "%" + salonKeyword.toLowerCase() + "%"
+        );
     }
 
     private static Specification<Designer> minCareerYears(Integer minCareerYears) {

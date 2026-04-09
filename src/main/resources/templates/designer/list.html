@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko"
       xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
 <head>
     <meta charset="UTF-8">
@@ -12,51 +11,103 @@
 <body>
 <main>
     <div class="container designer-page designer-list-page">
-        <div class="page-header">
-            <h1>디자이너 목록</h1>
-            <p>살롱, 경력, 평점 조건으로 디자이너를 조회할 수 있습니다.</p>
+        <div class="catalog-hero">
+            <p class="catalog-hero__eyebrow">Designer Directory</p>
+            <h1 class="catalog-hero__title">디자이너 목록</h1>
+            <p class="catalog-hero__subtitle">이름, 미용실, 평점, 경력을 기준으로 원하는 디자이너를 찾아보세요.</p>
         </div>
 
         <form method="get" th:action="@{/designers}" class="designer-search-form">
-            <input type="text" name="keyword" placeholder="이름, 소개, 살롱명" th:value="${search.keyword}">
-            <input type="number" name="salonId" placeholder="살롱 ID" th:value="${search.salonId}">
-            <input type="number" step="0.1" name="minRating" placeholder="최소 평점" th:value="${search.minRating}">
-            <input type="number" name="minCareerYears" placeholder="최소 경력(년)" th:value="${search.minCareerYears}">
-            <button type="submit" class="btn btn-primary">검색</button>
+            <input type="hidden" name="searched" value="true">
+
+            <div class="designer-search-form__intro">
+                <p class="designer-search-form__eyebrow">Designer Finder</p>
+                <h2>조건에 맞는 디자이너를 찾아보세요.</h2>
+                <p>이름, 미용실, 평점, 경력 기준으로 원하는 디자이너만 골라볼 수 있습니다.</p>
+            </div>
+
+            <div class="designer-search-form__controls">
+                <div class="designer-search-form__fields">
+                    <input type="text" name="keyword" placeholder="이름, 소개, 미용실명 검색" th:value="${search.keyword}">
+                    <input type="text" name="salonKeyword" placeholder="미용실명" th:value="${search.salonKeyword}">
+                    <input type="number" step="0.1" name="minRating" placeholder="최소 평점" th:value="${search.minRating}">
+                    <input type="number" name="minCareerYears" placeholder="최소 경력(년)" th:value="${search.minCareerYears}">
+                    <input type="number" name="minReviewCount" placeholder="최소 리뷰 수" th:value="${search.minReviewCount}">
+                    <select name="sortBy">
+                        <option value="" th:selected="${search.sortBy == null or search.sortBy == ''}">평점순</option>
+                        <option value="reviews" th:selected="${search.sortBy == 'reviews'}">리뷰순</option>
+                        <option value="likes" th:selected="${search.sortBy == 'likes'}">좋아요순</option>
+                        <option value="career" th:selected="${search.sortBy == 'career'}">경력순</option>
+                        <option value="name" th:selected="${search.sortBy == 'name'}">이름순</option>
+                    </select>
+                </div>
+
+                <div class="designer-search-form__actions">
+                    <button type="submit" class="btn btn-primary">검색</button>
+                    <a th:href="@{/designers}" class="btn btn-outline">초기화</a>
+                </div>
+            </div>
         </form>
 
-        <div class="page-actions">
-            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/designers/new}" class="btn btn-outline">디자이너 등록</a>
+        <div class="designer-empty-state designer-empty-state--guide" th:if="${!searched}">
+            <h2>검색 조건을 입력하면 결과가 여기에 표시됩니다.</h2>
+            <p>평점, 경력, 리뷰 수를 조합해 원하는 디자이너만 찾아보세요.</p>
         </div>
 
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>이름</th>
-                    <th>살롱</th>
-                    <th>경력</th>
-                    <th>평점</th>
-                    <th>리뷰 수</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:if="${#lists.isEmpty(designers)}">
-                    <td colspan="6">조회된 디자이너가 없습니다.</td>
-                </tr>
-                <tr th:each="designer : ${designers}">
-                    <td th:text="${designer.designerId}">1</td>
-                    <td>
-                        <a th:href="@{/designers/{id}(id=${designer.designerId})}" th:text="${designer.name}">디자이너명</a>
-                    </td>
-                    <td th:text="${designer.salonName}">살롱명</td>
-                    <td th:text="|${designer.careerYears}년|">0년</td>
-                    <td th:text="${designer.averageRating}">0</td>
-                    <td th:text="${designer.reviewCount}">0</td>
-                </tr>
-                </tbody>
-            </table>
+        <div th:if="${searched}">
+            <div class="designer-results-head catalog-results-head">
+                <div>
+                    <p class="designer-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
+                    <h2>디자이너 <span th:text="${totalDesignerCount}">0</span>명</h2>
+                </div>
+            </div>
+
+            <div class="designer-grid" th:if="${!#lists.isEmpty(designers)}">
+                <article class="designer-card" th:each="designer : ${designers}">
+                    <div class="designer-card__body">
+                        <div class="designer-card__avatar"
+                             th:text="${#strings.substring(designer.name, 0, 1)}">D</div>
+
+                        <p class="designer-card__salon" th:text="${designer.salonName}">Salon Name</p>
+                        <h3 class="designer-card__name">
+                            <a th:href="@{/designers/{id}(id=${designer.designerId})}"
+                               th:text="${designer.name}">디자이너명</a>
+                        </h3>
+
+                        <div class="designer-card__stats">
+                            <span class="designer-card__stat">평점 <strong th:text="${designer.averageRating}">0</strong></span>
+                            <span class="designer-card__stat">리뷰 <strong th:text="${designer.reviewCount}">0</strong></span>
+                            <span class="designer-card__stat">좋아요 <strong th:text="${designer.likeCount}">0</strong></span>
+                            <span class="designer-card__stat">경력 <strong th:text="${designer.careerYears}">0</strong>년</span>
+                        </div>
+
+                        <div class="designer-card__footer">
+                            <a th:href="@{/designers/{id}(id=${designer.designerId})}" class="btn btn-outline">상세 보기</a>
+                            <a th:href="@{/salons/{id}(id=${designer.salonId})}" class="btn btn-primary">미용실 보기</a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <div class="designer-empty-state" th:if="${#lists.isEmpty(designers)}">
+                <h2>조건에 맞는 디자이너가 없습니다.</h2>
+                <p>검색어를 줄이거나 평점, 경력, 리뷰 수 조건을 완화해서 다시 찾아보세요.</p>
+                <a th:href="@{/designers}" class="btn btn-primary">검색 다시 하기</a>
+            </div>
+
+            <div class="pagination" th:if="${totalPages > 1}">
+                <a class="page-link"
+                   th:classappend="${currentPage == 1 ? ' disabled' : ''}"
+                   th:href="@{/designers(page=${currentPage > 1 ? currentPage - 1 : 1}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, minRating=${search.minRating}, minCareerYears=${search.minCareerYears}, minReviewCount=${search.minReviewCount}, sortBy=${search.sortBy})}">이전</a>
+                <a class="page-link"
+                   th:each="pageNumber : ${pageNumbers}"
+                   th:classappend="${pageNumber == currentPage ? ' active' : ''}"
+                   th:href="@{/designers(page=${pageNumber}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, minRating=${search.minRating}, minCareerYears=${search.minCareerYears}, minReviewCount=${search.minReviewCount}, sortBy=${search.sortBy})}"
+                   th:text="${pageNumber}">1</a>
+                <a class="page-link"
+                   th:classappend="${currentPage == totalPages ? ' disabled' : ''}"
+                   th:href="@{/designers(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, minRating=${search.minRating}, minCareerYears=${search.minCareerYears}, minReviewCount=${search.minReviewCount}, sortBy=${search.sortBy})}">다음</a>
+            </div>
         </div>
     </div>
 </main>

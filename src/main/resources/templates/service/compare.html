@@ -6,6 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <title>시술 가격 비교</title>
+
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/service.css}">
     <script th:src="@{/js/common.js}" defer></script>
@@ -13,43 +14,66 @@
 </head>
 <body>
 <main>
-    <div class="container service-page">
-        <div class="page-header">
-            <h1 class="page-title">시술 가격 비교</h1>
-            <p class="page-desc">시술명과 지역 조건으로 살롱별 가격을 비교합니다.</p>
+    <div class="container service-page service-compare-page">
+        <div class="catalog-hero">
+            <p class="catalog-hero__eyebrow">Price Compare</p>
+            <h1 class="catalog-hero__title">시술 가격 비교</h1>
+            <p class="catalog-hero__subtitle">지역과 시술명을 기준으로 여러 미용실의 가격과 시간, 평점을 한 화면에서 비교해보세요.</p>
         </div>
 
-        <form method="get" th:action="@{/salon-services/compare}" class="service-search-form">
-            <input type="text" name="serviceName" placeholder="시술명" th:value="${serviceName}">
-            <input type="text" name="region" placeholder="지역" th:value="${region}">
-            <button type="submit" class="btn btn-primary">비교</button>
+        <form method="get" th:action="@{/salon-services/compare}" class="service-search-form service-search-form--compare">
+            <div class="service-search-form__intro">
+                <p class="service-search-form__eyebrow">Comparison Search</p>
+                <h2>비슷한 시술을 한 번에 나란히 비교하세요.</h2>
+                <p>미용실별 가격 차이와 소요 시간, 평점까지 같이 보면서 더 쉽게 선택할 수 있습니다.</p>
+            </div>
+
+            <div>
+                <div class="service-search-form__fields service-search-form__fields--compare">
+                    <input type="text" name="serviceName" placeholder="시술명" th:value="${serviceName}">
+                    <input type="text" name="region" placeholder="지역" th:value="${region}">
+                </div>
+
+                <div class="service-search-form__actions">
+                    <button type="submit" class="btn btn-primary">비교하기</button>
+                    <a th:href="@{/salon-services/compare}" class="btn btn-outline">초기화</a>
+                </div>
+            </div>
         </form>
 
-        <div class="table-wrap">
-            <table class="data-table">
+        <div class="service-results-head catalog-results-head">
+            <div>
+                <p class="service-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
+                <h2>비교 결과 <span th:text="${#lists.size(comparisons)}">0</span>건</h2>
+            </div>
+        </div>
+
+        <div class="service-compare-table-wrap">
+            <table class="service-compare-table">
                 <thead>
                 <tr>
-                    <th>살롱</th>
-                    <th>주소</th>
-                    <th>시술명</th>
+                    <th>미용실</th>
+                    <th>지역</th>
+                    <th>시술</th>
                     <th>가격</th>
                     <th>시간</th>
                     <th>평점</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:if="${#lists.isEmpty(comparisons)}">
-                    <td colspan="6">비교 가능한 시술 정보가 없습니다.</td>
-                </tr>
                 <tr th:each="row : ${comparisons}">
                     <td>
-                        <a th:href="@{/salons/{id}(id=${row.salonId})}" th:text="${row.salonName}">살롱명</a>
+                        <a th:href="@{/salons/{id}(id=${row.salonId})}"
+                           th:text="${row.salonName}">미용실</a>
                     </td>
                     <td th:text="${row.address}">주소</td>
-                    <td th:text="${row.serviceName}">시술명</td>
+                    <td th:text="${row.serviceName}">시술</td>
                     <td th:text="|${row.price}원|">0원</td>
                     <td th:text="|${row.duration}분|">0분</td>
                     <td th:text="${row.averageRating}">0</td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(comparisons)}">
+                    <td colspan="6" class="service-compare-table__empty">비교할 시술 정보가 없습니다.</td>
                 </tr>
                 </tbody>
             </table>

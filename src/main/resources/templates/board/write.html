@@ -3,18 +3,11 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
 
-<!--
-  write.html — 게시글 작성 페이지
-  =====================================================
-  boardType → "NOTICE" 또는 "QNA" (Controller에서 전달)
-  공지사항 / QnA 둘 다 이 파일 하나로 처리
--->
-
 <head>
     <title>글 작성 | HairSalon</title>
     <link rel="stylesheet" th:href="@{/css/board.css}">
     <!-- 썸머노트 CSS (CDN) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.min.css">
 </head>
 
 <body>
@@ -87,74 +80,168 @@
 
     </div>
 
-    <!-- 썸머노트 JS (CDN) — jQuery는 layout.html에서 이미 로드됨 -->
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/lang/summernote-ko-KR.min.js"></script>
+    <!-- jQuery는 layout.html head에서 이미 로드됨 -->
+    <!-- 순서 중요 — 썸머노트 → 한국어 팩 → board.js -->
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/lang/summernote-ko-KR.min.js"></script>
     <script th:src="@{/js/board.js}"></script>
 
     <script>
-        $(document).ready(function () {
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('.board-write-form');
+            const titleInput = document.getElementById('title');
+            const submitBtn = document.getElementById('submitBtn');
+            const csrfTokenInput = document.querySelector('input[name="_csrf"]');
 
-            // 썸머노트 에디터 초기화
-            $('#content').summernote({
-                lang: 'ko-KR',
-                height: 400,
-                minHeight: 200,
-                maxHeight: 600,
-                placeholder: '내용을 입력하세요.',
-                toolbar: [
-                    ['style', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
-                    ['font', ['fontsize', 'color', 'highlight']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['picture', 'link']],
-                    ['view', ['codeview']]
-                ],
-                callbacks: {
-                    onImageUpload: function (files) {
-                        uploadEditorImage(files[0]);
+            let isSubmitting = false;
+
+            initializeEditorWhenReady(csrfTokenInput.value);
+
+            form.addEventListener('submit', function (event) {
+                const title = titleInput.value.trim();
+                const content = $('#content').summernote('code');
+                document.getElementById('content').value = content;
+                const plainTextContent = stripHtml(content).trim();
+                const fileInput = form.querySelector('input[name="files"]');
+                const maxFileSize = 10 * 1024 * 1024;
+
+                if (title === '') {
+                    event.preventDefault();
+                    alert('제목을 입력해주세요.');
+                    titleInput.focus();
+                    return;
+                }
+
+                if (plainTextContent === '') {
+                    event.preventDefault();
+                    alert('내용을 입력해주세요.');
+                    $('#content').summernote('focus');
+                    return;
+                }
+
+                if (fileInput && fileInput.files) {
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        if (fileInput.files[i].size > maxFileSize) {
+                            event.preventDefault();
+                            alert('첨부파일은 10MB 이하만 업로드할 수 있습니다.');
+                            return;
+                        }
                     }
                 }
-            });
 
-            // 등록 버튼 유효성 검사
-            $('#submitBtn').on('click', function () {
-                const content = $('#content').summernote('code');
-                if ($('#title').val().trim() === '') {
-                    alert('제목을 입력해주세요.');
-                    return false;
+                if (isSubmitting) {
+                    event.preventDefault();
+                    return;
                 }
-                if (content.trim() === '' || content === '<p><br></p>') {
-                    alert('내용을 입력해주세요.');
-                    return false;
-                }
+
+                isSubmitting = true;
+                submitBtn.disabled = true;
+                submitBtn.textContent = '등록 중...';
             });
         });
 
-        // 썸머노트 이미지 업로드 함수
-        function uploadEditorImage(file) {
+        function initializeEditorWhenReady(csrfToken, attempt = 0) {
+            if (window.jQuery && $.fn && $.fn.summernote) {
+                const summernoteOptions = {
+                    height: 400,
+                    minHeight: 200,
+                    maxHeight: 600,
+                    placeholder: '내용을 입력하세요.',
+                    toolbar: [
+                        ['style', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                        ['para', ['ul', 'ol']],
+                        ['insert', ['picture', 'link']],
+                        ['view', ['codeview']]
+                    ],
+                    colors: [
+                        ['#111111', '#444444', '#7a6f5d', '#8b5e3c', '#c9a84c', '#d97706', '#dc2626', '#2563eb'],
+                        ['#ffffff', '#f8f5ee', '#efe1bb', '#fde68a', '#fecaca', '#bbf7d0', '#bfdbfe', '#ddd6fe']
+                    ],
+                    colorsName: [
+                        ['Black', 'Dark Gray', 'Warm Gray', 'Brown', 'Gold', 'Orange', 'Red', 'Blue'],
+                        ['White', 'Ivory', 'Beige', 'Yellow', 'Pink', 'Green', 'Sky', 'Purple']
+                    ],
+                    fontSizes: ['10', '12', '14', '16', '18', '24', '32', '48'],
+                    fontSizeUnits: ['px'],
+                    dialogsInBody: true,
+                    callbacks: {
+                        onImageUpload: function (files) {
+                            for (let i = 0; i < files.length; i++) {
+                                uploadEditorImage(files[i], csrfToken);
+                            }
+                        }
+                    }
+                };
+
+                if ($.summernote && $.summernote.lang && $.summernote.lang['ko-KR']) {
+                    summernoteOptions.lang = 'ko-KR';
+                } else {
+                    console.warn('Summernote ko-KR language pack was not loaded. Falling back to default locale.');
+                }
+
+                $('#content').summernote(summernoteOptions);
+                if (window.mountBoardEditorControls) {
+                    window.mountBoardEditorControls('#content');
+                }
+                return;
+            }
+
+            if (attempt < 20) {
+                window.setTimeout(function () {
+                    initializeEditorWhenReady(csrfToken, attempt + 1);
+                }, 250);
+                return;
+            }
+
+            console.error('Summernote failed to initialize.');
+            alert('에디터 스크립트를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+        }
+
+        function stripHtml(html) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            return tempDiv.textContent || tempDiv.innerText || '';
+        }
+
+        async function uploadEditorImage(file, csrfToken) {
+            const maxImageSize = 5 * 1024 * 1024;
+
+            if (!file) {
+                return;
+            }
+
+            if (file.size > maxImageSize) {
+                alert('에디터 이미지는 5MB 이하만 업로드할 수 있습니다.');
+                return;
+            }
+
             const formData = new FormData();
             formData.append('file', file);
 
-            const csrfToken = document.querySelector('input[name="_csrf"]').value;
-
-            fetch('/files/images', {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrfToken },
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    $('#content').summernote('insertImage', data.url, function ($image) {
-                        if (data.originalFilename) {
-                            $image.attr('data-original-name', data.originalFilename);
-                            $image.attr('alt', data.originalFilename);
-                        }
-                    });
-                })
-                .catch(error => {
-                    alert('이미지 업로드에 실패했습니다.');
-                    console.error('이미지 업로드 오류:', error);
+            try {
+                const response = await fetch('/files/images', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken },
+                    body: formData
                 });
+
+                if (!response.ok) {
+                    const message = await response.text();
+                    throw new Error(message || '이미지 업로드에 실패했습니다.');
+                }
+
+                const data = await response.json();
+
+                $('#content').summernote('insertImage', data.url, function ($image) {
+                    if (data.originalFilename) {
+                        $image.attr('data-original-name', data.originalFilename);
+                        $image.attr('alt', data.originalFilename);
+                    }
+                });
+            } catch (error) {
+                alert(error.message || '이미지 업로드에 실패했습니다.');
+                console.error('이미지 업로드 오류:', error);
+            }
         }
     </script>
 

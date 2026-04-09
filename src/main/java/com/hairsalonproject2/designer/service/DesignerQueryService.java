@@ -6,7 +6,9 @@ import com.hairsalonproject2.designer.dto.request.DesignerUpdateRequest;
 import com.hairsalonproject2.designer.dto.response.DesignerDetailResponse;
 import com.hairsalonproject2.designer.dto.response.DesignerSummaryResponse;
 import com.hairsalonproject2.designer.entity.Designer;
+import com.hairsalonproject2.designer.entity.DesignerLike;
 import com.hairsalonproject2.designer.projection.DesignerRatingRow;
+import com.hairsalonproject2.designer.repository.DesignerLikeRepository;
 import com.hairsalonproject2.designer.repository.DesignerRepository;
 import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.repository.MemberRepository;
@@ -16,6 +18,9 @@ import com.hairsalonproject2.salonservice.dto.response.SalonServiceSummaryRespon
 import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,35 +37,47 @@ import java.util.stream.Collectors;
 public class DesignerQueryService {
 
     private final DesignerRepository designerRepository;
+    private final DesignerLikeRepository designerLikeRepository;
     private final SalonRepository salonRepository;
     private final SalonServiceRepository salonServiceRepository;
     private final MemberRepository memberRepository;
 
     public List<DesignerSummaryResponse> search(DesignerSearchRequest request) {
+        DesignerSearchRequest safeRequest = request == null ? new DesignerSearchRequest() : request;
+        return search(safeRequest, 0, Integer.MAX_VALUE).getContent();
+    }
+
+    public Page<DesignerSummaryResponse> search(DesignerSearchRequest request, int page, int size) {
         Map<Integer, DesignerRatingRow> ratings = designerRepository.findDesignerRatingRows()
                 .stream()
                 .collect(Collectors.toMap(DesignerRatingRow::getDesignerId, Function.identity()));
 
-        return designerRepository.findAll(DesignerSpecifications.bySearch(request))
+        List<DesignerSummaryResponse> filtered = designerRepository.findAll(DesignerSpecifications.bySearch(request))
                 .stream()
                 .map(d -> toSummary(d, ratings.get(d.getDesignerId())))
                 .filter(d -> request.getMinRating() == null
                         || d.getAverageRating().compareTo(request.getMinRating()) >= 0)
+                .filter(d -> request.getMinReviewCount() == null
+                        || d.getReviewCount() >= request.getMinReviewCount())
                 .sorted(
-                        Comparator.comparing(
-                                        DesignerSummaryResponse::getAverageRating,
-                                        Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(
-                                        DesignerSummaryResponse::getReviewCount,
-                                        Comparator.nullsLast(Comparator.reverseOrder()))
-                                .thenComparing(
-                                        DesignerSummaryResponse::getCareerYears,
-                                        Comparator.nullsLast(Comparator.reverseOrder()))
+                        designerComparator(request.getSortBy())
                 )
                 .toList();
+
+        int safeSize = Math.max(size, 1);
+        int maxPage = filtered.isEmpty() ? 0 : (filtered.size() - 1) / safeSize;
+        int safePage = Math.min(Math.max(page, 0), maxPage);
+        int fromIndex = Math.min(safePage * safeSize, filtered.size());
+        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
+
+        return new PageImpl<>(
+                filtered.subList(fromIndex, toIndex),
+                PageRequest.of(safePage, safeSize),
+                filtered.size()
+        );
     }
 
-    public DesignerDetailResponse getDetail(Integer designerId) {
+    public DesignerDetailResponse getDetail(Integer designerId, String loginMemberId) {
         Designer designer = designerRepository.findById(designerId)
                 .orElseThrow(() -> new EntityNotFoundException("Designer not found: " + designerId));
 
@@ -94,8 +111,67 @@ public class DesignerQueryService {
                 .careerYears(designer.getCareerYears())
                 .averageRating(row == null ? BigDecimal.ZERO : BigDecimal.valueOf(row.getAverageRating()))
                 .reviewCount(row == null ? 0L : row.getReviewCount())
+                .likeCount(designer.getLikeCount() == null ? 0 : designer.getLikeCount())
+                .likedByCurrentUser(isLikedByMember(designerId, loginMemberId))
                 .salonServices(services)
                 .build();
+    }
+
+    public DesignerDetailResponse getDetail(Integer designerId) {
+        return getDetail(designerId, null);
+    }
+
+    public List<DesignerSummaryResponse> getLikedDesigners(String memberId) {
+        return designerLikeRepository.findAllByMember_MemberIdOrderByCreatedAtDesc(memberId).stream()
+                .map(DesignerLike::getDesigner)
+                .map(designer -> toSummary(designer, findRatingRow(designer.getDesignerId())))
+                .toList();
+    }
+
+    public List<Integer> getLikedDesignerIds(String memberId) {
+        return designerLikeRepository.findAllByMember_MemberIdOrderByCreatedAtDesc(memberId).stream()
+                .map(like -> like.getDesigner().getDesignerId())
+                .toList();
+    }
+
+    public boolean isLikedByMember(Integer designerId, String memberId) {
+        if (memberId == null || memberId.isBlank()) {
+            return false;
+        }
+        return designerLikeRepository.existsByMember_MemberIdAndDesigner_DesignerId(memberId, designerId);
+    }
+
+    @Transactional
+    public boolean like(Integer designerId, String memberId) {
+        Designer designer = designerRepository.findById(designerId)
+                .orElseThrow(() -> new EntityNotFoundException("Designer not found: " + designerId));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found: " + memberId));
+
+        if (designerLikeRepository.findByMember_MemberIdAndDesigner_DesignerId(memberId, designerId).isPresent()) {
+            return false;
+        }
+
+        designerLikeRepository.save(DesignerLike.builder()
+                .member(member)
+                .designer(designer)
+                .build());
+        designer.setLikeCount(Math.toIntExact(designerLikeRepository.countByDesigner_DesignerId(designerId)));
+        return true;
+    }
+
+    @Transactional
+    public boolean unlike(Integer designerId, String memberId) {
+        Designer designer = designerRepository.findById(designerId)
+                .orElseThrow(() -> new EntityNotFoundException("Designer not found: " + designerId));
+
+        return designerLikeRepository.findByMember_MemberIdAndDesigner_DesignerId(memberId, designerId)
+                .map(like -> {
+                    designerLikeRepository.delete(like);
+                    designer.setLikeCount(Math.toIntExact(designerLikeRepository.countByDesigner_DesignerId(designerId)));
+                    return true;
+                })
+                .orElse(false);
     }
 
     @Transactional
@@ -162,6 +238,65 @@ public class DesignerQueryService {
                 .careerYears(d.getCareerYears())
                 .averageRating(ratingRow == null ? BigDecimal.ZERO : BigDecimal.valueOf(ratingRow.getAverageRating()))
                 .reviewCount(ratingRow == null ? 0L : ratingRow.getReviewCount())
+                .likeCount(d.getLikeCount() == null ? 0 : d.getLikeCount())
+                .createdAt(d.getCreatedAt())
                 .build();
+    }
+
+    private Comparator<DesignerSummaryResponse> designerComparator(String sortBy) {
+        if ("likes".equalsIgnoreCase(sortBy)) {
+            return Comparator.comparing(
+                            DesignerSummaryResponse::getLikeCount,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                            DesignerSummaryResponse::getAverageRating,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(DesignerSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
+        }
+
+        if ("career".equalsIgnoreCase(sortBy)) {
+            return Comparator.comparing(
+                            DesignerSummaryResponse::getCareerYears,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                            DesignerSummaryResponse::getAverageRating,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(DesignerSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
+        }
+
+        if ("reviews".equalsIgnoreCase(sortBy)) {
+            return Comparator.comparing(
+                            DesignerSummaryResponse::getReviewCount,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                            DesignerSummaryResponse::getAverageRating,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(DesignerSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
+        }
+
+        if ("name".equalsIgnoreCase(sortBy)) {
+            return Comparator.comparing(DesignerSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(
+                            DesignerSummaryResponse::getAverageRating,
+                            Comparator.nullsLast(Comparator.reverseOrder()));
+        }
+
+        return Comparator.comparing(
+                        DesignerSummaryResponse::getAverageRating,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(
+                        DesignerSummaryResponse::getReviewCount,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(
+                        DesignerSummaryResponse::getCareerYears,
+                        Comparator.nullsLast(Comparator.reverseOrder()));
+    }
+
+    private DesignerRatingRow findRatingRow(Integer designerId) {
+        return designerRepository.findDesignerRatingRows()
+                .stream()
+                .filter(r -> designerId.equals(r.getDesignerId()))
+                .findFirst()
+                .orElse(null);
     }
 }

@@ -181,6 +181,10 @@ public class BoardAttachmentService {
                     ? image.attr("data-original-name").trim()
                     : null;
 
+            if ((originalName == null || originalName.isBlank()) && image.hasAttr("alt")) {
+                originalName = image.attr("alt").trim();
+            }
+
             result.add(new ImageMeta(src, originalName));
         }
 

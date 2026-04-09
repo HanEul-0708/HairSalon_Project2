@@ -1,44 +1,49 @@
 package com.hairsalonproject2.salonservice.controller;
 
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceCreateRequest;
+import com.hairsalonproject2.salonservice.dto.request.SalonServiceSearchRequest;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceUpdateRequest;
 import com.hairsalonproject2.salonservice.service.SalonServiceQueryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/salon-services")
 public class ServiceController {
+    private static final int SERVICES_PER_PAGE = 8;
+
     private final SalonServiceQueryService salonServiceQueryService;
 
     @GetMapping("/new")
-    public String createForm(Authentication authentication, Model model) {
-        String guard = requireDesignerOrAdmin(authentication);
-        if (guard != null) {
-            return guard;
-        }
-
+    public String createForm(Model model) {
         model.addAttribute("form", new SalonServiceCreateRequest());
         return "service/form";
     }
 
     @GetMapping
-    public String list(@RequestParam(required = false) String keyword, Model model) {
-        model.addAttribute("services", salonServiceQueryService.list(keyword));
-        model.addAttribute("keyword", keyword);
+    public String list(@ModelAttribute SalonServiceSearchRequest request,
+                       @RequestParam(defaultValue = "1") int page,
+                       Model model) {
+        Page<?> resultPage = request.hasSearchRequest()
+                ? salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE)
+                : new PageImpl<>(java.util.Collections.emptyList(), PageRequest.of(0, SERVICES_PER_PAGE), 0);
+
+        model.addAttribute("services", resultPage.getContent());
+        model.addAttribute("search", request);
+        model.addAttribute("searched", request.hasSearchRequest());
+        model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
+        model.addAttribute("totalPages", resultPage.getTotalPages());
+        model.addAttribute("totalServiceCount", resultPage.getTotalElements());
+        model.addAttribute("pageNumbers", resultPage.getTotalPages() == 0
+                ? java.util.Collections.emptyList()
+                : java.util.stream.IntStream.rangeClosed(1, resultPage.getTotalPages()).boxed().toList());
         return "service/list";
     }
 
@@ -49,9 +54,7 @@ public class ServiceController {
     }
 
     @GetMapping("/compare")
-    public String compare(@RequestParam(required = false) String serviceName,
-                          @RequestParam(required = false) String region,
-                          Model model) {
+    public String compare(@RequestParam(required = false) String serviceName, @RequestParam(required = false) String region, Model model) {
         model.addAttribute("comparisons", salonServiceQueryService.compare(serviceName, region));
         model.addAttribute("serviceName", serviceName);
         model.addAttribute("region", region);
@@ -59,29 +62,16 @@ public class ServiceController {
     }
 
     @PostMapping
-    public String create(@ModelAttribute("form") SalonServiceCreateRequest request,
-                         BindingResult bindingResult,
-                         Authentication authentication) {
-        String guard = requireDesignerOrAdmin(authentication);
-        if (guard != null) {
-            return guard;
-        }
-
+    public String create(@ModelAttribute("form") SalonServiceCreateRequest request, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return "service/form";
         }
-
         Integer serviceId = salonServiceQueryService.create(request);
         return "redirect:/salon-services/" + serviceId;
     }
 
     @GetMapping("/{serviceId}/edit")
-    public String editForm(@PathVariable Integer serviceId, Authentication authentication, Model model) {
-        String guard = requireDesignerOrAdmin(authentication);
-        if (guard != null) {
-            return guard;
-        }
-
+    public String editForm(@PathVariable Integer serviceId, Model model) {
         var detail = salonServiceQueryService.getDetail(serviceId);
         SalonServiceUpdateRequest form = new SalonServiceUpdateRequest();
         form.setSalonId(detail.getSalonId());
@@ -95,45 +85,18 @@ public class ServiceController {
     }
 
     @PostMapping("/{serviceId}/edit")
-    public String update(@PathVariable Integer serviceId,
-                         @ModelAttribute("form") SalonServiceUpdateRequest request,
-                         BindingResult bindingResult,
-                         Authentication authentication,
-                         Model model) {
-        String guard = requireDesignerOrAdmin(authentication);
-        if (guard != null) {
-            return guard;
-        }
-
+    public String update(@PathVariable Integer serviceId, @ModelAttribute("form") SalonServiceUpdateRequest request, BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("serviceId", serviceId);
             return "service/form";
         }
-
         salonServiceQueryService.update(serviceId, request);
         return "redirect:/salon-services/" + serviceId;
     }
 
-    @DeleteMapping("/{serviceId}")
-    public String delete(@PathVariable Integer serviceId, Authentication authentication) {
-        String guard = requireDesignerOrAdmin(authentication);
-        if (guard != null) {
-            return guard;
-        }
-
+    @PostMapping("/{serviceId}/delete")
+    public String delete(@PathVariable Integer serviceId) {
         salonServiceQueryService.delete(serviceId);
         return "redirect:/salon-services";
-    }
-
-    private String requireDesignerOrAdmin(Authentication authentication) {
-        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
-            return "redirect:/members/login";
-        }
-
-        boolean authorized = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(role -> "ROLE_ADMIN".equals(role) || "ROLE_DESIGNER".equals(role));
-
-        return authorized ? null : "redirect:/access-denied";
     }
 }
