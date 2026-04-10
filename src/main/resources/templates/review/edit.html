@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리뷰 수정</title>
+    <link rel="stylesheet" th:href="@{/css/review.css}">
+    <script th:src="@{/js/review.js}" defer></script>
+</head>
+<body>
+<main>
+    <div class="container review-page review-form-page">
+        <div class="page-header">
+            <h1 class="page-title">리뷰 수정</h1>
+            <p class="page-desc">별점과 리뷰 내용을 수정할 수 있습니다.</p>
+        </div>
+
+        <div class="review-reservation-summary">
+            <p><strong>디자이너</strong><span th:text="${review.designerName}">디자이너명</span></p>
+            <p><strong>시술</strong><span th:text="${review.serviceName}">시술명</span></p>
+            <p><strong>예약 일시</strong><span th:text="${review.reservationDate + ' ' + review.reservationTime}">2026-04-07 15:00</span></p>
+        </div>
+
+        <form id="reviewForm" class="review-form" data-mode="edit">
+            <input type="hidden" id="reviewId" th:value="${review.reviewId}">
+
+            <div class="form-group">
+                <label for="rating">별점</label>
+                <div class="review-rating">
+                    <input type="hidden" id="rating" name="rating" th:value="${review.rating}">
+                    <div class="review-rating__stars">
+                        <button type="button" class="review-rating__star" data-value="1">&#9733;</button>
+                        <button type="button" class="review-rating__star" data-value="2">&#9733;</button>
+                        <button type="button" class="review-rating__star" data-value="3">&#9733;</button>
+                        <button type="button" class="review-rating__star" data-value="4">&#9733;</button>
+                        <button type="button" class="review-rating__star" data-value="5">&#9733;</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="content">리뷰 내용</label>
+                <textarea id="content" name="content" rows="5" th:text="${review.content}">리뷰 내용</textarea>
+            </div>
+
+            <div class="review-actions">
+                <button type="submit" class="btn btn-primary">리뷰 수정</button>
+                <a th:href="@{/reviews/{reviewId}(reviewId=${review.reviewId})}" class="btn btn-outline">상세로 돌아가기</a>
+            </div>
+        </form>
+    </div>
+</main>
+</body>
+</html>
