@@ -13,6 +13,8 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Locale;
+
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/salon-services")
@@ -31,6 +33,8 @@ public class ServiceController {
     public String list(@ModelAttribute SalonServiceSearchRequest request,
                        @RequestParam(defaultValue = "1") int page,
                        Model model) {
+        request.setSortBy(normalizeSortBy(request.getSortBy()));
+
         Page<?> resultPage = request.hasSearchRequest()
                 ? salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE)
                 : new PageImpl<>(java.util.Collections.emptyList(), PageRequest.of(0, SERVICES_PER_PAGE), 0);
@@ -59,6 +63,19 @@ public class ServiceController {
         model.addAttribute("serviceName", serviceName);
         model.addAttribute("region", region);
         return "service/compare";
+    }
+
+    private String normalizeSortBy(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return "rating";
+        }
+
+        String normalized = sortBy.toLowerCase(Locale.ROOT);
+        if ("rating".equals(normalized) || "price".equals(normalized) || "duration".equals(normalized)) {
+            return normalized;
+        }
+
+        return "rating";
     }
 
     @PostMapping

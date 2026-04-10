@@ -14,5 +14,7 @@ public interface DesignerLikeRepository extends JpaRepository<DesignerLike, Inte
 
     List<DesignerLike> findAllByMember_MemberIdOrderByCreatedAtDesc(String memberId);
 
+    List<DesignerLike> findAllByDesigner_Member_MemberIdOrderByCreatedAtDesc(String memberId);
+
     long countByDesigner_DesignerId(Integer designerId);
 }

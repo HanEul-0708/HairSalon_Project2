@@ -15,7 +15,7 @@
         <div class="catalog-hero">
             <p class="catalog-hero__eyebrow">Designer Detail</p>
             <h1 class="catalog-hero__title" th:text="${designer.name}">디자이너</h1>
-            <p class="catalog-hero__subtitle">디자이너 소개와 경력, 평점, 연결된 시술 정보를 한눈에 확인할 수 있습니다.</p>
+            <p class="catalog-hero__subtitle">디자이너 소개와 경력, 평점, 연결된 시술 정보를 확인할 수 있습니다.</p>
         </div>
 
         <div class="designer-detail">
@@ -36,7 +36,7 @@
                     </div>
                     <div class="designer-info-item">
                         <strong>평점</strong>
-                        <span th:text="${designer.averageRating}">0</span>
+                        <span th:text="${#numbers.formatDecimal(designer.averageRating, 1, 0)}">0</span>
                     </div>
                     <div class="designer-info-item">
                         <strong>리뷰 수</strong>

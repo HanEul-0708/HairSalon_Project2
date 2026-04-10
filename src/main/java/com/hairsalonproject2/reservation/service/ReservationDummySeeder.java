@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ReservationDummySeeder {
 
+    private static final int MAX_SLOT_SEARCH_ATTEMPTS = 180;
+
     private static final List<LocalTime> DIRECTOR_TIMES = List.of(
             LocalTime.of(11, 0),
             LocalTime.of(13, 0),
@@ -58,7 +60,7 @@ public class ReservationDummySeeder {
     private final SalonServiceRepository salonServiceRepository;
     private final DummyTimelineService dummyTimelineService;
 
-    @Value("${app.seed.reservations.target-count:60}")
+    @Value("${app.seed.reservations.target-count:120}")
     private int targetReservationCount;
 
     @Transactional
@@ -95,8 +97,13 @@ public class ReservationDummySeeder {
             Member member = members.get((index * 2) % members.size());
             SalonService salonService = chooseService(salonServices, designer, index);
             ReservationStatus status = determineStatus(index);
-            LocalDate reservationDate = determineDate(index, status, designer);
-            LocalTime reservationTime = determineTime(index, designer);
+            ReservationSchedule schedule = findAvailableSchedule(designer, status, index);
+            if (schedule == null) {
+                continue;
+            }
+
+            LocalDate reservationDate = schedule.reservationDate();
+            LocalTime reservationTime = schedule.reservationTime();
 
             Reservation reservation = Reservation.builder()
                     .member(member)
@@ -132,6 +139,24 @@ public class ReservationDummySeeder {
             created++;
         }
         return created;
+    }
+
+    private ReservationSchedule findAvailableSchedule(Designer designer, ReservationStatus status, int baseIndex) {
+        for (int attempt = 0; attempt < MAX_SLOT_SEARCH_ATTEMPTS; attempt++) {
+            int candidateIndex = baseIndex + attempt;
+            LocalDate reservationDate = determineDate(candidateIndex, status, designer);
+            LocalTime reservationTime = determineTime(candidateIndex, designer);
+
+            boolean occupied = reservationSlotRepository.existsByDesigner_DesignerIdAndReservationDateAndSlotTime(
+                    designer.getDesignerId(),
+                    reservationDate,
+                    reservationTime
+            );
+            if (!occupied) {
+                return new ReservationSchedule(reservationDate, reservationTime);
+            }
+        }
+        return null;
     }
 
     private SalonService chooseService(List<SalonService> salonServices, Designer designer, int index) {
@@ -223,5 +248,8 @@ public class ReservationDummySeeder {
             latest = serviceCreatedAt;
         }
         return latest == null ? java.time.LocalDateTime.now().minusDays(10) : latest;
+    }
+
+    private record ReservationSchedule(LocalDate reservationDate, LocalTime reservationTime) {
     }
 }

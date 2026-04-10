@@ -27,6 +27,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -84,5 +85,32 @@ class ReservationDummySeederTest {
 
         ArgumentCaptor<ReservationSlot> slotCaptor = ArgumentCaptor.forClass(ReservationSlot.class);
         verify(reservationSlotRepository, times(4)).save(slotCaptor.capture());
+    }
+
+    @Test
+    void seedReservationsSkipsOccupiedSlotAndFindsNextAvailableSlot() {
+        ReflectionTestUtils.setField(reservationDummySeeder, "targetReservationCount", 1);
+
+        Salon salon = Salon.builder().salonId(1).name("Test Salon").build();
+        Designer designer = Designer.builder().designerId(1).salon(salon).name("Senior Director").careerYears(5).build();
+        SalonService service = SalonService.builder().serviceId(1).salon(salon).name("Basic Cut").price(30000).duration(60).build();
+        Member user = Member.builder().memberId("user1").name("User1").role(MemberRole.USER).status(MemberStatus.ACTIVE).build();
+
+        when(reservationRepository.count()).thenReturn(0L);
+        when(memberRepository.findByRoleAndStatusOrderByCreatedAtAsc(MemberRole.USER, MemberStatus.ACTIVE)).thenReturn(List.of(user));
+        when(designerRepository.findAll()).thenReturn(List.of(designer));
+        when(salonServiceRepository.findAll()).thenReturn(List.of(service));
+        when(reservationSlotRepository.existsByDesigner_DesignerIdAndReservationDateAndSlotTime(eq(1), any(), any()))
+                .thenReturn(true, false);
+        when(reservationRepository.save(any(Reservation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(reservationSlotRepository.save(any(ReservationSlot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        int created = reservationDummySeeder.seedReservations();
+
+        assertThat(created).isEqualTo(1);
+        verify(reservationSlotRepository, times(2))
+                .existsByDesigner_DesignerIdAndReservationDateAndSlotTime(eq(1), any(), any());
+        verify(reservationRepository, times(1)).save(any(Reservation.class));
+        verify(reservationSlotRepository, times(1)).save(any(ReservationSlot.class));
     }
 }

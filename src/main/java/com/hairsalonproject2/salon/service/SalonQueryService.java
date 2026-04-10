@@ -93,11 +93,32 @@ public class SalonQueryService {
                             .thenComparing(
                                     SalonSummaryResponse::getReviewCount,
                                     Comparator.nullsLast(Comparator.reverseOrder()))
+                            .thenComparing(
+                                    SalonSummaryResponse::getLikeCount,
+                                    Comparator.nullsLast(Comparator.reverseOrder()))
+            );
+        } else if ("reviews".equalsIgnoreCase(request.getSort())) {
+            responses.sort(
+                    Comparator.comparing(
+                                    SalonSummaryResponse::getReviewCount,
+                                    Comparator.nullsLast(Comparator.reverseOrder()))
+                            .thenComparing(
+                                    SalonSummaryResponse::getAverageRating,
+                                    Comparator.nullsLast(Comparator.reverseOrder()))
+                            .thenComparing(
+                                    SalonSummaryResponse::getLikeCount,
+                                    Comparator.nullsLast(Comparator.reverseOrder()))
             );
         } else if ("likes".equalsIgnoreCase(request.getSort())) {
             responses.sort(Comparator.comparing(
-                    SalonSummaryResponse::getLikeCount,
-                    Comparator.nullsLast(Comparator.reverseOrder()))
+                            SalonSummaryResponse::getLikeCount,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                            SalonSummaryResponse::getAverageRating,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                            SalonSummaryResponse::getReviewCount,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
             );
         } else {
             responses.sort(

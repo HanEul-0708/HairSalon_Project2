@@ -11,8 +11,8 @@ public final class DesignerSpecifications {
     public static Specification<Designer> bySearch(DesignerSearchRequest request) {
         return Specification.<Designer>unrestricted()
                 .and(keywordContains(request.getKeyword()))
-                .and(salonNameContains(request.getSalonKeyword()))
-                .and(minCareerYears(request.getMinCareerYears()));
+                .and(salonKeywordContains(request.getSalonKeyword()))
+                .and(careerYearsAtLeast(request.getMinCareerYears()));
     }
 
     private static Specification<Designer> keywordContains(String keyword) {
@@ -21,21 +21,22 @@ public final class DesignerSpecifications {
         }
         return (root, query, cb) -> {
             String pattern = "%" + keyword.toLowerCase() + "%";
-            return cb.or(cb.like(cb.lower(root.get("name")), pattern), cb.like(cb.lower(root.get("introduction")), pattern), cb.like(cb.lower(root.get("salon").get("name")), pattern));
+            return cb.or(
+                    cb.like(cb.lower(root.get("name")), pattern),
+                    cb.like(cb.lower(root.get("introduction")), pattern)
+            );
         };
     }
 
-    private static Specification<Designer> salonNameContains(String salonKeyword) {
+    private static Specification<Designer> salonKeywordContains(String salonKeyword) {
         if (salonKeyword == null || salonKeyword.isBlank()) {
             return null;
         }
-        return (root, query, cb) -> cb.like(
-                cb.lower(root.get("salon").get("name")),
-                "%" + salonKeyword.toLowerCase() + "%"
-        );
+        return (root, query, cb) ->
+                cb.like(cb.lower(root.get("salon").get("name")), "%" + salonKeyword.toLowerCase() + "%");
     }
 
-    private static Specification<Designer> minCareerYears(Integer minCareerYears) {
+    private static Specification<Designer> careerYearsAtLeast(Integer minCareerYears) {
         if (minCareerYears == null) {
             return null;
         }

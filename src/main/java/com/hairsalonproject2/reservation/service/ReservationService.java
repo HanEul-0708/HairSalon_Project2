@@ -19,6 +19,8 @@ public interface ReservationService {
 
     List<ReservationResponse> getMyReservations(String memberId);
 
+    List<ReservationResponse> getReservationsByDesignerMember(String memberId);
+
     ReservationResponse updateReservation(Integer reservationId, ReservationUpdateRequest request);
 
     void cancelReservation(Integer reservationId);

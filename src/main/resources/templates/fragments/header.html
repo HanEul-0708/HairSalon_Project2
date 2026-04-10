@@ -58,17 +58,11 @@
                         <a href="#" class="gnb__link">
                             미용실 <span class="gnb__arrow">+</span>
                         </a>
-                        <div class="dropdown-panel dropdown-panel--medium">
+                        <div class="dropdown-panel dropdown-panel--small">
                             <div class="dropdown-panel__group">
                                 <h4>미용실</h4>
                                 <a th:href="@{/salons}">미용실 전체 보기</a>
                                 <a th:href="@{/salons/map}">지도 검색</a>
-                            </div>
-                            <div class="dropdown-panel__group">
-                                <h4>비교 / 추천</h4>
-                                <a th:href="@{/salons/price-compare}">가격 비교</a>
-                                <a th:href="@{/salons/recommend-by-service}">시술별 추천 미용실</a>
-                                <a th:href="@{/salons/top-rated}">평점 높은 미용실</a>
                             </div>
                         </div>
                     </li>
@@ -93,6 +87,7 @@
                             <div class="dropdown-panel__group">
                                 <h4>시술</h4>
                                 <a th:href="@{/salon-services}">시술 안내</a>
+                                <a th:href="@{/salon-services/compare}">가격 비교</a>
                             </div>
                         </div>
                     </li>

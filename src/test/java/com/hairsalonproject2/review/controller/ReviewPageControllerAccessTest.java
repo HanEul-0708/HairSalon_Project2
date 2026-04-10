@@ -73,6 +73,18 @@ class ReviewPageControllerAccessTest {
     }
 
     @Test
+    void ownerCannotOpenReviewWritePageForReservedReservation() throws Exception {
+        when(reservationService.getReservation(1)).thenReturn(sampleReservation("user01", ReservationStatus.RESERVED));
+
+        mockMvc.perform(get("/reviews/write")
+                        .with(authenticationFor("user01", MemberRole.USER))
+                        .param("reservationId", "1"))
+                .andExpect(status().isBadRequest());
+
+        verify(reviewRepository, never()).findByReservation_ReservationId(anyInt());
+    }
+
+    @Test
     void adminCannotOpenOtherMembersReviewWritePage() throws Exception {
         when(reservationService.getReservation(1)).thenReturn(sampleReservation("user01"));
 
@@ -113,6 +125,10 @@ class ReviewPageControllerAccessTest {
     }
 
     private ReservationResponse sampleReservation(String memberId) {
+        return sampleReservation(memberId, ReservationStatus.COMPLETED);
+    }
+
+    private ReservationResponse sampleReservation(String memberId, ReservationStatus status) {
         return ReservationResponse.builder()
                 .reservationId(1)
                 .memberId(memberId)
@@ -122,7 +138,7 @@ class ReviewPageControllerAccessTest {
                 .serviceName("Cut")
                 .reservationDate(LocalDate.of(2026, 4, 8))
                 .reservationTime(LocalTime.of(10, 0))
-                .status(ReservationStatus.COMPLETED)
+                .status(status)
                 .createdAt(LocalDateTime.of(2026, 4, 8, 9, 0))
                 .build();
     }

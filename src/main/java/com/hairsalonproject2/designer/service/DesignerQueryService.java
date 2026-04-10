@@ -10,6 +10,7 @@ import com.hairsalonproject2.designer.entity.DesignerLike;
 import com.hairsalonproject2.designer.projection.DesignerRatingRow;
 import com.hairsalonproject2.designer.repository.DesignerLikeRepository;
 import com.hairsalonproject2.designer.repository.DesignerRepository;
+import com.hairsalonproject2.member.dto.response.MemberSummaryResponse;
 import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.repository.MemberRepository;
 import com.hairsalonproject2.salon.entity.Salon;
@@ -57,8 +58,6 @@ public class DesignerQueryService {
                 .map(d -> toSummary(d, ratings.get(d.getDesignerId())))
                 .filter(d -> request.getMinRating() == null
                         || d.getAverageRating().compareTo(request.getMinRating()) >= 0)
-                .filter(d -> request.getMinReviewCount() == null
-                        || d.getReviewCount() >= request.getMinReviewCount())
                 .sorted(
                         designerComparator(request.getSortBy())
                 )
@@ -131,6 +130,13 @@ public class DesignerQueryService {
     public List<Integer> getLikedDesignerIds(String memberId) {
         return designerLikeRepository.findAllByMember_MemberIdOrderByCreatedAtDesc(memberId).stream()
                 .map(like -> like.getDesigner().getDesignerId())
+                .toList();
+    }
+
+    public List<MemberSummaryResponse> getMembersWhoLikedDesigner(String memberId) {
+        return designerLikeRepository.findAllByDesigner_Member_MemberIdOrderByCreatedAtDesc(memberId).stream()
+                .map(DesignerLike::getMember)
+                .map(MemberSummaryResponse::from)
                 .toList();
     }
 
@@ -272,13 +278,6 @@ public class DesignerQueryService {
                             DesignerSummaryResponse::getAverageRating,
                             Comparator.nullsLast(Comparator.reverseOrder()))
                     .thenComparing(DesignerSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
-        }
-
-        if ("name".equalsIgnoreCase(sortBy)) {
-            return Comparator.comparing(DesignerSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER)
-                    .thenComparing(
-                            DesignerSummaryResponse::getAverageRating,
-                            Comparator.nullsLast(Comparator.reverseOrder()));
         }
 
         return Comparator.comparing(

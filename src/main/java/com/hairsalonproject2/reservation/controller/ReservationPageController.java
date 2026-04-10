@@ -1,6 +1,7 @@
 package com.hairsalonproject2.reservation.controller;
 
 import com.hairsalonproject2.common.constant.PaymentMethod;
+import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.ReservationStatus;
 import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
 import com.hairsalonproject2.designer.dto.response.DesignerSummaryResponse;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
@@ -49,8 +49,11 @@ public class ReservationPageController {
     public String reservationList(@AuthenticationPrincipal CustomUserDetails userDetails,
                                   @RequestParam(defaultValue = "1") int page,
                                   Model model) {
+        boolean designerReservationView = userDetails.getMember().getRole() == MemberRole.DESIGNER;
         List<ReservationResponse> reservations =
-                reservationService.getMyReservations(userDetails.getMember().getMemberId()).stream()
+                (designerReservationView
+                        ? reservationService.getReservationsByDesignerMember(userDetails.getMember().getMemberId())
+                        : reservationService.getMyReservations(userDetails.getMember().getMemberId())).stream()
                         .sorted(Comparator.comparing(ReservationResponse::getCreatedAt).reversed())
                         .toList();
 
@@ -73,11 +76,10 @@ public class ReservationPageController {
                 .map(review -> review.getReservation().getReservationId())
                 .collect(Collectors.toSet());
 
-        LocalDateTime now = LocalDateTime.now();
         Map<Integer, Boolean> reviewableReservationMap = pagedReservations.stream()
                 .collect(Collectors.toMap(
                         ReservationResponse::getReservationId,
-                        reservation -> isReviewableReservation(reservation, now)
+                        this::isReviewableReservation
                 ));
 
         model.addAttribute("reservations", pagedReservations);
@@ -86,6 +88,7 @@ public class ReservationPageController {
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("pageNumbers", java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());
+        model.addAttribute("isDesignerReservationView", designerReservationView);
         return "reservation/list";
     }
 
@@ -133,15 +136,7 @@ public class ReservationPageController {
         return "reservation/edit";
     }
 
-    private boolean isReviewableReservation(ReservationResponse reservation, LocalDateTime now) {
-        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-            return false;
-        }
-
-        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
-            return true;
-        }
-
-        return !reservation.getReservationDate().isAfter(now.toLocalDate());
+    private boolean isReviewableReservation(ReservationResponse reservation) {
+        return reservation.getStatus() == ReservationStatus.COMPLETED;
     }
 }

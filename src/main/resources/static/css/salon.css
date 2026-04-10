@@ -221,6 +221,28 @@
     margin-bottom: 20px;
 }
 
+.salon-detail__map-wrap {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: linear-gradient(135deg, #f5f1e4 0%, #fff 100%);
+}
+
+.salon-detail__map {
+    width: 100%;
+    height: 320px;
+}
+
+.salon-detail__map-notice {
+    padding: 16px 18px;
+    color: #9d3434;
+    background: #fff5f5;
+    border-top: 1px solid #f1c5c5;
+    font-size: 0.92rem;
+}
+
 .salon-detail__headline {
     display: flex;
     align-items: flex-start;
@@ -376,6 +398,10 @@
     .salon-detail__main,
     .salon-detail__side {
         padding: 20px;
+    }
+
+    .salon-detail__map {
+        height: 260px;
     }
 
     .salon-search-form__actions {

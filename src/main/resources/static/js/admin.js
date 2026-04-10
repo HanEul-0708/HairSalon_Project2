@@ -1,16 +1,56 @@
-// admin.js — 관리자 페이지 전용 자바스크립트
-// =====================================================
-// 관리자는 게시글/회원/예약/살롱 등 다양한 목록을 볼 수 있습니다.
-// 이 스크립트는 관리자 화면의 공통 동작을 정의합니다.
-
 document.addEventListener('DOMContentLoaded', function () {
-    /*
-     * 검색 입력: Enter 키로 필터 폼 제출
-     * --------------------------------------------
-     * 관리자 페이지의 검색 입력에서 Enter 키를 누르면 폼을 즉시
-     * 제출하여 검색을 수행합니다. 폼이 이미 submit 버튼을 가지고
-     * 있어도 키보드 입력을 지원하기 위해 추가합니다.
-     */
+    var scrollStorageKey = 'admin-pagination-scroll-state';
+
+    function finishScrollRestore() {
+        document.documentElement.classList.remove('admin-scroll-restoring');
+    }
+
+    function restorePaginationScroll() {
+        var savedState;
+
+        try {
+            savedState = sessionStorage.getItem(scrollStorageKey);
+        } catch (e) {
+            finishScrollRestore();
+            return;
+        }
+
+        if (!savedState) {
+            finishScrollRestore();
+            return;
+        }
+
+        var parsedState;
+        try {
+            parsedState = JSON.parse(savedState);
+        } catch (e) {
+            sessionStorage.removeItem(scrollStorageKey);
+            finishScrollRestore();
+            return;
+        }
+
+        if (!parsedState || parsedState.path !== window.location.pathname) {
+            sessionStorage.removeItem(scrollStorageKey);
+            finishScrollRestore();
+            return;
+        }
+
+        sessionStorage.removeItem(scrollStorageKey);
+
+        var scrollY = parseInt(parsedState.scrollY, 10);
+        if (Number.isNaN(scrollY)) {
+            finishScrollRestore();
+            return;
+        }
+
+        requestAnimationFrame(function () {
+            window.scrollTo(0, scrollY);
+            requestAnimationFrame(finishScrollRestore);
+        });
+    }
+
+    restorePaginationScroll();
+
     var adminSearchInputs = document.querySelectorAll('.admin-search-input');
     adminSearchInputs.forEach(function (input) {
         input.addEventListener('keypress', function (e) {
@@ -19,6 +59,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (input.form) {
                     input.form.submit();
                 }
+            }
+        });
+    });
+
+    var paginationLinks = document.querySelectorAll('.admin-page-link');
+    paginationLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+            try {
+                sessionStorage.setItem(scrollStorageKey, JSON.stringify({
+                    path: window.location.pathname,
+                    scrollY: window.scrollY
+                }));
+            } catch (e) {
+                finishScrollRestore();
             }
         });
     });

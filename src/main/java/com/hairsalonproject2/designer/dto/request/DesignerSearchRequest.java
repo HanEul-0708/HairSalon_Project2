@@ -10,13 +10,17 @@ import java.math.BigDecimal;
 public class DesignerSearchRequest {
     private String keyword;
     private String salonKeyword;
-    private BigDecimal minRating;
     private Integer minCareerYears;
-    private Long minReviewCount;
+    private BigDecimal minRating;
     private String sortBy;
     private boolean searched;
 
     public boolean hasSearchRequest() {
-        return searched;
+        return searched
+                || (keyword != null && !keyword.isBlank())
+                || (salonKeyword != null && !salonKeyword.isBlank())
+                || minCareerYears != null
+                || minRating != null
+                || (sortBy != null && !sortBy.isBlank());
     }
 }

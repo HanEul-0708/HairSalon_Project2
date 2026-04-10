@@ -19,13 +19,13 @@ import com.hairsalonproject2.review.entity.ReviewLike;
 import com.hairsalonproject2.review.repository.ReviewImageRepository;
 import com.hairsalonproject2.review.repository.ReviewLikeRepository;
 import com.hairsalonproject2.review.repository.ReviewRepository;
+import com.hairsalonproject2.salon.service.SalonRatingSyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -39,6 +39,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewImageRepository reviewImageRepository;
     private final ReviewLikeRepository reviewLikeRepository;
     private final MemberRepository memberRepository;
+    private final SalonRatingSyncService salonRatingSyncService;
 
     @Override
     @Transactional
@@ -51,7 +52,7 @@ public class ReviewServiceImpl implements ReviewService {
         }
 
         if (!isReviewableReservation(reservation)) {
-            throw new IllegalArgumentException("Only completed or same-day reservations can be reviewed.");
+            throw new IllegalArgumentException("Only completed reservations can be reviewed.");
         }
 
         if (reviewRepository.findByReservation_ReservationId(request.getReservationId()).isPresent()) {
@@ -66,7 +67,9 @@ public class ReviewServiceImpl implements ReviewService {
                 .content(request.getContent())
                 .build();
 
-        return toResponse(reviewRepository.save(review), loginMemberId);
+        Review savedReview = reviewRepository.save(review);
+        salonRatingSyncService.syncSalonStats(savedReview.getDesigner().getSalon().getSalonId());
+        return toResponse(savedReview, loginMemberId);
     }
 
     @Override
@@ -138,8 +141,9 @@ public class ReviewServiceImpl implements ReviewService {
 
         validateReviewAccess(review, loginMemberId, isAdmin);
         review.updateReview(request.getRating(), request.getContent());
-
-        return toResponse(reviewRepository.save(review), loginMemberId);
+        Review savedReview = reviewRepository.save(review);
+        salonRatingSyncService.syncSalonStats(savedReview.getDesigner().getSalon().getSalonId());
+        return toResponse(savedReview, loginMemberId);
     }
 
     @Override
@@ -149,7 +153,9 @@ public class ReviewServiceImpl implements ReviewService {
                 .orElseThrow(() -> new IllegalArgumentException("Review not found."));
 
         validateReviewAccess(review, loginMemberId, isAdmin);
+        Integer salonId = review.getDesigner().getSalon().getSalonId();
         reviewRepository.delete(review);
+        salonRatingSyncService.syncSalonStats(salonId);
     }
 
     @Override
@@ -234,15 +240,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     private boolean isReviewableReservation(Reservation reservation) {
-        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-            return false;
-        }
-
-        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
-            return true;
-        }
-
-        return !reservation.getReservationDate().isAfter(LocalDateTime.now().toLocalDate());
+        return reservation.getStatus() == ReservationStatus.COMPLETED;
     }
 
     private ReviewResponse toResponse(Review review, String loginMemberId) {
@@ -263,7 +261,9 @@ public class ReviewServiceImpl implements ReviewService {
                 review.getMember().getName(),
                 review.getDesigner().getDesignerId(),
                 review.getDesigner().getName(),
+                review.getDesigner().getSalon().getSalonId(),
                 review.getDesigner().getSalon().getName(),
+                review.getDesigner().getSalon().getAddress(),
                 review.getReservation().getSalonService().getName(),
                 review.getRating(),
                 review.getContent(),

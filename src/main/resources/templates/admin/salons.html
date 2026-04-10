@@ -1,15 +1,30 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{admin/layout}">
-<head><title>관리자 - 살롱</title></head>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/layout}">
+<head>
+    <title>관리자 - 살롱 관리</title>
+</head>
 <body>
 <th:block layout:fragment="pageTitle">살롱 관리</th:block>
+
 <div layout:fragment="content">
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:16px;">
-        <div class="admin-card"><div class="admin-card-title">등록 살롱</div><div style="font-size:28px; font-weight:700;" th:text="${totalSalonCount}">0</div></div>
-        <div class="admin-card"><div class="admin-card-title">오늘 등록 살롱</div><div style="font-size:28px; font-weight:700;" th:text="${todaySalonCount}">0</div><a th:href="@{/admin/salons(todayOnly=true)}" class="admin-btn admin-btn-secondary" style="margin-top:12px;">오늘 상세보기</a></div>
+        <div class="admin-card">
+            <div class="admin-card-title">전체 살롱 수</div>
+            <div style="font-size:28px; font-weight:700;" th:text="${totalSalonCount}">0</div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-title">오늘 등록된 살롱</div>
+            <div style="font-size:28px; font-weight:700;" th:text="${todaySalonCount}">0</div>
+            <a th:href="@{/admin/salons(todayOnly=true)}" class="admin-btn admin-btn-secondary" style="margin-top:12px;">오늘 등록만 보기</a>
+        </div>
     </div>
+
     <div class="admin-card">
         <div class="admin-card-title">살롱 목록</div>
+
         <form class="admin-filter-wrap" th:action="@{/admin/salons}" method="get">
             <input type="text" name="keyword" class="admin-search-input" placeholder="살롱명 검색" th:value="${search.keyword}">
             <input type="text" name="region" class="admin-search-input" placeholder="지역 검색" th:value="${search.region}">
@@ -22,22 +37,41 @@
             <button type="submit" class="admin-btn admin-btn-primary"><i class="bi bi-search"></i> 검색</button>
             <a th:href="@{/admin/salons}" class="admin-btn admin-btn-secondary">초기화</a>
         </form>
+
         <div th:if="${todayOnly}" style="margin-bottom:12px; color:#555;">오늘 등록된 살롱만 표시 중입니다.</div>
+
         <div class="admin-table-wrap">
             <table class="admin-table">
-                <thead><tr><th>ID</th><th>이름</th><th>주소</th><th>평점</th><th>리뷰</th><th>좋아요</th></tr></thead>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>이름</th>
+                    <th>주소</th>
+                    <th>평점</th>
+                    <th>리뷰 수</th>
+                    <th>좋아요 수</th>
+                </tr>
+                </thead>
                 <tbody>
-                <tr th:if="${#lists.isEmpty(salons)}"><td colspan="6" style="text-align:center; padding:40px; color:#555;">조회된 살롱이 없습니다.</td></tr>
+                <tr th:if="${#lists.isEmpty(salons)}">
+                    <td colspan="6" style="text-align:center; padding:40px; color:#555;">조회된 살롱이 없습니다.</td>
+                </tr>
                 <tr th:each="salon : ${salons}">
                     <td th:text="${salon.salonId}">1</td>
-                    <td><a th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.name}">살롱</a></td>
-                    <td th:text="${salon.address}">서울</td>
+                    <td><a th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.name}">살롱명</a></td>
+                    <td th:text="${salon.address}">주소</td>
                     <td th:text="${salon.averageRating}">0</td>
                     <td th:text="${salon.reviewCount}">0</td>
                     <td th:text="${salon.likeCount}">0</td>
                 </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="admin-pagination" th:if="${salonPage != null and salonPage.totalPages > 1}">
+            <a th:if="${previousGroupPage != null}" th:href="@{/admin/salons(page=${previousGroupPage}, keyword=${search.keyword}, region=${search.region}, reservable=${search.reservable}, todayOnly=${todayOnly})}" class="admin-page-link">이전</a>
+            <a th:each="pageNumber : ${pageNumbers}" th:href="@{/admin/salons(page=${pageNumber}, keyword=${search.keyword}, region=${search.region}, reservable=${search.reservable}, todayOnly=${todayOnly})}" th:text="${pageNumber}" th:classappend="${pageNumber == currentPage} ? ' active'" class="admin-page-link">1</a>
+            <a th:if="${nextGroupPage != null}" th:href="@{/admin/salons(page=${nextGroupPage}, keyword=${search.keyword}, region=${search.region}, reservable=${search.reservable}, todayOnly=${todayOnly})}" class="admin-page-link">다음</a>
         </div>
     </div>
 </div>

@@ -19,7 +19,9 @@ public class ReviewResponse {
     private String memberName;
     private Integer designerId;
     private String designerName;
+    private Integer salonId;
     private String salonName;
+    private String salonAddress;
     private String serviceName;
     private Byte rating;
     private String content;

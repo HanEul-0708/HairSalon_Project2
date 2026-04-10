@@ -81,14 +81,14 @@
 }
 
 .review-filter__controls {
-    display: flex;
-    align-items: flex-end;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
-    flex-wrap: wrap;
+    align-items: end;
 }
 
 .review-filter__group {
-    min-width: 180px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -100,17 +100,28 @@
 }
 
 .review-filter__group select {
+    width: 100%;
+    max-width: 100%;
     min-height: 44px;
     padding: 10px 12px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-dark);
     background: var(--white);
     font-family: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .review-filter__actions {
     display: flex;
     gap: 10px;
+    align-self: end;
+}
+
+.review-filter__actions .btn {
+    flex: 1 1 0;
+    justify-content: center;
 }
 
 .review-results-head {
@@ -304,6 +315,15 @@
     white-space: pre-wrap;
 }
 
+.review-detail__content-box {
+    min-height: 200px;
+    margin-top: 8px;
+    padding: 24px 0;
+    border-top: 1px solid #efe5d0;
+    border-bottom: 1px solid #efe5d0;
+    color: #3f3628;
+}
+
 .review-reservation-summary {
     padding: 18px 20px;
     margin: 0 auto 18px;
@@ -337,6 +357,28 @@
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     background: #f8f6f1;
+}
+
+.review-detail__reply {
+    margin-top: 28px;
+    padding: 20px 22px;
+    background: linear-gradient(180deg, #fffdf8 0%, #fff7ea 100%);
+    border: 1px solid #e7d7b0;
+    border-radius: 14px;
+    box-shadow: 0 10px 20px rgba(74, 64, 48, 0.06);
+}
+
+.review-detail__reply-title {
+    margin-bottom: 10px;
+    color: #8c6b18;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.review-detail__reply-content {
+    color: #3f3628;
+    line-height: 1.8;
+    white-space: pre-wrap;
 }
 
 .review-form {
@@ -503,6 +545,10 @@
 
 @media (max-width: 1100px) {
     .review-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .review-filter__controls {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 

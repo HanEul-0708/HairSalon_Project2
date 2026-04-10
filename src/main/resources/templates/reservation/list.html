@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 예약 목록</title>
+    <title th:text="${isDesignerReservationView} ? '담당 예약 목록' : '내 예약 목록'">예약 목록</title>
     <link rel="stylesheet" th:href="@{/css/reservation.css}">
     <script th:src="@{/js/reservation.js}" defer></script>
 </head>
@@ -13,8 +13,13 @@
 <main>
     <div class="container reservation-page reservation-list-page">
         <div class="page-header">
-            <h1 class="page-title">내 예약 목록</h1>
-            <p class="page-desc">예약 변경, 취소, 리뷰 작성까지 한 곳에서 관리할 수 있습니다.</p>
+            <h1 class="page-title" th:text="${isDesignerReservationView} ? '담당 예약 목록' : '내 예약 목록'">예약 목록</h1>
+            <p class="page-desc"
+               th:text="${isDesignerReservationView}
+               ? '내가 담당하는 예약 현황을 한 곳에서 확인할 수 있습니다.'
+               : '예약 변경, 취소, 리뷰 작성까지 한 곳에서 관리할 수 있습니다.'">
+                예약 안내
+            </p>
         </div>
 
         <div class="reservation-list" th:if="${!#lists.isEmpty(reservations)}">
@@ -51,23 +56,24 @@
                 </div>
 
                 <div class="reservation-actions">
-                    <a th:if="${reservation.status.name() == 'RESERVED' and !reviewedReservationIds.contains(reservation.reservationId)}"
+                    <a th:if="${!isDesignerReservationView and reservation.status.name() == 'RESERVED' and !reviewedReservationIds.contains(reservation.reservationId)}"
                        th:href="@{/reservations/{reservationId}/edit(reservationId=${reservation.reservationId})}"
                        class="btn btn-outline">예약 변경</a>
-                    <button th:if="${reservation.status.name() == 'RESERVED' and !reviewedReservationIds.contains(reservation.reservationId)}"
+                    <button th:if="${!isDesignerReservationView and reservation.status.name() == 'RESERVED' and !reviewedReservationIds.contains(reservation.reservationId)}"
                             type="button"
                             class="btn btn-danger"
                             data-reservation-cancel
                             th:attr="data-reservation-id=${reservation.reservationId}">예약 취소</button>
-                    <a th:if="${reviewableReservationMap[reservation.reservationId] and !reviewedReservationIds.contains(reservation.reservationId)}"
+                    <a th:if="${!isDesignerReservationView and reviewableReservationMap[reservation.reservationId] and !reviewedReservationIds.contains(reservation.reservationId)}"
                        th:href="@{/reviews/write(reservationId=${reservation.reservationId})}"
                        class="btn btn-primary">리뷰 작성</a>
-                    <span th:if="${reviewableReservationMap[reservation.reservationId] and reviewedReservationIds.contains(reservation.reservationId)}"
+                    <span th:if="${!isDesignerReservationView and reviewableReservationMap[reservation.reservationId] and reviewedReservationIds.contains(reservation.reservationId)}"
                           class="btn btn-review-complete">리뷰 작성 완료</span>
-                    <span th:if="${reservation.status.name() == 'RESERVED' and !reviewableReservationMap[reservation.reservationId] and !reviewedReservationIds.contains(reservation.reservationId)}"
+                    <span th:if="${!isDesignerReservationView and reservation.status.name() == 'RESERVED' and !reviewableReservationMap[reservation.reservationId] and !reviewedReservationIds.contains(reservation.reservationId)}"
                           class="btn btn-outline">방문 후 리뷰 작성 가능</span>
-                    <span th:if="${reservation.status.name() == 'CANCELLED'}"
+                    <span th:if="${!isDesignerReservationView and reservation.status.name() == 'CANCELLED'}"
                           class="btn btn-outline">취소된 예약</span>
+                    <span th:if="${isDesignerReservationView}" class="btn btn-outline">디자이너 예약 조회</span>
                     <p class="reservation-created-at"
                        th:if="${reservation.createdAt != null}"
                        th:text="${#temporals.format(reservation.createdAt, 'yyyy.MM.dd HH:mm')}">2026.04.18 17:42</p>
@@ -90,8 +96,8 @@
         </div>
 
         <div class="review-empty" th:if="${#lists.isEmpty(reservations)}">
-            <p>아직 예약 내역이 없습니다.</p>
-            <a href="/reservations/new" class="btn btn-primary">예약하러 가기</a>
+            <p th:text="${isDesignerReservationView} ? '아직 담당 예약이 없습니다.' : '아직 예약 내역이 없습니다.'">예약이 없습니다.</p>
+            <a th:if="${!isDesignerReservationView}" href="/reservations/new" class="btn btn-primary">예약하러 가기</a>
         </div>
     </div>
 </main>

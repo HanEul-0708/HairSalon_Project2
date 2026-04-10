@@ -24,18 +24,39 @@
             <div class="review-filter__intro">
                 <p class="review-filter__eyebrow">Review Filter</p>
                 <h2>원하는 리뷰만 골라서 확인해보세요.</h2>
-                <p>디자이너와 정렬 기준을 선택해 필요한 후기만 빠르게 살펴볼 수 있습니다.</p>
             </div>
 
             <div class="review-filter__controls">
                 <div class="review-filter__group">
+                    <label for="region">지역</label>
+                    <select id="region" name="region">
+                        <option value="">전체 지역</option>
+                        <option th:each="regionOption : ${regionOptions}"
+                                th:value="${regionOption}"
+                                th:text="${regionOption}"
+                                th:selected="${selectedRegion == regionOption}">
+                        </option>
+                    </select>
+                </div>
+                <div class="review-filter__group">
+                    <label for="salonId">미용실</label>
+                    <select id="salonId" name="salonId">
+                        <option value="">전체 미용실</option>
+                        <option th:each="salonOption : ${salonOptions}"
+                                th:value="${salonOption.salonId}"
+                                th:text="${salonOption.salonName}"
+                                th:selected="${selectedSalonId != null and selectedSalonId == salonOption.salonId}">
+                        </option>
+                    </select>
+                </div>
+                <div class="review-filter__group">
                     <label for="designerId">디자이너</label>
                     <select id="designerId" name="designerId">
                         <option value="">전체 디자이너</option>
-                        <option th:each="designerOption : ${designerOptions.entrySet()}"
-                                th:value="${designerOption.key}"
-                                th:text="${designerOption.value}"
-                                th:selected="${selectedDesignerId != null and selectedDesignerId == designerOption.key}">
+                        <option th:each="designerOption : ${designerOptions}"
+                                th:value="${designerOption.designerId}"
+                                th:text="${designerOption.designerName}"
+                                th:selected="${selectedDesignerId != null and selectedDesignerId == designerOption.designerId}">
                         </option>
                     </select>
                 </div>
@@ -54,10 +75,6 @@
             </div>
         </form>
 
-        <div class="review-empty review-empty--guide" th:if="${!searched}">
-            <p>디자이너와 정렬 조건을 선택하면 리뷰 결과가 여기에 표시됩니다.</p>
-        </div>
-
         <div th:if="${searched}">
             <div class="review-results-head catalog-results-head">
                 <div>
@@ -73,7 +90,7 @@
                         <div class="review-card__header">
                             <div class="review-card__avatar" th:text="${#strings.substring(review.memberName, 0, 1)}">김</div>
                             <div class="review-card__meta">
-                                <p class="review-card__name" th:text="${review.memberName}">회원명</p>
+                                <p class="review-card__name" th:text="${T(com.hairsalonproject2.common.util.NameMaskingUtils).maskName(review.memberName)}">회원명</p>
                                 <p class="review-card__info">
                                     디자이너:
                                     <span th:text="${review.designerName}">디자이너명</span>
@@ -121,18 +138,24 @@
             <div class="pagination" th:if="${totalPages > 1}">
                 <a class="page-link"
                    th:classappend="${currentPage == 1 ? ' disabled' : ''}"
-                   th:href="@{/reviews(page=${currentPage > 1 ? currentPage - 1 : 1}, searched=true, designerId=${selectedDesignerId}, sortBy=${currentSort})}">이전</a>
+                   th:href="@{/reviews(page=${currentPage > 1 ? currentPage - 1 : 1}, searched=true, region=${selectedRegion}, salonId=${selectedSalonId}, designerId=${selectedDesignerId}, sortBy=${currentSort})}">이전</a>
                 <a class="page-link"
                    th:each="pageNumber : ${pageNumbers}"
                    th:classappend="${pageNumber == currentPage ? ' active' : ''}"
-                   th:href="@{/reviews(page=${pageNumber}, searched=true, designerId=${selectedDesignerId}, sortBy=${currentSort})}"
+                   th:href="@{/reviews(page=${pageNumber}, searched=true, region=${selectedRegion}, salonId=${selectedSalonId}, designerId=${selectedDesignerId}, sortBy=${currentSort})}"
                    th:text="${pageNumber}">1</a>
                 <a class="page-link"
                    th:classappend="${currentPage == totalPages ? ' disabled' : ''}"
-                   th:href="@{/reviews(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, searched=true, designerId=${selectedDesignerId}, sortBy=${currentSort})}">다음</a>
+                   th:href="@{/reviews(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, searched=true, region=${selectedRegion}, salonId=${selectedSalonId}, designerId=${selectedDesignerId}, sortBy=${currentSort})}">다음</a>
             </div>
         </div>
     </div>
+    <script th:inline="javascript">
+        window.reviewFilterData = {
+            salons: /*[[${salonOptions}]]*/ [],
+            designers: /*[[${designerOptions}]]*/ []
+        };
+    </script>
 </main>
 </body>
 </html>

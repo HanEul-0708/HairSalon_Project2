@@ -1,10 +1,104 @@
 document.addEventListener("DOMContentLoaded", function () {
+    bindReviewFilterCascade();
     bindReviewRatingStars();
     bindReviewContentCounter();
     bindReviewFormSubmit();
     bindReviewDeleteButton();
     bindReviewLikeButtons();
 });
+
+function bindReviewFilterCascade() {
+    var regionSelect = document.getElementById("region");
+    var salonSelect = document.getElementById("salonId");
+    var designerSelect = document.getElementById("designerId");
+    var filterData = window.reviewFilterData;
+
+    if (!regionSelect || !salonSelect || !designerSelect || !filterData) {
+        return;
+    }
+
+    var salons = Array.isArray(filterData.salons) ? filterData.salons : [];
+    var designers = Array.isArray(filterData.designers) ? filterData.designers : [];
+
+    function normalizeValue(value) {
+        return value == null ? "" : String(value).trim();
+    }
+
+    function populateSelect(select, options, defaultLabel, valueKey, textKey, selectedValue, disabled) {
+        select.innerHTML = "";
+
+        var defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = defaultLabel;
+        select.appendChild(defaultOption);
+
+        options.forEach(function (optionItem) {
+            var option = document.createElement("option");
+            option.value = normalizeValue(optionItem[valueKey]);
+            option.textContent = optionItem[textKey];
+            select.appendChild(option);
+        });
+
+        select.disabled = disabled;
+        select.value = normalizeValue(selectedValue);
+
+        if (select.value !== normalizeValue(selectedValue)) {
+            select.value = "";
+        }
+    }
+
+    function syncSalonOptions(resetSelection) {
+        var selectedRegion = normalizeValue(regionSelect.value);
+        var filteredSalons = selectedRegion
+            ? salons.filter(function (salon) {
+                return normalizeValue(salon.region) === selectedRegion;
+            })
+            : [];
+        var selectedSalonId = resetSelection ? "" : salonSelect.value;
+
+        populateSelect(
+            salonSelect,
+            filteredSalons,
+            selectedRegion ? "전체 미용실" : "지역을 먼저 선택하세요",
+            "salonId",
+            "salonName",
+            selectedSalonId,
+            !selectedRegion
+        );
+
+        syncDesignerOptions(resetSelection);
+    }
+
+    function syncDesignerOptions(resetSelection) {
+        var selectedSalonId = normalizeValue(salonSelect.value);
+        var filteredDesigners = selectedSalonId
+            ? designers.filter(function (designer) {
+                return normalizeValue(designer.salonId) === selectedSalonId;
+            })
+            : [];
+        var selectedDesignerId = resetSelection ? "" : designerSelect.value;
+
+        populateSelect(
+            designerSelect,
+            filteredDesigners,
+            selectedSalonId ? "전체 디자이너" : "미용실을 먼저 선택하세요",
+            "designerId",
+            "designerName",
+            selectedDesignerId,
+            !selectedSalonId
+        );
+    }
+
+    regionSelect.addEventListener("change", function () {
+        syncSalonOptions(true);
+    });
+
+    salonSelect.addEventListener("change", function () {
+        syncDesignerOptions(true);
+    });
+
+    syncSalonOptions(false);
+}
 
 function bindReviewRatingStars() {
     var stars = document.querySelectorAll(".review-rating__star");

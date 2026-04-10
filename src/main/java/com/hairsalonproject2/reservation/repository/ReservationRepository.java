@@ -19,6 +19,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
      */
     List<Reservation> findByMember_MemberId(String memberId);
 
+    List<Reservation> findByDesigner_Member_MemberId(String memberId);
+
     /**
      * 디자이너별 예약 목록 조회
      */

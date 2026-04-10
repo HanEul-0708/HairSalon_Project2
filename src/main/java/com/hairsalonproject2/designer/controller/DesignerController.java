@@ -1,7 +1,9 @@
 package com.hairsalonproject2.designer.controller;
 
+import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
+import com.hairsalonproject2.member.service.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -72,7 +74,13 @@ public class DesignerController {
         if (!isAuthenticated(authentication)) {
             return "redirect:/members/login";
         }
-        model.addAttribute("designers", designerQueryService.getLikedDesigners(authentication.getName()));
+        CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+        if (principal.getMember().getRole() == MemberRole.DESIGNER) {
+            model.addAttribute("members", designerQueryService.getMembersWhoLikedDesigner(principal.getMember().getMemberId()));
+            return "designer/liked-members";
+        }
+
+        model.addAttribute("designers", designerQueryService.getLikedDesigners(principal.getMember().getMemberId()));
         return "designer/liked-list";
     }
 

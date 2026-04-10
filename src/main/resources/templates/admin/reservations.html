@@ -8,12 +8,13 @@
 </head>
 <body>
 <th:block layout:fragment="pageTitle">예약 관리</th:block>
+
 <div layout:fragment="content">
     <div th:replace="~{fragments/message :: flashMessage}"></div>
 
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:16px;">
         <div class="admin-card"><div class="admin-card-title">전체 예약</div><div style="font-size:28px; font-weight:700;" th:text="${reservationCount}">0</div></div>
-        <div class="admin-card"><div class="admin-card-title">예약 완료</div><div style="font-size:28px; font-weight:700;" th:text="${completedReservationCount}">0</div></div>
+        <div class="admin-card"><div class="admin-card-title">방문 완료</div><div style="font-size:28px; font-weight:700;" th:text="${completedReservationCount}">0</div></div>
         <div class="admin-card"><div class="admin-card-title">예약 대기</div><div style="font-size:28px; font-weight:700;" th:text="${reservedReservationCount}">0</div></div>
         <div class="admin-card"><div class="admin-card-title">예약 취소</div><div style="font-size:28px; font-weight:700;" th:text="${cancelledReservationCount}">0</div></div>
         <div class="admin-card"><div class="admin-card-title">리뷰 수</div><div style="font-size:28px; font-weight:700;" th:text="${reviewCount}">0</div></div>
@@ -22,44 +23,19 @@
     <div class="admin-card">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
             <div class="admin-card-title" style="margin-bottom:0;">예약 목록</div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <form th:action="@{/admin/reservations/seed}" method="post"
-                      onsubmit="return confirm('현재 회원, 디자이너, 시술 정보를 기준으로 예약 더미를 생성합니다. 계속할까요?')">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                    <button type="submit" class="admin-btn admin-btn-primary">
-                        <i class="bi bi-calendar-plus"></i>
-                        예약 더미 생성
-                    </button>
-                </form>
-                <form th:action="@{/admin/reservations/seed-reviews}" method="post"
-                      onsubmit="return confirm('완료된 예약 중 리뷰가 없는 예약에만 리뷰 더미를 생성합니다. 계속할까요?')">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                    <button type="submit" class="admin-btn admin-btn-secondary">
-                        <i class="bi bi-chat-left-text"></i>
-                        리뷰 더미 생성
-                    </button>
-                </form>
-            </div>
+            <form th:action="@{/admin/reservations/seed}" method="post" onsubmit="return confirm('현재 회원, 디자이너, 시술 정보를 기준으로 예약 더미를 생성합니다. 계속하시겠습니까?');">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="admin-btn admin-btn-primary"><i class="bi bi-calendar-plus"></i> 예약 더미 생성</button>
+            </form>
         </div>
 
         <form class="admin-filter-wrap" th:action="@{/admin/reservations}" method="get">
-            <input type="text"
-                   name="keyword"
-                   class="admin-search-input"
-                   placeholder="예약번호, 회원 ID, 디자이너명, 시술명 검색"
-                   th:value="${keyword}">
+            <input type="text" name="keyword" class="admin-search-input" placeholder="예약번호, 회원 ID, 디자이너명, 시술명 검색" th:value="${keyword}">
             <select name="status" class="admin-select">
                 <option value="">전체 상태</option>
-                <option th:each="statusItem : ${statuses}"
-                        th:value="${statusItem}"
-                        th:text="${statusItem.name()}"
-                        th:selected="${statusItem == selectedStatus}">
-                </option>
+                <option th:each="statusItem : ${statuses}" th:value="${statusItem}" th:text="${statusItem.name()}" th:selected="${statusItem == selectedStatus}"></option>
             </select>
-            <button type="submit" class="admin-btn admin-btn-primary">
-                <i class="bi bi-search"></i>
-                검색
-            </button>
+            <button type="submit" class="admin-btn admin-btn-primary"><i class="bi bi-search"></i> 검색</button>
             <a th:href="@{/admin/reservations}" class="admin-btn admin-btn-secondary">초기화</a>
         </form>
 
@@ -84,8 +60,8 @@
                 <tr th:each="reservation : ${reservations}">
                     <td th:text="${reservation.reservationId}">1</td>
                     <td th:text="${reservation.memberId}">user1</td>
-                    <td th:text="${reservation.designerName}">김하늘 점장</td>
-                    <td th:text="${reservation.serviceName}">여성 커트</td>
+                    <td th:text="${reservation.designerName}">디자이너명</td>
+                    <td th:text="${reservation.serviceName}">시술명</td>
                     <td th:text="${reservation.reservationDate}">2026-04-08</td>
                     <td th:text="${reservation.reservationTime}">10:00</td>
                     <td th:text="${reservation.status.name()}">COMPLETED</td>
@@ -93,6 +69,12 @@
                 </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="admin-pagination" th:if="${reservationPage != null and reservationPage.totalPages > 1}">
+            <a th:if="${previousGroupPage != null}" th:href="@{/admin/reservations(page=${previousGroupPage}, keyword=${keyword}, status=${selectedStatus})}" class="admin-page-link">이전</a>
+            <a th:each="pageNumber : ${pageNumbers}" th:href="@{/admin/reservations(page=${pageNumber}, keyword=${keyword}, status=${selectedStatus})}" th:text="${pageNumber}" th:classappend="${pageNumber == currentPage} ? ' active'" class="admin-page-link">1</a>
+            <a th:if="${nextGroupPage != null}" th:href="@{/admin/reservations(page=${nextGroupPage}, keyword=${keyword}, status=${selectedStatus})}" class="admin-page-link">다음</a>
         </div>
     </div>
 </div>

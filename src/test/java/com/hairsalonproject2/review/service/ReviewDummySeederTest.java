@@ -9,6 +9,7 @@ import com.hairsalonproject2.reservation.repository.ReservationRepository;
 import com.hairsalonproject2.review.entity.Review;
 import com.hairsalonproject2.review.repository.ReviewRepository;
 import com.hairsalonproject2.salon.entity.Salon;
+import com.hairsalonproject2.salon.service.SalonRatingSyncService;
 import com.hairsalonproject2.salonservice.entity.SalonService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,9 @@ class ReviewDummySeederTest {
 
     @Mock
     private DummyTimelineService dummyTimelineService;
+
+    @Mock
+    private SalonRatingSyncService salonRatingSyncService;
 
     @InjectMocks
     private ReviewDummySeeder reviewDummySeeder;
@@ -93,6 +97,7 @@ class ReviewDummySeederTest {
         assertThat(reviewCaptor.getValue().getRating()).isBetween((byte) 1, (byte) 5);
         verify(reviewRepository, times(1)).findByReservation_ReservationId(1);
         verify(reviewRepository, times(1)).findByReservation_ReservationId(2);
+        verify(salonRatingSyncService).syncSalonStats(List.of(1));
     }
 
     private void setReservationId(Reservation reservation, int reservationId) {

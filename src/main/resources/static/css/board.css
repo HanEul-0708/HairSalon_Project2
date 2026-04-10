@@ -515,6 +515,37 @@
     border-top: 2px solid #c9a84c;
 }
 
+.board-reply-write-wrap {
+    margin-top: 40px;
+    padding: 24px;
+    background: linear-gradient(180deg, #fffdf8 0%, #ffffff 100%);
+    border: 1px solid #eadcb3;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(74, 64, 48, 0.08);
+}
+
+.board-reply-form .form-control {
+    width: 100%;
+    background: #fffdf8;
+    border: 1px solid #d8c79b;
+    color: #3f3628;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.board-reply-form .form-control::placeholder {
+    color: #9a8b73;
+}
+
+.board-reply-form .form-control:focus {
+    border-color: #c9a84c;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.14);
+}
+
 .board-reply-title {
     color: #c9a84c;
     font-size: 1rem;
@@ -522,10 +553,12 @@
 }
 
 .board-reply {
-    background: #2a2a2c;
-    border-radius: 6px;
-    padding: 16px 20px;
+    background: linear-gradient(180deg, #fffdf8 0%, #fff7ea 100%);
+    border: 1px solid #e7d7b0;
+    border-radius: 14px;
+    padding: 18px 20px;
     margin-bottom: 12px;
+    box-shadow: 0 10px 20px rgba(74, 64, 48, 0.06);
 }
 
 .board-reply-info {
@@ -537,18 +570,32 @@
 }
 
 .board-reply-writer {
-    color: #c9a84c;
+    color: #8c6b18;
     font-weight: 700;
 }
 
 .board-reply-date {
-    color: #666;
+    color: #8f7d62;
+}
+
+.board-reply-subject {
+    margin-bottom: 10px;
+    color: #4a4030;
+    font-size: 0.96rem;
 }
 
 .board-reply-content {
-    color: #ccc;
-    font-size: 0.9rem;
-    line-height: 1.7;
+    color: #3f3628;
+    font-size: 0.94rem;
+    line-height: 1.8;
+}
+
+.board-reply-empty {
+    padding: 18px 20px;
+    border: 1px dashed #d8c79b;
+    border-radius: 12px;
+    background: #fffdf8;
+    color: #7a6f5d;
 }
 
 

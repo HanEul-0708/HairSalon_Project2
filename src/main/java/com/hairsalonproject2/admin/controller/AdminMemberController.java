@@ -1,5 +1,6 @@
 package com.hairsalonproject2.admin.controller;
 
+import com.hairsalonproject2.admin.support.AdminPaginationUtils;
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.common.exception.BusinessException;
@@ -45,11 +46,15 @@ public class AdminMemberController {
                              @RequestParam(required = false) MemberRole role,
                              @RequestParam(required = false) MemberStatus status,
                              @RequestParam(defaultValue = "latest") String sort,
-                             @RequestParam(defaultValue = "0") int page,
+                             @RequestParam(defaultValue = "1") int page,
                              Model model) {
+        int safePage = AdminPaginationUtils.normalizePageNumber(page);
 
         Page<MemberSummaryResponse> memberPage =
-                memberService.searchMembers(keyword, role, status, sort, page);
+                memberService.searchMembers(keyword, role, status, sort, safePage - 1);
+        if (memberPage.getTotalPages() > 0 && safePage > memberPage.getTotalPages()) {
+            memberPage = memberService.searchMembers(keyword, role, status, sort, memberPage.getTotalPages() - 1);
+        }
 
         model.addAttribute("memberPage", memberPage);
         model.addAttribute("members", memberPage.getContent());
@@ -59,8 +64,11 @@ public class AdminMemberController {
         model.addAttribute("selectedSort", sort);
         model.addAttribute("roles", MemberRole.values());
         model.addAttribute("statuses", MemberStatus.values());
-        model.addAttribute("currentPage", page);
+        model.addAttribute("currentPage", memberPage.getNumber() + 1);
         model.addAttribute("totalPages", memberPage.getTotalPages());
+        model.addAttribute("pageNumbers", AdminPaginationUtils.getPageNumbers(memberPage));
+        model.addAttribute("previousGroupPage", AdminPaginationUtils.getPreviousGroupPage(memberPage));
+        model.addAttribute("nextGroupPage", AdminPaginationUtils.getNextGroupPage(memberPage));
         model.addAttribute("currentMenu", "members");
         model.addAttribute("memberSeedingEnabled", true);
         model.addAttribute("adminMemberCount", memberRepository.countByRole(MemberRole.ADMIN));

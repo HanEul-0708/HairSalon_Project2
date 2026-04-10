@@ -4,7 +4,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{admin/layout}">
 <head>
-    <title>관리자 - 회원 목록</title>
+    <title>관리자 - 회원 관리</title>
 </head>
 <body>
 <th:block layout:fragment="pageTitle">회원 관리</th:block>
@@ -23,10 +23,7 @@
             <form th:if="${memberSeedingEnabled}" th:action="@{/admin/members/seed}" method="post"
                   th:attr="onsubmit=|return confirm('더미 회원을 생성합니다. ${seedGuide}')|">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <button type="submit" class="admin-btn admin-btn-primary">
-                    <i class="bi bi-person-plus"></i>
-                    더미 회원 생성
-                </button>
+                <button type="submit" class="admin-btn admin-btn-primary"><i class="bi bi-person-plus"></i> 더미 회원 생성</button>
             </form>
         </div>
 
@@ -51,9 +48,22 @@
 
         <div class="admin-table-wrap">
             <table class="admin-table">
-                <thead><tr><th>아이디</th><th>이름</th><th>이메일</th><th>전화번호</th><th>권한</th><th>상태</th><th>가입일</th><th>관리</th></tr></thead>
+                <thead>
+                <tr>
+                    <th>아이디</th>
+                    <th>이름</th>
+                    <th>이메일</th>
+                    <th>전화번호</th>
+                    <th>권한</th>
+                    <th>상태</th>
+                    <th>가입일</th>
+                    <th>관리</th>
+                </tr>
+                </thead>
                 <tbody>
-                <tr th:if="${#lists.isEmpty(members)}"><td colspan="8" style="text-align:center; padding:40px; color:#555;">조회된 회원이 없습니다.</td></tr>
+                <tr th:if="${#lists.isEmpty(members)}">
+                    <td colspan="8" style="text-align:center; padding:40px; color:#555;">조회된 회원이 없습니다.</td>
+                </tr>
                 <tr th:each="member : ${members}">
                     <td th:text="${member.memberId}">member1</td>
                     <td th:text="${member.name}">회원1</td>
@@ -73,6 +83,12 @@
                 </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="admin-pagination" th:if="${memberPage != null and memberPage.totalPages > 1}">
+            <a th:if="${previousGroupPage != null}" th:href="@{/admin/members(page=${previousGroupPage}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus}, sort=${selectedSort})}" class="admin-page-link">이전</a>
+            <a th:each="pageNumber : ${pageNumbers}" th:href="@{/admin/members(page=${pageNumber}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus}, sort=${selectedSort})}" th:text="${pageNumber}" th:classappend="${pageNumber == currentPage} ? ' active'" class="admin-page-link">1</a>
+            <a th:if="${nextGroupPage != null}" th:href="@{/admin/members(page=${nextGroupPage}, keyword=${keyword}, role=${selectedRole}, status=${selectedStatus}, sort=${selectedSort})}" class="admin-page-link">다음</a>
         </div>
     </div>
 </div>

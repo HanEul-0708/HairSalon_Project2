@@ -25,7 +25,6 @@
         <div class="salon-search-form__intro">
             <p class="salon-search-form__eyebrow">Salon Search</p>
             <h2>원하는 지역과 조건으로 미용실을 찾아보세요.</h2>
-            <p>이름, 지역, 평점, 예약 가능 여부를 기준으로 결과를 확인할 수 있습니다.</p>
         </div>
 
         <div class="salon-search-form__controls">
@@ -37,10 +36,17 @@
                            th:checked="${search.reservable != null and search.reservable}">
                     예약 가능한 미용실만 보기
                 </label>
-                <input type="number" step="0.1" name="minRating" placeholder="최소 평점" th:value="${search.minRating}">
+                <select name="minRating">
+                    <option value="" th:selected="${search.minRating == null}">최소 평점</option>
+                    <option value="1" th:selected="${search.minRating != null and search.minRating.intValue() == 1}">1점 이상</option>
+                    <option value="2" th:selected="${search.minRating != null and search.minRating.intValue() == 2}">2점 이상</option>
+                    <option value="3" th:selected="${search.minRating != null and search.minRating.intValue() == 3}">3점 이상</option>
+                    <option value="4" th:selected="${search.minRating != null and search.minRating.intValue() == 4}">4점 이상</option>
+                    <option value="5" th:selected="${search.minRating != null and search.minRating.intValue() == 5}">5점</option>
+                </select>
                 <select name="sort">
-                    <option value="recommended" th:selected="${search.sort == 'recommended'}">추천순</option>
-                    <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
+                    <option value="rating" th:selected="${search.sort == null or search.sort == '' or search.sort == 'rating'}">평점순</option>
+                    <option value="reviews" th:selected="${search.sort == 'reviews'}">리뷰순</option>
                     <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
                 </select>
             </div>
@@ -51,11 +57,6 @@
             </div>
         </div>
     </form>
-
-    <div class="salon-empty-state salon-empty-state--guide" th:if="${!searched}">
-        <h2>검색 조건을 입력하면 결과가 여기에 표시됩니다.</h2>
-        <p>이름, 지역, 평점, 예약 가능 여부를 조합해 원하는 미용실만 찾아보세요.</p>
-    </div>
 
     <div th:if="${searched}">
         <div class="catalog-results-head salon-results-head">

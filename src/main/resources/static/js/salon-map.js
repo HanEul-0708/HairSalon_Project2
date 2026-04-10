@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var regionInput = document.getElementById("mapRegion");
     var keywordInput = document.getElementById("mapKeyword");
     var searchButton = document.getElementById("mapSearchButton");
+    var myLocationButton = document.getElementById("myLocationButton");
     var resetButton = document.getElementById("mapResetButton");
     var resultsBox = document.getElementById("mapResults");
     var noticeBox = document.getElementById("mapNotice");
@@ -45,12 +46,42 @@ document.addEventListener("DOMContentLoaded", function () {
     var infoWindow = new kakao.maps.InfoWindow({ zIndex: 1 });
     var markers = [];
 
+    /* 현재 사용자 위치 마커를 따로 관리하는 변수 */
+    var myLocationMarker = null;
+
     function clearMarkers() {
         markers.forEach(function (marker) {
             marker.setMap(null);
         });
         markers = [];
         bounds = new kakao.maps.LatLngBounds();
+    }
+
+    function clearMyLocationMarker() {
+        if (myLocationMarker) {
+            myLocationMarker.setMap(null);
+            myLocationMarker = null;
+        }
+    }
+
+    function setMyLocationMarker(latitude, longitude) {
+        clearMyLocationMarker();
+
+        var position = new kakao.maps.LatLng(latitude, longitude);
+
+        myLocationMarker = new kakao.maps.Marker({
+            position: position
+        });
+
+        myLocationMarker.setMap(map);
+
+        var myLocationInfoWindow = new kakao.maps.InfoWindow({
+            content: '<div class="salon-map-infowindow"><strong>내 위치</strong></div>'
+        });
+
+        kakao.maps.event.addListener(myLocationMarker, "click", function () {
+            myLocationInfoWindow.open(map, myLocationMarker);
+        });
     }
 
     function buildQuery() {
@@ -111,6 +142,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
                 infoWindow.open(map, marker);
             });
+
             item.addEventListener("keydown", function (event) {
                 if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
@@ -179,11 +211,115 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     }
 
+    function moveToMyLocationAndSearch() {
+        if (!navigator.geolocation) {
+            showNotice("이 브라우저에서는 위치 정보를 지원하지 않습니다.");
+            renderEmpty("현재 위치를 사용할 수 없습니다.");
+            return;
+        }
+
+        renderEmpty("현재 위치를 확인하는 중입니다...");
+
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                var latitude = position.coords.latitude;
+                var longitude = position.coords.longitude;
+
+                var currentPosition = new kakao.maps.LatLng(latitude, longitude);
+
+                /* 지도 중심을 현재 위치로 이동 */
+                map.setCenter(currentPosition);
+                map.setLevel(4);
+
+                /* 내 위치 마커 표시 */
+                setMyLocationMarker(latitude, longitude);
+
+                /*
+                 * 현재 위치 기준으로 카카오 장소 검색을 수행한다.
+                 * 키워드가 비어 있으면 기본값으로 "미용실"을 사용한다.
+                 */
+                var keyword = (keywordInput.value || "").trim();
+                if (!keyword) {
+                    keyword = "미용실";
+                    keywordInput.value = keyword;
+                }
+
+                clearMarkers();
+                renderEmpty("내 위치 기준으로 주변 미용실을 검색하는 중입니다...");
+
+                var places = new kakao.maps.services.Places();
+
+                places.keywordSearch(
+                    keyword,
+                    function (data, status) {
+                        if (status === kakao.maps.services.Status.OK) {
+                            var mappedResults = data.map(function (place) {
+                                return {
+                                    salonId: null,
+                                    name: place.place_name,
+                                    address: place.address_name,
+                                    roadAddress: place.road_address_name,
+                                    latitude: parseFloat(place.y),
+                                    longitude: parseFloat(place.x)
+                                };
+                            });
+
+                            renderResults(mappedResults);
+                            return;
+                        }
+
+                        if (status === kakao.maps.services.Status.ZERO_RESULT) {
+                            renderEmpty("내 주변에서 검색 결과가 없습니다.");
+                            return;
+                        }
+
+                        renderEmpty("내 위치 기준 검색 중 오류가 발생했습니다.");
+                        showNotice("현재 위치 기반 검색에 실패했습니다.");
+                    },
+                    {
+                        location: currentPosition,
+                        radius: 3000,
+                        sort: kakao.maps.services.SortBy.DISTANCE
+                    }
+                );
+            },
+            function (error) {
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        showNotice("위치 권한이 거부되었습니다. 브라우저에서 위치 허용 후 다시 시도하세요.");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        showNotice("현재 위치를 확인할 수 없습니다.");
+                        break;
+                    case error.TIMEOUT:
+                        showNotice("위치 확인 시간이 초과되었습니다.");
+                        break;
+                    default:
+                        showNotice("위치 정보를 가져오지 못했습니다.");
+                        break;
+                }
+
+                renderEmpty("현재 위치를 사용할 수 없습니다.");
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    }
+
     searchButton.addEventListener("click", searchPlaces);
+
+    if (myLocationButton) {
+        myLocationButton.addEventListener("click", moveToMyLocationAndSearch);
+    }
+
     resetButton.addEventListener("click", function () {
         regionInput.value = "";
         keywordInput.value = "";
         clearMarkers();
+        clearMyLocationMarker();
         renderEmpty("검색 결과가 여기에 표시됩니다.");
         map.setCenter(new kakao.maps.LatLng(37.5665, 126.9780));
         map.setLevel(5);

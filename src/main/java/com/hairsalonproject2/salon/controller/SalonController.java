@@ -182,6 +182,7 @@ public class SalonController {
     public String detail(@PathVariable Integer salonId, Authentication authentication, Model model) {
         model.addAttribute("salon", salonQueryService.getDetail(salonId));
         model.addAttribute("recommendationCondition", salonQueryService.getRecommendationCondition(salonId));
+        model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey == null ? "" : kakaoJavascriptKey.trim());
         model.addAttribute(
                 "likedByCurrentUser",
                 isAuthenticated(authentication) && salonQueryService.isLikedByMember(salonId, authentication.getName())

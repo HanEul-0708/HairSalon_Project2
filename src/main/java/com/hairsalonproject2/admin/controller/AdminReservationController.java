@@ -1,12 +1,13 @@
 package com.hairsalonproject2.admin.controller;
 
+import com.hairsalonproject2.admin.support.AdminPaginationUtils;
 import com.hairsalonproject2.common.constant.ReservationStatus;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.service.ReservationDummySeeder;
 import com.hairsalonproject2.reservation.service.ReservationService;
 import com.hairsalonproject2.review.repository.ReviewRepository;
-import com.hairsalonproject2.review.service.ReviewDummySeeder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,22 +24,30 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class AdminReservationController {
 
+    private static final int PAGE_SIZE = 10;
+
     private final ReservationService reservationService;
     private final ReservationDummySeeder reservationDummySeeder;
-    private final ReviewDummySeeder reviewDummySeeder;
     private final ReviewRepository reviewRepository;
 
     @GetMapping
     public String reservationList(@RequestParam(required = false) String keyword,
                                   @RequestParam(required = false) ReservationStatus status,
+                                  @RequestParam(defaultValue = "1") int page,
                                   Model model) {
         List<ReservationResponse> allReservations = reservationService.getAllReservations();
-        List<ReservationResponse> reservations = allReservations.stream()
+        List<ReservationResponse> filteredReservations = allReservations.stream()
                 .filter(reservation -> status == null || reservation.getStatus() == status)
                 .filter(reservation -> matchesKeyword(reservation, keyword))
                 .toList();
+        Page<ReservationResponse> reservationPage = AdminPaginationUtils.slice(filteredReservations, page, PAGE_SIZE);
 
-        model.addAttribute("reservations", reservations);
+        model.addAttribute("reservationPage", reservationPage);
+        model.addAttribute("reservations", reservationPage.getContent());
+        model.addAttribute("pageNumbers", AdminPaginationUtils.getPageNumbers(reservationPage));
+        model.addAttribute("currentPage", reservationPage.getNumber() + 1);
+        model.addAttribute("previousGroupPage", AdminPaginationUtils.getPreviousGroupPage(reservationPage));
+        model.addAttribute("nextGroupPage", AdminPaginationUtils.getNextGroupPage(reservationPage));
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedStatus", status);
         model.addAttribute("statuses", ReservationStatus.values());
@@ -58,17 +67,6 @@ public class AdminReservationController {
             redirectAttributes.addFlashAttribute("successMessage", created + "개의 예약 더미를 생성했습니다.");
         } else {
             redirectAttributes.addFlashAttribute("successMessage", "추가로 생성할 예약 더미가 없습니다.");
-        }
-        return "redirect:/admin/reservations";
-    }
-
-    @PostMapping("/seed-reviews")
-    public String seedReviews(RedirectAttributes redirectAttributes) {
-        int created = reviewDummySeeder.seedReviewsFromCompletedReservations();
-        if (created > 0) {
-            redirectAttributes.addFlashAttribute("successMessage", created + "개의 리뷰 더미를 생성했습니다.");
-        } else {
-            redirectAttributes.addFlashAttribute("successMessage", "리뷰를 생성할 완료 예약이 없습니다.");
         }
         return "redirect:/admin/reservations";
     }

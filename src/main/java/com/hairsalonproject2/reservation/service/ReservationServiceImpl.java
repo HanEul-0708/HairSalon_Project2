@@ -99,6 +99,13 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
+    public List<ReservationResponse> getReservationsByDesignerMember(String memberId) {
+        return reservationRepository.findByDesigner_Member_MemberId(memberId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public ReservationResponse updateReservation(Integer reservationId, ReservationUpdateRequest request) {
         Reservation reservation = reservationRepository.findById(reservationId)

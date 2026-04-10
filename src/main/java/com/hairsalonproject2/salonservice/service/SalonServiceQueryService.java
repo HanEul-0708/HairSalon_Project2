@@ -117,21 +117,16 @@ public class SalonServiceQueryService {
                     .thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
         }
 
-        if ("rating".equalsIgnoreCase(sortBy)) {
-            return Comparator.comparing(
-                            SalonServiceSummaryResponse::getAverageRating,
-                            Comparator.nullsLast(Comparator.reverseOrder()))
-                    .thenComparing(SalonServiceSummaryResponse::getPrice)
+        if ("price".equalsIgnoreCase(sortBy)) {
+            return Comparator.comparing(SalonServiceSummaryResponse::getPrice)
+                    .thenComparing(SalonServiceSummaryResponse::getDuration)
                     .thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
         }
 
-        if ("name".equalsIgnoreCase(sortBy)) {
-            return Comparator.comparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER)
-                    .thenComparing(SalonServiceSummaryResponse::getPrice);
-        }
-
-        return Comparator.comparing(SalonServiceSummaryResponse::getPrice)
-                .thenComparing(SalonServiceSummaryResponse::getDuration)
+        return Comparator.comparing(
+                        SalonServiceSummaryResponse::getAverageRating,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(SalonServiceSummaryResponse::getPrice)
                 .thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
     }
 }
