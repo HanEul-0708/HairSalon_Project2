@@ -10,6 +10,9 @@ import java.math.BigDecimal;
 public class SalonSearchRequest {
     private String keyword;
     private String region;
+    private String city;
+    private String district;
+    private String neighborhood;
     private BigDecimal minRating;
     private Boolean reservable;
     private BigDecimal latitude;

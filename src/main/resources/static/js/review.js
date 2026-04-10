@@ -8,23 +8,30 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function bindReviewFilterCascade() {
-    var regionSelect = document.getElementById("region");
+    var citySelect = document.getElementById("city");
+    var districtSelect = document.getElementById("district");
+    var neighborhoodSelect = document.getElementById("neighborhood");
     var salonSelect = document.getElementById("salonId");
     var designerSelect = document.getElementById("designerId");
     var filterData = window.reviewFilterData;
 
-    if (!regionSelect || !salonSelect || !designerSelect || !filterData) {
+    if (!citySelect || !districtSelect || !neighborhoodSelect || !salonSelect || !designerSelect || !filterData) {
         return;
     }
 
     var salons = Array.isArray(filterData.salons) ? filterData.salons : [];
     var designers = Array.isArray(filterData.designers) ? filterData.designers : [];
+    var cities = uniqueSorted(salons.map(function (salon) { return normalizeValue(salon.city); }).filter(Boolean));
 
     function normalizeValue(value) {
         return value == null ? "" : String(value).trim();
     }
 
-    function populateSelect(select, options, defaultLabel, valueKey, textKey, selectedValue, disabled) {
+    function uniqueSorted(values) {
+        return Array.from(new Set(values)).sort();
+    }
+
+    function populateSelect(select, options, defaultLabel, valueKey, textKey, selectedValue) {
         select.innerHTML = "";
 
         var defaultOption = document.createElement("option");
@@ -34,70 +41,109 @@ function bindReviewFilterCascade() {
 
         options.forEach(function (optionItem) {
             var option = document.createElement("option");
-            option.value = normalizeValue(optionItem[valueKey]);
-            option.textContent = optionItem[textKey];
+            option.value = valueKey ? normalizeValue(optionItem[valueKey]) : normalizeValue(optionItem);
+            option.textContent = textKey ? optionItem[textKey] : optionItem;
             select.appendChild(option);
         });
 
-        select.disabled = disabled;
         select.value = normalizeValue(selectedValue);
-
         if (select.value !== normalizeValue(selectedValue)) {
             select.value = "";
         }
     }
 
+    function salonsByRegion() {
+        var selectedCity = normalizeValue(citySelect.value);
+        var selectedDistrict = normalizeValue(districtSelect.value);
+        var selectedNeighborhood = normalizeValue(neighborhoodSelect.value);
+
+        return salons.filter(function (salon) {
+            return (!selectedCity || normalizeValue(salon.city) === selectedCity)
+                && (!selectedDistrict || normalizeValue(salon.district) === selectedDistrict)
+                && (!selectedNeighborhood || normalizeValue(salon.neighborhood) === selectedNeighborhood);
+        });
+    }
+
+    function syncDistricts(resetBelow) {
+        var selectedCity = normalizeValue(citySelect.value);
+        var districts = uniqueSorted(
+            salons
+                .filter(function (salon) {
+                    return !selectedCity || normalizeValue(salon.city) === selectedCity;
+                })
+                .map(function (salon) { return normalizeValue(salon.district); })
+                .filter(Boolean)
+        );
+        var selectedDistrict = resetBelow ? "" : (districtSelect.dataset.selectedValue || districtSelect.value || "");
+        populateSelect(districtSelect, districts, "전체 구", null, null, selectedDistrict);
+        districtSelect.dataset.selectedValue = districtSelect.value || "";
+        syncNeighborhoods(resetBelow);
+    }
+
+    function syncNeighborhoods(resetBelow) {
+        var selectedCity = normalizeValue(citySelect.value);
+        var selectedDistrict = normalizeValue(districtSelect.value);
+        var neighborhoods = uniqueSorted(
+            salons
+                .filter(function (salon) {
+                    return (!selectedCity || normalizeValue(salon.city) === selectedCity)
+                        && (!selectedDistrict || normalizeValue(salon.district) === selectedDistrict);
+                })
+                .map(function (salon) { return normalizeValue(salon.neighborhood); })
+                .filter(Boolean)
+        );
+        var selectedNeighborhood = resetBelow ? "" : (neighborhoodSelect.dataset.selectedValue || neighborhoodSelect.value || "");
+        populateSelect(neighborhoodSelect, neighborhoods, "전체 동", null, null, selectedNeighborhood);
+        neighborhoodSelect.dataset.selectedValue = neighborhoodSelect.value || "";
+        syncSalonOptions(resetBelow);
+    }
+
     function syncSalonOptions(resetSelection) {
-        var selectedRegion = normalizeValue(regionSelect.value);
-        var filteredSalons = selectedRegion
-            ? salons.filter(function (salon) {
-                return normalizeValue(salon.region) === selectedRegion;
-            })
-            : [];
+        var filteredSalons = salonsByRegion();
         var selectedSalonId = resetSelection ? "" : salonSelect.value;
-
-        populateSelect(
-            salonSelect,
-            filteredSalons,
-            selectedRegion ? "전체 미용실" : "지역을 먼저 선택하세요",
-            "salonId",
-            "salonName",
-            selectedSalonId,
-            !selectedRegion
-        );
-
-        syncDesignerOptions(resetSelection);
+        populateSelect(salonSelect, filteredSalons, "전체 미용실", "salonId", "salonName", selectedSalonId);
+        syncDesignerOptions(resetSelection, filteredSalons);
     }
 
-    function syncDesignerOptions(resetSelection) {
+    function syncDesignerOptions(resetSelection, filteredSalons) {
         var selectedSalonId = normalizeValue(salonSelect.value);
-        var filteredDesigners = selectedSalonId
-            ? designers.filter(function (designer) {
-                return normalizeValue(designer.salonId) === selectedSalonId;
-            })
-            : [];
-        var selectedDesignerId = resetSelection ? "" : designerSelect.value;
+        var allowedSalonIds = filteredSalons.map(function (salon) {
+            return normalizeValue(salon.salonId);
+        });
 
-        populateSelect(
-            designerSelect,
-            filteredDesigners,
-            selectedSalonId ? "전체 디자이너" : "미용실을 먼저 선택하세요",
-            "designerId",
-            "designerName",
-            selectedDesignerId,
-            !selectedSalonId
-        );
+        var filteredDesigners = designers.filter(function (designer) {
+            var designerSalonId = normalizeValue(designer.salonId);
+            if (selectedSalonId) {
+                return designerSalonId === selectedSalonId;
+            }
+            return allowedSalonIds.indexOf(designerSalonId) >= 0;
+        });
+
+        var selectedDesignerId = resetSelection ? "" : designerSelect.value;
+        populateSelect(designerSelect, filteredDesigners, "전체 디자이너", "designerId", "designerName", selectedDesignerId);
     }
 
-    regionSelect.addEventListener("change", function () {
+    citySelect.addEventListener("change", function () {
+        districtSelect.dataset.selectedValue = "";
+        neighborhoodSelect.dataset.selectedValue = "";
+        syncDistricts(true);
+    });
+
+    districtSelect.addEventListener("change", function () {
+        neighborhoodSelect.dataset.selectedValue = "";
+        syncNeighborhoods(true);
+    });
+
+    neighborhoodSelect.addEventListener("change", function () {
         syncSalonOptions(true);
     });
 
     salonSelect.addEventListener("change", function () {
-        syncDesignerOptions(true);
+        syncDesignerOptions(true, salonsByRegion());
     });
 
-    syncSalonOptions(false);
+    populateSelect(citySelect, cities, "전체 시", null, null, citySelect.value || "");
+    syncDistricts(false);
 }
 
 function bindReviewRatingStars() {

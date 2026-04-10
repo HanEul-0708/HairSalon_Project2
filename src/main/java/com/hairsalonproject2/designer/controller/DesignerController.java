@@ -4,6 +4,7 @@ import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
 import com.hairsalonproject2.member.service.CustomUserDetails;
+import com.hairsalonproject2.salon.service.SalonQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -33,6 +34,7 @@ public class DesignerController {
     private static final int DESIGNERS_PER_PAGE = 9;
 
     private final DesignerQueryService designerQueryService;
+    private final SalonQueryService salonQueryService;
 
     /**
      * 디자이너 목록 페이지
@@ -49,6 +51,10 @@ public class DesignerController {
         model.addAttribute("designers", resultPage.getContent());
         model.addAttribute("search", request);
         model.addAttribute("searched", request.hasSearchRequest());
+        model.addAttribute("cityOptions", salonQueryService.getCityOptions());
+        model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(request.getCity()));
+        model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(request.getCity(), request.getDistrict()));
+        model.addAttribute("regionAddresses", salonQueryService.getAddressOptions());
         model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
         model.addAttribute("totalPages", resultPage.getTotalPages());
         model.addAttribute("totalDesignerCount", resultPage.getTotalElements());

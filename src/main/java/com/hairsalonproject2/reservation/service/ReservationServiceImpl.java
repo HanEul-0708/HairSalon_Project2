@@ -100,9 +100,11 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     public List<ReservationResponse> getReservationsByDesignerMember(String memberId) {
-        return reservationRepository.findByDesigner_Member_MemberId(memberId).stream()
-                .map(this::toResponse)
-                .toList();
+        return designerRepository.findByMember_MemberId(memberId)
+                .map(designer -> reservationRepository.findByDesigner_Salon_SalonId(designer.getSalon().getSalonId()).stream()
+                        .map(this::toResponse)
+                        .toList())
+                .orElseGet(List::of);
     }
 
     @Override

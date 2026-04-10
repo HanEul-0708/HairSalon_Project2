@@ -25,17 +25,30 @@ public interface SalonServiceRepository extends JpaRepository<SalonService, Inte
             join ss.salon s
             where (:keyword is null
                     or lower(ss.name) like lower(concat('%', :keyword, '%'))
-                    or lower(coalesce(ss.description, '')) like lower(concat('%', :keyword, '%')))
+                    or lower(coalesce(ss.description, '')) like lower(concat('%', :keyword, '%'))
+                    or lower(s.name) like lower(concat('%', :keyword, '%')))
               and (:salonKeyword is null or lower(s.name) like lower(concat('%', :salonKeyword, '%')))
               and (:region is null
                     or lower(s.address) like lower(concat('%', :region, '%'))
                     or lower(coalesce(s.roadAddress, '')) like lower(concat('%', :region, '%')))
+              and (:city is null
+                    or lower(s.address) like lower(concat(:city, '%'))
+                    or lower(coalesce(s.roadAddress, '')) like lower(concat(:city, '%')))
+              and (:district is null
+                    or lower(s.address) like lower(concat('% ', :district, '%'))
+                    or lower(coalesce(s.roadAddress, '')) like lower(concat('% ', :district, '%')))
+              and (:neighborhood is null
+                    or lower(s.address) like lower(concat('% ', :neighborhood, '%'))
+                    or lower(coalesce(s.roadAddress, '')) like lower(concat('% ', :neighborhood, '%')))
               and (:maxPrice is null or ss.price <= :maxPrice)
               and (:maxDuration is null or ss.duration <= :maxDuration)
             """)
     List<SalonService> searchServices(@Param("keyword") String keyword,
                                       @Param("salonKeyword") String salonKeyword,
                                       @Param("region") String region,
+                                      @Param("city") String city,
+                                      @Param("district") String district,
+                                      @Param("neighborhood") String neighborhood,
                                       @Param("maxPrice") Integer maxPrice,
                                       @Param("maxDuration") Integer maxDuration);
 
@@ -51,8 +64,13 @@ public interface SalonServiceRepository extends JpaRepository<SalonService, Inte
             FROM salon_service ss
             JOIN salon s ON s.salon_id = ss.salon_id
             WHERE (:serviceName IS NULL OR LOWER(ss.name) LIKE LOWER(CONCAT('%', :serviceName, '%')))
-              AND (:region IS NULL OR LOWER(s.address) LIKE LOWER(CONCAT('%', :region, '%')))
+              AND (:city IS NULL OR LOWER(s.address) LIKE LOWER(CONCAT(:city, '%')))
+              AND (:district IS NULL OR LOWER(s.address) LIKE LOWER(CONCAT('% ', :district, '%')))
+              AND (:neighborhood IS NULL OR LOWER(s.address) LIKE LOWER(CONCAT('% ', :neighborhood, '%')))
             ORDER BY ss.price ASC, s.average_rating DESC, s.salon_id ASC
             """, nativeQuery = true)
-    List<ServicePriceCompareRow> compareServices(@Param("serviceName") String serviceName, @Param("region") String region);
+    List<ServicePriceCompareRow> compareServices(@Param("serviceName") String serviceName,
+                                                 @Param("city") String city,
+                                                 @Param("district") String district,
+                                                 @Param("neighborhood") String neighborhood);
 }

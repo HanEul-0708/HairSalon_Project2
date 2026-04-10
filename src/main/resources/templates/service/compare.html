@@ -17,20 +17,53 @@
         <div class="catalog-hero">
             <p class="catalog-hero__eyebrow">Price Compare</p>
             <h1 class="catalog-hero__title">시술 가격 비교</h1>
-            <p class="catalog-hero__subtitle">지역과 시술명을 기준으로 여러 미용실의 가격과 시간, 평점을 한 화면에서 비교해보세요.</p>
+            <p class="catalog-hero__subtitle">시술과 지역을 필터로 좁혀서 미용실별 가격, 소요 시간, 평점을 한 번에 비교해보세요.</p>
         </div>
 
         <form method="get" th:action="@{/salon-services/compare}" class="service-search-form service-search-form--compare">
             <div class="service-search-form__intro">
-                <p class="service-search-form__eyebrow">Comparison Search</p>
-                <h2>비슷한 시술을 한 번에 나란히 비교하세요.</h2>
-                <p>미용실별 가격 차이와 소요 시간, 평점까지 같이 보면서 더 쉽게 선택할 수 있습니다.</p>
+                <p class="service-search-form__eyebrow">Comparison Filter</p>
+                <h2>필터로 시술 가격을 비교해보세요.</h2>
+                <p>원하는 시술과 시, 구, 동을 선택하면 해당 조건에 맞는 가격표를 정리해서 보여줍니다.</p>
             </div>
 
             <div>
                 <div class="service-search-form__fields service-search-form__fields--compare">
-                    <input type="text" name="serviceName" placeholder="시술명" th:value="${serviceName}">
-                    <input type="text" name="region" placeholder="지역" th:value="${region}">
+                    <select id="city" name="city">
+                        <option value="">전체 시</option>
+                        <option th:each="cityOption : ${cityOptions}"
+                                th:value="${cityOption}"
+                                th:text="${cityOption}"
+                                th:selected="${city == cityOption}">
+                        </option>
+                    </select>
+
+                    <select id="district" name="district" data-selected-value="" th:attr="data-selected-value=${district}">
+                        <option value="">전체 구</option>
+                        <option th:each="districtOption : ${districtOptions}"
+                                th:value="${districtOption}"
+                                th:text="${districtOption}"
+                                th:selected="${district == districtOption}">
+                        </option>
+                    </select>
+
+                    <select id="neighborhood" name="neighborhood" data-selected-value="" th:attr="data-selected-value=${neighborhood}">
+                        <option value="">전체 동</option>
+                        <option th:each="neighborhoodOption : ${neighborhoodOptions}"
+                                th:value="${neighborhoodOption}"
+                                th:text="${neighborhoodOption}"
+                                th:selected="${neighborhood == neighborhoodOption}">
+                        </option>
+                    </select>
+
+                    <select name="serviceName">
+                        <option value="">전체 시술</option>
+                        <option th:each="serviceNameOption : ${serviceNameOptions}"
+                                th:value="${serviceNameOption}"
+                                th:text="${serviceNameOption}"
+                                th:selected="${serviceName == serviceNameOption}">
+                        </option>
+                    </select>
                 </div>
 
                 <div class="service-search-form__actions">
@@ -67,16 +100,22 @@
                     </td>
                     <td th:text="${row.address}">주소</td>
                     <td th:text="${row.serviceName}">시술</td>
-                    <td th:text="|${row.price}원|">0원</td>
+                    <td th:text="|${#numbers.formatInteger(row.price, 3, 'COMMA')}원|">0원</td>
                     <td th:text="|${row.duration}분|">0분</td>
                     <td th:text="${row.averageRating}">0</td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(comparisons)}">
-                    <td colspan="6" class="service-compare-table__empty">비교할 시술 정보가 없습니다.</td>
+                    <td colspan="6" class="service-compare-table__empty">조건에 맞는 시술 가격 정보가 없습니다.</td>
                 </tr>
                 </tbody>
             </table>
         </div>
+
+        <script th:inline="javascript">
+            window.regionFilterData = {
+                addresses: /*[[${regionAddresses}]]*/ []
+            };
+        </script>
     </div>
 </main>
 </body>

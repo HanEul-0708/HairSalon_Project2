@@ -64,6 +64,7 @@ class MemberFlowMvcTest {
 
         mockMvc.perform(post("/members/signup")
                         .with(csrf())
+                        .param("role", "USER")
                         .param("memberId", "user01")
                         .param("password", "password123")
                         .param("passwordConfirm", "password123")

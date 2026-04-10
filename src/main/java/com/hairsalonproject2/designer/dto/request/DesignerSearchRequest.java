@@ -10,6 +10,9 @@ import java.math.BigDecimal;
 public class DesignerSearchRequest {
     private String keyword;
     private String salonKeyword;
+    private String city;
+    private String district;
+    private String neighborhood;
     private Integer minCareerYears;
     private BigDecimal minRating;
     private String sortBy;
@@ -19,6 +22,9 @@ public class DesignerSearchRequest {
         return searched
                 || (keyword != null && !keyword.isBlank())
                 || (salonKeyword != null && !salonKeyword.isBlank())
+                || (city != null && !city.isBlank())
+                || (district != null && !district.isBlank())
+                || (neighborhood != null && !neighborhood.isBlank())
                 || minCareerYears != null
                 || minRating != null
                 || (sortBy != null && !sortBy.isBlank());

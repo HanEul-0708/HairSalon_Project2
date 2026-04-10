@@ -1,6 +1,7 @@
 package com.hairsalonproject2.salon.service;
 
 import com.hairsalonproject2.common.support.GeoUtils;
+import com.hairsalonproject2.common.util.AddressRegionUtils;
 import com.hairsalonproject2.designer.dto.response.DesignerSummaryResponse;
 import com.hairsalonproject2.designer.projection.DesignerRatingRow;
 import com.hairsalonproject2.designer.repository.DesignerRepository;
@@ -203,6 +204,26 @@ public class SalonQueryService {
                 .toList();
     }
 
+    public List<String> getRegionOptions() {
+        return getCityOptions();
+    }
+
+    public List<String> getCityOptions() {
+        return AddressRegionUtils.cityOptions(getAllAddresses());
+    }
+
+    public List<String> getDistrictOptions(String city) {
+        return AddressRegionUtils.districtOptions(getAllAddresses(), city);
+    }
+
+    public List<String> getNeighborhoodOptions(String city, String district) {
+        return AddressRegionUtils.neighborhoodOptions(getAllAddresses(), city, district);
+    }
+
+    public List<String> getAddressOptions() {
+        return getAllAddresses();
+    }
+
     public List<Integer> getLikedSalonIds(String memberId) {
         return salonLikeRepository.findAllByMember_MemberIdOrderByCreatedAtDesc(memberId).stream()
                 .map(like -> like.getSalon().getSalonId())
@@ -218,7 +239,19 @@ public class SalonQueryService {
     }
 
     public List<SalonRankResponse> recommendedTop3() {
-        List<Salon> salons = salonRepository.findRecommendedSalons(PageRequest.of(0, 3));
+        return recommendedTop3(null, null, null);
+    }
+
+    public List<SalonRankResponse> recommendedTop3(String city, String district, String neighborhood) {
+        List<Salon> salons = salonRepository.findAll().stream()
+                .filter(salon -> AddressRegionUtils.matches(salon.getAddress(), city, district, neighborhood)
+                        || AddressRegionUtils.matches(salon.getRoadAddress(), city, district, neighborhood))
+                .sorted(Comparator.comparing(Salon::getAverageRating, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Salon::getReviewCount, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Salon::getLikeCount, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Salon::getSalonId))
+                .limit(3)
+                .toList();
         List<SalonRankResponse> result = new ArrayList<>();
 
         for (int i = 0; i < salons.size(); i++) {
@@ -227,6 +260,7 @@ public class SalonQueryService {
                     .rank(i + 1)
                     .salonId(s.getSalonId())
                     .salonName(s.getName())
+                    .address(s.getAddress() != null && !s.getAddress().isBlank() ? s.getAddress() : s.getRoadAddress())
                     .averageRating(s.getAverageRating())
                     .reviewCount(s.getReviewCount())
                     .likeCount(s.getLikeCount())
@@ -398,6 +432,18 @@ public class SalonQueryService {
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                 .limit(5)
                 .map(Map.Entry::getKey)
+                .toList();
+    }
+
+    private List<String> getAllAddresses() {
+        return salonRepository.findAll().stream()
+                .map(salon -> {
+                    if (salon.getAddress() != null && !salon.getAddress().isBlank()) {
+                        return salon.getAddress();
+                    }
+                    return salon.getRoadAddress();
+                })
+                .filter(address -> address != null && !address.isBlank())
                 .toList();
     }
 }

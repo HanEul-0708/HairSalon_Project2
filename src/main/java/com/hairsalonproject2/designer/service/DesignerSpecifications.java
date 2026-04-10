@@ -12,6 +12,9 @@ public final class DesignerSpecifications {
         return Specification.<Designer>unrestricted()
                 .and(keywordContains(request.getKeyword()))
                 .and(salonKeywordContains(request.getSalonKeyword()))
+                .and(cityContains(request.getCity()))
+                .and(districtContains(request.getDistrict()))
+                .and(neighborhoodContains(request.getNeighborhood()))
                 .and(careerYearsAtLeast(request.getMinCareerYears()));
     }
 
@@ -23,7 +26,8 @@ public final class DesignerSpecifications {
             String pattern = "%" + keyword.toLowerCase() + "%";
             return cb.or(
                     cb.like(cb.lower(root.get("name")), pattern),
-                    cb.like(cb.lower(root.get("introduction")), pattern)
+                    cb.like(cb.lower(root.get("introduction")), pattern),
+                    cb.like(cb.lower(root.get("salon").get("name")), pattern)
             );
         };
     }
@@ -41,5 +45,37 @@ public final class DesignerSpecifications {
             return null;
         }
         return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("careerYears"), minCareerYears);
+    }
+
+    private static Specification<Designer> cityContains(String city) {
+        if (city == null || city.isBlank()) {
+            return null;
+        }
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("salon").get("address")), city.toLowerCase() + "%"),
+                cb.like(cb.lower(root.get("salon").get("roadAddress")), city.toLowerCase() + "%")
+        );
+    }
+
+    private static Specification<Designer> districtContains(String district) {
+        if (district == null || district.isBlank()) {
+            return null;
+        }
+        String pattern = "% " + district.toLowerCase() + "%";
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("salon").get("address")), pattern),
+                cb.like(cb.lower(root.get("salon").get("roadAddress")), pattern)
+        );
+    }
+
+    private static Specification<Designer> neighborhoodContains(String neighborhood) {
+        if (neighborhood == null || neighborhood.isBlank()) {
+            return null;
+        }
+        String pattern = "% " + neighborhood.toLowerCase() + "%";
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("salon").get("address")), pattern),
+                cb.like(cb.lower(root.get("salon").get("roadAddress")), pattern)
+        );
     }
 }

@@ -129,7 +129,8 @@ public class ExternalSalonSyncService {
         }
 
         targetDesigner.setMember(availableMember);
-        availableMember.updateProfile(targetDesigner.getName(), availableMember.getPhone(), availableMember.getEmail());
+        String salonName = targetDesigner.getSalon() == null ? targetDesigner.getName() : targetDesigner.getSalon().getName();
+        availableMember.updateProfile(salonName, availableMember.getPhone(), availableMember.getEmail());
     }
 
     private boolean isBlank(String value) {

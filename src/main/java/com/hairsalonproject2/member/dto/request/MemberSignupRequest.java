@@ -1,5 +1,6 @@
 package com.hairsalonproject2.member.dto.request;
 
+import com.hairsalonproject2.common.constant.MemberRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -57,7 +58,6 @@ public class MemberSignupRequest {
     /**
      * 이름
      */
-    @NotBlank(message = "이름은 필수입니다.")
     @Size(max = 50, message = "이름은 50자 이하여야 합니다.")
     private String name;
 
@@ -83,4 +83,23 @@ public class MemberSignupRequest {
     @Email(message = "이메일 형식이 올바르지 않습니다.")
     @Size(max = 100, message = "이메일은 100자 이하여야 합니다.")
     private String email;
+
+    /**
+     * 가입 유형
+     */
+    private MemberRole role = MemberRole.USER;
+
+    /**
+     * 디자이너 회원가입용 지역 선택
+     */
+    private String city;
+
+    private String district;
+
+    private String neighborhood;
+
+    /**
+     * 디자이너 회원가입용 선택 미용실
+     */
+    private Integer salonId;
 }

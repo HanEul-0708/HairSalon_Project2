@@ -24,6 +24,8 @@ public interface ReviewService {
 
     List<ReviewResponse> getReviewsByMember(String memberId, String loginMemberId);
 
+    List<ReviewResponse> getReviewsByDesignerMember(String memberId, String loginMemberId);
+
     ReviewResponse updateReview(String loginMemberId, boolean isAdmin, Integer reviewId, ReviewUpdateRequest request);
 
     void deleteReview(String loginMemberId, boolean isAdmin, Integer reviewId);
@@ -31,6 +33,8 @@ public interface ReviewService {
     Double getAverageRatingByDesigner(Integer designerId);
 
     List<DesignerRankingResponse> getTop3Designers();
+
+    List<DesignerRankingResponse> getTop3Designers(String city, String district, String neighborhood);
 
     List<MonthlyReviewStatResponse> getMonthlyReviewStats();
 
@@ -41,4 +45,6 @@ public interface ReviewService {
     ReviewLikeToggleResponse toggleLike(Integer reviewId, String loginMemberId);
 
     List<ReviewResponse> getRecentReviews();
+
+    List<ReviewResponse> getRecentReviews(String city, String district, String neighborhood);
 }

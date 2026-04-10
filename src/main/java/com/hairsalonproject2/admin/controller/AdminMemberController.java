@@ -32,11 +32,11 @@ public class AdminMemberController {
     private final DummyMemberSeeder dummyMemberSeeder;
     private final MemberRepository memberRepository;
 
-    @Value("${app.seed.members.target-designer-count:20}")
-    private int targetDesignerCount;
+    @Value("${app.seed.members.batch-designer-count:${app.seed.members.target-designer-count:20}}")
+    private int batchDesignerCount;
 
-    @Value("${app.seed.members.target-user-count:40}")
-    private int targetUserCount;
+    @Value("${app.seed.members.batch-user-count:${app.seed.members.target-user-count:40}}")
+    private int batchUserCount;
 
     @Value("${app.seed.members.default-password:12341234}")
     private String seedPassword;
@@ -74,9 +74,9 @@ public class AdminMemberController {
         model.addAttribute("adminMemberCount", memberRepository.countByRole(MemberRole.ADMIN));
         model.addAttribute("designerMemberCount", memberRepository.countByRole(MemberRole.DESIGNER));
         model.addAttribute("userMemberCount", memberRepository.countByRole(MemberRole.USER));
-        model.addAttribute("seedGuide", "디자이너 " + targetDesignerCount
-                + "명, 회원 " + targetUserCount
-                + "명까지 생성합니다. 공통 비밀번호는 " + seedPassword + " 입니다.");
+        model.addAttribute("seedGuide", "실행할 때마다 디자이너 " + batchDesignerCount
+                + "명, 회원 " + batchUserCount
+                + "명을 추가 생성합니다. 공통 비밀번호는 " + seedPassword + " 입니다.");
 
         return "admin/member-list";
     }

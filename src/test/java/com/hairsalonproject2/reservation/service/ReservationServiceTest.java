@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -105,6 +106,22 @@ class ReservationServiceTest {
                 .hasMessage("Designer and service must belong to the same salon.");
     }
 
+    @Test
+    void getReservationsByDesignerMemberReturnsReservationsForEntireSalon() {
+        Salon salon = Salon.builder().salonId(7).name("Salon Seven").build();
+        Designer linkedDesigner = Designer.builder().designerId(1).name("Salon Manager").salon(salon).build();
+        Reservation firstReservation = reservationWithDesignerAndSalon(10, "Senior", salon);
+        Reservation secondReservation = reservationWithDesignerAndSalon(11, "Junior", salon);
+
+        when(designerRepository.findByMember_MemberId("designer01")).thenReturn(Optional.of(linkedDesigner));
+        when(reservationRepository.findByDesigner_Salon_SalonId(7)).thenReturn(List.of(firstReservation, secondReservation));
+
+        assertThat(reservationService.getReservationsByDesignerMember("designer01"))
+                .hasSize(2)
+                .extracting("designerName")
+                .containsExactly("Senior", "Junior");
+    }
+
     private Reservation reservationWithStatus(ReservationStatus status) {
         return Reservation.builder()
                 .member(Member.builder()
@@ -129,6 +146,37 @@ class ReservationServiceTest {
                 .reservationDate(LocalDate.of(2026, 4, 8))
                 .reservationTime(LocalTime.of(10, 0))
                 .status(status)
+                .totalPrice(30000)
+                .paymentMethod(PaymentMethod.CARD)
+                .build();
+    }
+
+    private Reservation reservationWithDesignerAndSalon(Integer designerId, String designerName, Salon salon) {
+        return Reservation.builder()
+                .member(Member.builder()
+                        .memberId("user01")
+                        .password("encoded-password")
+                        .name("Tester")
+                        .phone("010-1234-5678")
+                        .email("user01@example.com")
+                        .role(MemberRole.USER)
+                        .status(MemberStatus.ACTIVE)
+                        .build())
+                .designer(Designer.builder()
+                        .designerId(designerId)
+                        .name(designerName)
+                        .salon(salon)
+                        .build())
+                .salonService(com.hairsalonproject2.salonservice.entity.SalonService.builder()
+                        .serviceId(1)
+                        .name("Cut")
+                        .price(30000)
+                        .duration(60)
+                        .salon(salon)
+                        .build())
+                .reservationDate(LocalDate.of(2026, 4, 8))
+                .reservationTime(LocalTime.of(10, 0))
+                .status(ReservationStatus.RESERVED)
                 .totalPrice(30000)
                 .paymentMethod(PaymentMethod.CARD)
                 .build();

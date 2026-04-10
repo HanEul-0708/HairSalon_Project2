@@ -16,26 +16,48 @@
         <div class="catalog-hero">
             <p class="catalog-hero__eyebrow">Salon Map Search</p>
             <h1 class="catalog-hero__title">미용실 지도 검색</h1>
-            <p class="catalog-hero__subtitle">지역과 키워드를 입력해서 카카오 지도에서 미용실 위치를 바로 확인하세요.</p>
+            <p class="catalog-hero__subtitle">시, 구, 동과 키워드로 지역 안의 미용실 위치를 바로 확인해보세요.</p>
         </div>
 
         <div class="salon-map-page__layout"
-             th:attr="data-keyword=${keyword},data-region=${region},data-has-key=${kakaoJavascriptKey != null and !kakaoJavascriptKey.isBlank()},data-has-rest-key=${kakaoRestApiKey != null and !kakaoRestApiKey.isBlank()}">
+             th:attr="data-has-key=${kakaoJavascriptKey != null and !kakaoJavascriptKey.isBlank()},data-has-rest-key=${kakaoRestApiKey != null and !kakaoRestApiKey.isBlank()}">
             <section class="salon-map-panel">
                 <form class="salon-search-form salon-search-form--primary salon-search-form--map"
                       onsubmit="return false;">
                     <div class="salon-search-form__intro">
                         <p class="salon-search-form__eyebrow">Salon Map Search</p>
-                        <h2>지역과 키워드로 미용실을 검색하세요.</h2>
-                        <p>검색 결과를 목록으로 확인하고, 지도에서 위치를 바로 확인할 수 있습니다.</p>
+                        <h2>지역 필터와 키워드로 미용실을 검색해보세요.</h2>
+                        <p>필터를 적용하면 목록과 지도에서 동시에 확인할 수 있습니다.</p>
                     </div>
 
                     <div class="salon-search-form__controls">
                         <div class="salon-search-form__fields">
-                            <div>
-                                <label class="sr-only" for="mapRegion">지역</label>
-                                <input id="mapRegion" type="text" placeholder="예: 부산 수영구" th:value="${region}">
-                            </div>
+                            <select id="mapCity">
+                                <option value="">전체 시</option>
+                                <option th:each="cityOption : ${cityOptions}"
+                                        th:value="${cityOption}"
+                                        th:text="${cityOption}"
+                                        th:selected="${city == cityOption}">
+                                </option>
+                            </select>
+
+                            <select id="mapDistrict" data-selected-value="" th:attr="data-selected-value=${district}">
+                                <option value="">전체 구</option>
+                                <option th:each="districtOption : ${districtOptions}"
+                                        th:value="${districtOption}"
+                                        th:text="${districtOption}"
+                                        th:selected="${district == districtOption}">
+                                </option>
+                            </select>
+
+                            <select id="mapNeighborhood" data-selected-value="" th:attr="data-selected-value=${neighborhood}">
+                                <option value="">전체 동</option>
+                                <option th:each="neighborhoodOption : ${neighborhoodOptions}"
+                                        th:value="${neighborhoodOption}"
+                                        th:text="${neighborhoodOption}"
+                                        th:selected="${neighborhood == neighborhoodOption}">
+                                </option>
+                            </select>
 
                             <div>
                                 <label class="sr-only" for="mapKeyword">키워드</label>
@@ -54,7 +76,7 @@
                 <div class="salon-map-notice"
                      id="mapNotice"
                      th:hidden="${kakaoJavascriptKey != null and !kakaoJavascriptKey.isBlank()}">
-                    카카오 JavaScript 키가 없어서 지도 검색을 사용할 수 없습니다.
+                    카카오 JavaScript 키가 없어 지도 검색을 사용할 수 없습니다.
                 </div>
 
                 <div class="salon-map-results" id="mapResults">
@@ -68,6 +90,12 @@
                 <div id="salonMapCanvas" class="salon-map-canvas" aria-label="미용실 지도"></div>
             </section>
         </div>
+
+        <script th:inline="javascript">
+            window.mapRegionFilterData = {
+                addresses: /*[[${regionAddresses}]]*/ []
+            };
+        </script>
     </div>
 </main>
 </body>

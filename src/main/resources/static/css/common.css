@@ -288,6 +288,28 @@ hr {
     color: var(--gold);
 }
 
+.catalog-search-context {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 22px;
+    padding: 14px 16px;
+    background: var(--gold-soft);
+    border: 1px solid var(--gold-border);
+    border-radius: var(--radius-lg);
+    color: var(--text-main);
+}
+
+.catalog-search-context__label {
+    font-size: 0.85rem;
+    color: var(--text-sub);
+}
+
+.catalog-search-context strong {
+    color: var(--text-main);
+}
+
 /* =============================================
    본문 중앙 정렬 보강
    ============================================= */

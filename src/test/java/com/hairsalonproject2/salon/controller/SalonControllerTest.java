@@ -38,15 +38,19 @@ class SalonControllerTest {
         SalonSearchRequest request = new SalonSearchRequest();
         request.setSearched(true);
         request.setKeyword("준오헤어");
-        request.setRegion("잠실");
+        request.setRegion("성수");
         ConcurrentModel model = new ConcurrentModel();
 
         when(salonQueryService.search(request, 0, 9)).thenReturn(new PageImpl<>(List.of()));
+        when(salonQueryService.getCityOptions()).thenReturn(List.of());
+        when(salonQueryService.getDistrictOptions(any())).thenReturn(List.of());
+        when(salonQueryService.getNeighborhoodOptions(any(), any())).thenReturn(List.of());
+        when(salonQueryService.getAddressOptions()).thenReturn(List.of());
 
         String viewName = salonController.list(request, 1, model);
 
         assertThat(viewName).isEqualTo("salon/list");
-        verify(externalSalonSyncService).syncFromSearch("준오헤어", "잠실");
+        verify(externalSalonSyncService).syncFromSearch("준오헤어", "성수");
         verify(salonQueryService).search(request, 0, 9);
     }
 
@@ -54,6 +58,11 @@ class SalonControllerTest {
     void listDoesNotSyncWhenUserHasNotSearchedYet() {
         SalonSearchRequest request = new SalonSearchRequest();
         ConcurrentModel model = new ConcurrentModel();
+
+        when(salonQueryService.getCityOptions()).thenReturn(List.of());
+        when(salonQueryService.getDistrictOptions(any())).thenReturn(List.of());
+        when(salonQueryService.getNeighborhoodOptions(any(), any())).thenReturn(List.of());
+        when(salonQueryService.getAddressOptions()).thenReturn(List.of());
 
         String viewName = salonController.list(request, 1, model);
 
@@ -67,11 +76,18 @@ class SalonControllerTest {
         ReflectionTestUtils.setField(salonController, "kakaoJavascriptKey", "test-js-key");
         ConcurrentModel model = new ConcurrentModel();
 
-        String viewName = salonController.mapSearch("준오헤어", "잠실", model);
+        when(salonQueryService.getCityOptions()).thenReturn(List.of("서울특별시"));
+        when(salonQueryService.getDistrictOptions(any())).thenReturn(List.of("강남구"));
+        when(salonQueryService.getNeighborhoodOptions(any(), any())).thenReturn(List.of("역삼동"));
+        when(salonQueryService.getAddressOptions()).thenReturn(List.of("서울특별시 강남구 역삼동"));
+
+        String viewName = salonController.mapSearch("준오헤어", "서울특별시 강남구 역삼동", null, null, null, model);
 
         assertThat(viewName).isEqualTo("salon/map-search");
         assertThat(model.getAttribute("keyword")).isEqualTo("준오헤어");
-        assertThat(model.getAttribute("region")).isEqualTo("잠실");
+        assertThat(model.getAttribute("city")).isEqualTo("서울특별시");
+        assertThat(model.getAttribute("district")).isEqualTo("강남구");
+        assertThat(model.getAttribute("neighborhood")).isEqualTo("역삼동");
         assertThat(model.getAttribute("kakaoJavascriptKey")).isEqualTo("test-js-key");
     }
 }

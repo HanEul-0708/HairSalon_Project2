@@ -44,6 +44,31 @@
                                    th:name="${_csrf.parameterName}"
                                    th:value="${_csrf.token}">
 
+                            <div class="mb-4">
+                                <label class="form-label d-block">회원 유형</label>
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <label class="form-check form-check-inline border rounded px-3 py-2">
+                                        <input class="form-check-input"
+                                               type="radio"
+                                               th:field="*{role}"
+                                               value="USER"
+                                               data-signup-role>
+                                        <span class="form-check-label">일반회원</span>
+                                    </label>
+                                    <label class="form-check form-check-inline border rounded px-3 py-2">
+                                        <input class="form-check-input"
+                                               type="radio"
+                                               th:field="*{role}"
+                                               value="DESIGNER"
+                                               data-signup-role>
+                                        <span class="form-check-label">디자이너 회원</span>
+                                    </label>
+                                </div>
+                                <div class="small text-muted mt-2" data-feedback-for="role">
+                                    일반회원은 기존 방식으로 가입하고, 디자이너 회원은 지역과 미용실을 선택합니다.
+                                </div>
+                            </div>
+
                             <div class="mb-3">
                                 <label for="memberId" class="form-label">아이디</label>
                                 <input type="text"
@@ -95,12 +120,73 @@
                                        id="name"
                                        th:field="*{name}"
                                        class="form-control"
+                                       data-signup-name
                                        data-required-message="이름을 입력해 주세요."
                                        data-invalid-message="이름은 50자 이하로 입력해 주세요.">
                                 <div class="text-danger small mt-1"
                                      th:if="${#fields.hasErrors('name')}"
                                      th:errors="*{name}"></div>
                                 <div class="small mt-1" data-feedback-for="name"></div>
+                                <div class="small text-muted mt-2 d-none" data-designer-name-hint>
+                                    디자이너 회원은 선택한 미용실 이름으로 계정명이 자동 설정됩니다.
+                                </div>
+                            </div>
+
+                            <div class="border rounded p-3 mb-3 d-none" data-designer-signup-section>
+                                <h5 class="mb-3">디자이너 미용실 선택</h5>
+
+                                <div class="mb-3">
+                                    <label for="signupCity" class="form-label">시</label>
+                                    <select id="signupCity"
+                                            th:field="*{city}"
+                                            class="form-select"
+                                            data-signup-city>
+                                        <option value="">시 선택</option>
+                                        <option th:each="city : ${signupCityOptions}"
+                                                th:value="${city}"
+                                                th:text="${city}"></option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="signupDistrict" class="form-label">구</label>
+                                    <select id="signupDistrict"
+                                            th:field="*{district}"
+                                            class="form-select"
+                                            data-signup-district>
+                                        <option value="">구 선택</option>
+                                        <option th:each="district : ${signupDistrictOptions}"
+                                                th:value="${district}"
+                                                th:text="${district}"></option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="signupNeighborhood" class="form-label">동</label>
+                                    <select id="signupNeighborhood"
+                                            th:field="*{neighborhood}"
+                                            class="form-select"
+                                            data-signup-neighborhood>
+                                        <option value="">동 선택</option>
+                                        <option th:each="neighborhood : ${signupNeighborhoodOptions}"
+                                                th:value="${neighborhood}"
+                                                th:text="${neighborhood}"></option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-0">
+                                    <label for="signupSalonId" class="form-label">미용실</label>
+                                    <select id="signupSalonId"
+                                            th:field="*{salonId}"
+                                            class="form-select"
+                                            data-signup-salon>
+                                        <option value="">미용실 선택</option>
+                                        <option th:each="salon : ${signupSalonOptions}"
+                                                th:value="${salon.salonId}"
+                                                th:text="${salon.salonName + ' | ' + salon.address}"></option>
+                                    </select>
+                                    <div class="small mt-1" data-feedback-for="salonId"></div>
+                                </div>
                             </div>
 
                             <div class="mb-3">

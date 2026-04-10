@@ -12,7 +12,9 @@ import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
 import com.hairsalonproject2.salon.dto.response.SalonSummaryResponse;
 import com.hairsalonproject2.reservation.service.ReservationService;
 import com.hairsalonproject2.reservation.service.ReservationServiceImpl;
+import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.repository.ReviewRepository;
+import com.hairsalonproject2.review.service.ReviewService;
 import com.hairsalonproject2.salon.dto.response.SalonDetailResponse;
 import com.hairsalonproject2.salon.service.SalonQueryService;
 import com.hairsalonproject2.salonservice.dto.response.SalonServiceSummaryResponse;
@@ -44,16 +46,18 @@ public class ReservationPageController {
     private final ReservationService reservationService;
     private final ReservationServiceImpl reservationServiceImpl;
     private final ReviewRepository reviewRepository;
+    private final ReviewService reviewService;
 
-    @GetMapping("/reservations")
+    @GetMapping({"/reservations", "/members/me/reservations", "/designers/me/reservations"})
     public String reservationList(@AuthenticationPrincipal CustomUserDetails userDetails,
                                   @RequestParam(defaultValue = "1") int page,
                                   Model model) {
         boolean designerReservationView = userDetails.getMember().getRole() == MemberRole.DESIGNER;
+        String loginMemberId = userDetails.getMember().getMemberId();
         List<ReservationResponse> reservations =
                 (designerReservationView
-                        ? reservationService.getReservationsByDesignerMember(userDetails.getMember().getMemberId())
-                        : reservationService.getMyReservations(userDetails.getMember().getMemberId())).stream()
+                        ? reservationService.getReservationsByDesignerMember(loginMemberId)
+                        : reservationService.getMyReservations(loginMemberId)).stream()
                         .sorted(Comparator.comparing(ReservationResponse::getCreatedAt).reversed())
                         .toList();
 
@@ -82,13 +86,20 @@ public class ReservationPageController {
                         this::isReviewableReservation
                 ));
 
+        List<ReviewResponse> relatedReviews = designerReservationView
+                ? reviewService.getReviewsByDesignerMember(loginMemberId, loginMemberId)
+                : reviewService.getReviewsByMember(loginMemberId, loginMemberId);
+
         model.addAttribute("reservations", pagedReservations);
+        model.addAttribute("relatedReviews", relatedReviews);
         model.addAttribute("reviewedReservationIds", reviewedReservationIds);
         model.addAttribute("reviewableReservationMap", reviewableReservationMap);
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("pageNumbers", java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());
         model.addAttribute("isDesignerReservationView", designerReservationView);
+        model.addAttribute("reservationPagePath",
+                designerReservationView ? "/designers/me/reservations" : "/members/me/reservations");
         return "reservation/list";
     }
 

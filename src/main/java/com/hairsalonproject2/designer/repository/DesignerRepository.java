@@ -8,11 +8,15 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface DesignerRepository extends JpaRepository<Designer, Integer>, JpaSpecificationExecutor<Designer> {
     List<Designer> findBySalonSalonId(Integer salonId);
+    Optional<Designer> findByMember_MemberId(String memberId);
     boolean existsBySalonSalonId(Integer salonId);
+    boolean existsBySalonSalonIdAndMemberIsNotNull(Integer salonId);
     boolean existsByMember_MemberId(String memberId);
+    Optional<Designer> findFirstBySalonSalonIdOrderByCareerYearsDescDesignerIdDesc(Integer salonId);
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     @Query(value = """

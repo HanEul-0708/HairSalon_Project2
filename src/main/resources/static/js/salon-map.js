@@ -6,13 +6,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var hasKey = page.dataset.hasKey === "true";
     var hasRestKey = page.dataset.hasRestKey === "true";
-    var regionInput = document.getElementById("mapRegion");
+    var citySelect = document.getElementById("mapCity");
+    var districtSelect = document.getElementById("mapDistrict");
+    var neighborhoodSelect = document.getElementById("mapNeighborhood");
     var keywordInput = document.getElementById("mapKeyword");
     var searchButton = document.getElementById("mapSearchButton");
     var myLocationButton = document.getElementById("myLocationButton");
     var resetButton = document.getElementById("mapResetButton");
     var resultsBox = document.getElementById("mapResults");
     var noticeBox = document.getElementById("mapNotice");
+    var regionData = window.mapRegionFilterData;
+
+    bindMapRegionFilters(citySelect, districtSelect, neighborhoodSelect, regionData);
 
     function showNotice(message) {
         if (!noticeBox) {
@@ -23,17 +28,17 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (!hasKey) {
-        showNotice("카카오 JavaScript 키가 비어 있습니다. application-secret.properties 설정을 확인하세요.");
+        showNotice("카카오 JavaScript 키가 비어 있습니다. application-secret.properties 설정을 확인해주세요.");
         return;
     }
 
     if (!hasRestKey) {
-        showNotice("카카오 REST API 키가 비어 있습니다. application-secret.properties의 kakao.rest-api-key 설정을 확인하세요.");
+        showNotice("카카오 REST API 키가 비어 있습니다. application-secret.properties 설정을 확인해주세요.");
         return;
     }
 
     if (typeof kakao === "undefined" || !kakao.maps) {
-        showNotice("카카오 지도 SDK를 불러오지 못했습니다. JavaScript 키와 Web 플랫폼 도메인에 http://localhost:8081, http://127.0.0.1:8081 이 등록되어 있는지 확인하세요.");
+        showNotice("카카오 지도 SDK를 불러오지 못했습니다. JavaScript 키와 도메인 설정을 확인해주세요.");
         return;
     }
 
@@ -45,8 +50,6 @@ document.addEventListener("DOMContentLoaded", function () {
     var bounds = new kakao.maps.LatLngBounds();
     var infoWindow = new kakao.maps.InfoWindow({ zIndex: 1 });
     var markers = [];
-
-    /* 현재 사용자 위치 마커를 따로 관리하는 변수 */
     var myLocationMarker = null;
 
     function clearMarkers() {
@@ -68,11 +71,9 @@ document.addEventListener("DOMContentLoaded", function () {
         clearMyLocationMarker();
 
         var position = new kakao.maps.LatLng(latitude, longitude);
-
         myLocationMarker = new kakao.maps.Marker({
             position: position
         });
-
         myLocationMarker.setMap(map);
 
         var myLocationInfoWindow = new kakao.maps.InfoWindow({
@@ -85,15 +86,23 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function buildQuery() {
-        var region = (regionInput.value || "").trim();
+        var city = (citySelect.value || "").trim();
+        var district = (districtSelect.value || "").trim();
+        var neighborhood = (neighborhoodSelect.value || "").trim();
         var keyword = (keywordInput.value || "").trim();
 
         var params = new URLSearchParams();
         if (keyword) {
             params.set("keyword", keyword);
         }
-        if (region) {
-            params.set("region", region);
+        if (city) {
+            params.set("city", city);
+        }
+        if (district) {
+            params.set("district", district);
+        }
+        if (neighborhood) {
+            params.set("neighborhood", neighborhood);
         }
         return params.toString();
     }
@@ -167,7 +176,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function searchPlaces() {
         var query = buildQuery();
         if (!query) {
-            renderEmpty("지역이나 키워드를 입력하세요.");
+            renderEmpty("지역이나 키워드를 선택해주세요.");
             return;
         }
 
@@ -204,7 +213,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 renderResults([]);
             })
             .catch(function (error) {
-                renderEmpty("검색을 처리할 수 없습니다. (카카오 키 설정을 확인하세요.)");
+                renderEmpty("검색을 처리할 수 없습니다. 카카오 API 설정을 확인해주세요.");
                 if (error && error.message) {
                     showNotice(error.message);
                 }
@@ -224,20 +233,12 @@ document.addEventListener("DOMContentLoaded", function () {
             function (position) {
                 var latitude = position.coords.latitude;
                 var longitude = position.coords.longitude;
-
                 var currentPosition = new kakao.maps.LatLng(latitude, longitude);
 
-                /* 지도 중심을 현재 위치로 이동 */
                 map.setCenter(currentPosition);
                 map.setLevel(4);
-
-                /* 내 위치 마커 표시 */
                 setMyLocationMarker(latitude, longitude);
 
-                /*
-                 * 현재 위치 기준으로 카카오 장소 검색을 수행한다.
-                 * 키워드가 비어 있으면 기본값으로 "미용실"을 사용한다.
-                 */
                 var keyword = (keywordInput.value || "").trim();
                 if (!keyword) {
                     keyword = "미용실";
@@ -245,7 +246,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 clearMarkers();
-                renderEmpty("내 위치 기준으로 주변 미용실을 검색하는 중입니다...");
+                renderEmpty("내 위치 기준으로 주변 미용실을 검색 중입니다...");
 
                 var places = new kakao.maps.services.Places();
 
@@ -286,7 +287,7 @@ document.addEventListener("DOMContentLoaded", function () {
             function (error) {
                 switch (error.code) {
                     case error.PERMISSION_DENIED:
-                        showNotice("위치 권한이 거부되었습니다. 브라우저에서 위치 허용 후 다시 시도하세요.");
+                        showNotice("위치 권한이 거부되었습니다. 브라우저 설정에서 위치 허용 후 다시 시도해주세요.");
                         break;
                     case error.POSITION_UNAVAILABLE:
                         showNotice("현재 위치를 확인할 수 없습니다.");
@@ -316,7 +317,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     resetButton.addEventListener("click", function () {
-        regionInput.value = "";
+        citySelect.value = "";
+        districtSelect.dataset.selectedValue = "";
+        neighborhoodSelect.dataset.selectedValue = "";
+        bindMapRegionFilters(citySelect, districtSelect, neighborhoodSelect, regionData);
         keywordInput.value = "";
         clearMarkers();
         clearMyLocationMarker();
@@ -325,7 +329,7 @@ document.addEventListener("DOMContentLoaded", function () {
         map.setLevel(5);
     });
 
-    [regionInput, keywordInput].forEach(function (input) {
+    [citySelect, districtSelect, neighborhoodSelect, keywordInput].forEach(function (input) {
         input.addEventListener("keydown", function (event) {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -334,5 +338,128 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    renderEmpty("지역이나 키워드를 입력하면 지도에서 바로 검색합니다.");
+    renderEmpty("지역과 키워드를 선택하면 지도에서 바로 검색합니다.");
 });
+
+function bindMapRegionFilters(citySelect, districtSelect, neighborhoodSelect, regionData) {
+    if (!citySelect || !districtSelect || !neighborhoodSelect || !regionData) {
+        return;
+    }
+
+    var addresses = Array.isArray(regionData.addresses) ? regionData.addresses : [];
+    var regions = parseMapRegions(addresses);
+
+    function populateSelect(select, options, defaultLabel, selectedValue) {
+        select.innerHTML = "";
+
+        var defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = defaultLabel;
+        select.appendChild(defaultOption);
+
+        options.forEach(function (value) {
+            var option = document.createElement("option");
+            option.value = value;
+            option.textContent = value;
+            select.appendChild(option);
+        });
+
+        select.value = selectedValue || "";
+        if (select.value !== (selectedValue || "")) {
+            select.value = "";
+        }
+    }
+
+    function syncDistricts(resetNeighborhood) {
+        var selectedCity = citySelect.value || "";
+        var selectedDistrict = resetNeighborhood ? "" : (districtSelect.dataset.selectedValue || districtSelect.value || "");
+        populateSelect(districtSelect, regions.districtsByCity[selectedCity] || [], "전체 구", selectedDistrict);
+        districtSelect.dataset.selectedValue = districtSelect.value || "";
+        syncNeighborhoods(resetNeighborhood);
+    }
+
+    function syncNeighborhoods(forceReset) {
+        var selectedCity = citySelect.value || "";
+        var selectedDistrict = districtSelect.value || "";
+        var key = selectedCity + "||" + selectedDistrict;
+        var selectedNeighborhood = forceReset ? "" : (neighborhoodSelect.dataset.selectedValue || neighborhoodSelect.value || "");
+        populateSelect(neighborhoodSelect, regions.neighborhoodsByDistrict[key] || [], "전체 동", selectedNeighborhood);
+        neighborhoodSelect.dataset.selectedValue = neighborhoodSelect.value || "";
+    }
+
+    citySelect.onchange = function () {
+        districtSelect.dataset.selectedValue = "";
+        neighborhoodSelect.dataset.selectedValue = "";
+        syncDistricts(true);
+    };
+
+    districtSelect.onchange = function () {
+        neighborhoodSelect.dataset.selectedValue = "";
+        syncNeighborhoods(true);
+    };
+
+    populateSelect(citySelect, regions.cities, "전체 시", citySelect.value || "");
+    syncDistricts(false);
+}
+
+function parseMapRegions(addresses) {
+    var citySet = new Set();
+    var districtsByCity = {};
+    var neighborhoodsByDistrict = {};
+
+    addresses.forEach(function (address) {
+        if (!address) {
+            return;
+        }
+
+        var tokens = String(address).trim().split(/\s+/);
+        var city = tokens[0] || "";
+        var district = tokens[1] || "";
+        var neighborhood = isNeighborhoodName(tokens[2]) ? tokens[2] : "";
+
+        if (!city) {
+            return;
+        }
+
+        citySet.add(city);
+
+        if (!districtsByCity[city]) {
+            districtsByCity[city] = new Set();
+        }
+        if (district) {
+            districtsByCity[city].add(district);
+        }
+
+        if (district) {
+            var key = city + "||" + district;
+            if (!neighborhoodsByDistrict[key]) {
+                neighborhoodsByDistrict[key] = new Set();
+            }
+            if (neighborhood) {
+                neighborhoodsByDistrict[key].add(neighborhood);
+            }
+        }
+    });
+
+    return {
+        cities: Array.from(citySet).sort(),
+        districtsByCity: sortMapRegionMap(districtsByCity),
+        neighborhoodsByDistrict: sortMapRegionMap(neighborhoodsByDistrict)
+    };
+}
+
+function isNeighborhoodName(value) {
+    if (!value) {
+        return false;
+    }
+
+    return /(?:동|가|읍|면|리)$/.test(String(value).trim());
+}
+
+function sortMapRegionMap(source) {
+    var result = {};
+    Object.keys(source).forEach(function (key) {
+        result[key] = Array.from(source[key]).sort();
+    });
+    return result;
+}

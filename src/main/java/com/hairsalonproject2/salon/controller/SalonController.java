@@ -1,5 +1,6 @@
 package com.hairsalonproject2.salon.controller;
 
+import com.hairsalonproject2.common.util.AddressRegionUtils;
 import com.hairsalonproject2.salon.dto.request.SalonCreateRequest;
 import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
 import com.hairsalonproject2.salon.dto.request.SalonUpdateRequest;
@@ -63,8 +64,14 @@ public class SalonController {
     public String list(@ModelAttribute SalonSearchRequest request,
                        @RequestParam(defaultValue = "1") int page,
                        Model model) {
+        String resolvedRegion = String.join(" ",
+                request.getCity() == null ? "" : request.getCity(),
+                request.getDistrict() == null ? "" : request.getDistrict(),
+                request.getNeighborhood() == null ? "" : request.getNeighborhood()
+        ).trim();
+
         if (request.hasSearchRequest()) {
-            externalSalonSyncService.syncFromSearch(request.getKeyword(), request.getRegion());
+            externalSalonSyncService.syncFromSearch(request.getKeyword(), resolvedRegion.isBlank() ? request.getRegion() : resolvedRegion);
         }
 
         Page<?> resultPage = request.hasSearchRequest()
@@ -74,6 +81,10 @@ public class SalonController {
         model.addAttribute("salons", resultPage.getContent());
         model.addAttribute("search", request);
         model.addAttribute("searched", request.hasSearchRequest());
+        model.addAttribute("cityOptions", salonQueryService.getCityOptions());
+        model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(request.getCity()));
+        model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(request.getCity(), request.getDistrict()));
+        model.addAttribute("regionAddresses", salonQueryService.getAddressOptions());
         model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
         model.addAttribute("totalPages", resultPage.getTotalPages());
         model.addAttribute("totalSalonCount", resultPage.getTotalElements());
@@ -96,9 +107,29 @@ public class SalonController {
     @GetMapping("/map")
     public String mapSearch(@RequestParam(required = false) String keyword,
                             @RequestParam(required = false) String region,
+                            @RequestParam(required = false) String city,
+                            @RequestParam(required = false) String district,
+                            @RequestParam(required = false) String neighborhood,
                             Model model) {
+        String resolvedCity = city == null ? "" : city.trim();
+        String resolvedDistrict = district == null ? "" : district.trim();
+        String resolvedNeighborhood = neighborhood == null ? "" : neighborhood.trim();
+
+        if (resolvedCity.isBlank() && region != null && !region.isBlank()) {
+            var parts = AddressRegionUtils.parse(region);
+            resolvedCity = parts.city();
+            resolvedDistrict = parts.district();
+            resolvedNeighborhood = parts.neighborhood();
+        }
+
         model.addAttribute("keyword", keyword == null ? "" : keyword.trim());
-        model.addAttribute("region", region == null ? "" : region.trim());
+        model.addAttribute("city", resolvedCity);
+        model.addAttribute("district", resolvedDistrict);
+        model.addAttribute("neighborhood", resolvedNeighborhood);
+        model.addAttribute("cityOptions", salonQueryService.getCityOptions());
+        model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(resolvedCity));
+        model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(resolvedCity, resolvedDistrict));
+        model.addAttribute("regionAddresses", salonQueryService.getAddressOptions());
         model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey == null ? "" : kakaoJavascriptKey.trim());
         model.addAttribute("kakaoRestApiKey", kakaoRestApiKey == null ? "" : kakaoRestApiKey.trim());
         return "salon/map-search";
@@ -108,10 +139,16 @@ public class SalonController {
     @ResponseBody
     public ResponseEntity<SalonMapResultsPayload> mapResults(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String region
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String district,
+            @RequestParam(required = false) String neighborhood
     ) {
         String safeKeyword = keyword == null ? "" : keyword.trim();
-        String safeRegion = region == null ? "" : region.trim();
+        String safeRegion = AddressRegionUtils.combine(city, district, neighborhood);
+        if (safeRegion.isBlank()) {
+            safeRegion = region == null ? "" : region.trim();
+        }
 
         String queryUsed;
         if (safeKeyword.isBlank() && safeRegion.isBlank()) {
@@ -133,7 +170,7 @@ public class SalonController {
 
         List<Integer> savedIds;
         try {
-            savedIds = externalSalonSyncService.syncFromKakao(keyword, region);
+            savedIds = externalSalonSyncService.syncFromKakao(keyword, safeRegion);
         } catch (RuntimeException ex) {
             // 카카오 API 호출 실패 시 500 에러 대신 빈 결과를 반환하되, 원인을 프론트에서 확인할 수 있게 한다.
             String safeMessage = (ex.getMessage() == null ? "" : ex.getMessage())
@@ -146,7 +183,7 @@ public class SalonController {
                 safeMessage = "카카오 REST API 검색 실패";
             }
 
-            log.warn("mapResults failed. keyword='{}', region='{}'", keyword, region, ex);
+            log.warn("mapResults failed. keyword='{}', region='{}'", keyword, safeRegion, ex);
             return ResponseEntity.ok(
                     SalonMapResultsPayload.builder()
                             .results(List.of())

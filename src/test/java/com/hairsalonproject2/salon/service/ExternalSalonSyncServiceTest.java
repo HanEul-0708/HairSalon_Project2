@@ -201,9 +201,10 @@ class ExternalSalonSyncServiceTest {
                 .latitude(new BigDecimal("37.1234567"))
                 .longitude(new BigDecimal("127.1234567"))
                 .build();
-        Designer junior = Designer.builder().designerId(10).name("Link Hair Stylist").careerYears(2).build();
-        Designer senior = Designer.builder().designerId(11).name("Link Hair Director").careerYears(9).build();
-        Designer mid = Designer.builder().designerId(12).name("Link Hair Senior Stylist").careerYears(5).build();
+        Salon salon = Salon.builder().salonId(5).name("Link Hair").build();
+        Designer junior = Designer.builder().designerId(10).name("Link Hair Stylist").careerYears(2).salon(salon).build();
+        Designer senior = Designer.builder().designerId(11).name("Link Hair Director").careerYears(9).salon(salon).build();
+        Designer mid = Designer.builder().designerId(12).name("Link Hair Senior Stylist").careerYears(5).salon(salon).build();
         Member designerMember = Member.builder()
                 .memberId("designer999")
                 .password("encoded")
@@ -223,16 +224,16 @@ class ExternalSalonSyncServiceTest {
         when(memberRepository.findFirstByRoleAndStatusAndDesignerIsNullOrderByCreatedAtAscMemberIdAsc(MemberRole.DESIGNER, MemberStatus.ACTIVE))
                 .thenReturn(Optional.of(designerMember));
         when(salonRepository.save(any(Salon.class))).thenAnswer(invocation -> {
-            Salon salon = invocation.getArgument(0);
-            salon.setSalonId(5);
-            return salon;
+            Salon savedSalon = invocation.getArgument(0);
+            savedSalon.setSalonId(5);
+            return savedSalon;
         });
         when(designerRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         externalSalonSyncService.syncFromKakao("Link", "Gangnam");
 
         assertThat(senior.getMember()).isEqualTo(designerMember);
-        assertThat(designerMember.getName()).isEqualTo("Link Hair Director");
+        assertThat(designerMember.getName()).isEqualTo("Link Hair");
         assertThat(junior.getMember()).isNull();
         assertThat(mid.getMember()).isNull();
     }

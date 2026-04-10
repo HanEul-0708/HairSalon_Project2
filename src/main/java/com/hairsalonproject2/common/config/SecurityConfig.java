@@ -82,6 +82,7 @@ public class SecurityConfig {
 
                                 // 회원
                                 "/members/signup",
+                                "/members/signup/**",
                                 "/members/login",
                                 "/members/check-id",
                                 "/members/check-email",
@@ -94,6 +95,7 @@ public class SecurityConfig {
                                 "/designers/*",
                                 "/salon-services",
                                 "/salon-services/**",
+                                "/search",
                                 "/reviews",
                                 "/reviews/**",
                                 "/boards/**"

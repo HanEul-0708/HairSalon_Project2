@@ -15,7 +15,7 @@
         <div class="catalog-hero">
             <p class="catalog-hero__eyebrow">Review Archive</p>
             <h1 class="catalog-hero__title">리뷰 목록</h1>
-            <p class="catalog-hero__subtitle">고객 리뷰와 평점, 이미지, 디자이너 답변까지 한 번에 확인해보세요.</p>
+            <p class="catalog-hero__subtitle">지역, 미용실, 디자이너 기준으로 리뷰를 세분화해서 확인해보세요.</p>
         </div>
 
         <form class="review-filter" method="get" action="/reviews">
@@ -28,13 +28,35 @@
 
             <div class="review-filter__controls">
                 <div class="review-filter__group">
-                    <label for="region">지역</label>
-                    <select id="region" name="region">
-                        <option value="">전체 지역</option>
-                        <option th:each="regionOption : ${regionOptions}"
-                                th:value="${regionOption}"
-                                th:text="${regionOption}"
-                                th:selected="${selectedRegion == regionOption}">
+                    <label for="city">시</label>
+                    <select id="city" name="city">
+                        <option value="">전체 시</option>
+                        <option th:each="cityOption : ${cityOptions}"
+                                th:value="${cityOption}"
+                                th:text="${cityOption}"
+                                th:selected="${selectedCity == cityOption}">
+                        </option>
+                    </select>
+                </div>
+                <div class="review-filter__group">
+                    <label for="district">구</label>
+                    <select id="district" name="district" data-selected-value="" th:attr="data-selected-value=${selectedDistrict}">
+                        <option value="">전체 구</option>
+                        <option th:each="districtOption : ${districtOptions}"
+                                th:value="${districtOption}"
+                                th:text="${districtOption}"
+                                th:selected="${selectedDistrict == districtOption}">
+                        </option>
+                    </select>
+                </div>
+                <div class="review-filter__group">
+                    <label for="neighborhood">동</label>
+                    <select id="neighborhood" name="neighborhood" data-selected-value="" th:attr="data-selected-value=${selectedNeighborhood}">
+                        <option value="">전체 동</option>
+                        <option th:each="neighborhoodOption : ${neighborhoodOptions}"
+                                th:value="${neighborhoodOption}"
+                                th:text="${neighborhoodOption}"
+                                th:selected="${selectedNeighborhood == neighborhoodOption}">
                         </option>
                     </select>
                 </div>
@@ -138,15 +160,15 @@
             <div class="pagination" th:if="${totalPages > 1}">
                 <a class="page-link"
                    th:classappend="${currentPage == 1 ? ' disabled' : ''}"
-                   th:href="@{/reviews(page=${currentPage > 1 ? currentPage - 1 : 1}, searched=true, region=${selectedRegion}, salonId=${selectedSalonId}, designerId=${selectedDesignerId}, sortBy=${currentSort})}">이전</a>
+                   th:href="@{/reviews(page=${currentPage > 1 ? currentPage - 1 : 1}, searched=true, city=${selectedCity}, district=${selectedDistrict}, neighborhood=${selectedNeighborhood}, salonId=${selectedSalonId}, designerId=${selectedDesignerId}, sortBy=${currentSort})}">이전</a>
                 <a class="page-link"
                    th:each="pageNumber : ${pageNumbers}"
                    th:classappend="${pageNumber == currentPage ? ' active' : ''}"
-                   th:href="@{/reviews(page=${pageNumber}, searched=true, region=${selectedRegion}, salonId=${selectedSalonId}, designerId=${selectedDesignerId}, sortBy=${currentSort})}"
+                   th:href="@{/reviews(page=${pageNumber}, searched=true, city=${selectedCity}, district=${selectedDistrict}, neighborhood=${selectedNeighborhood}, salonId=${selectedSalonId}, designerId=${selectedDesignerId}, sortBy=${currentSort})}"
                    th:text="${pageNumber}">1</a>
                 <a class="page-link"
                    th:classappend="${currentPage == totalPages ? ' disabled' : ''}"
-                   th:href="@{/reviews(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, searched=true, region=${selectedRegion}, salonId=${selectedSalonId}, designerId=${selectedDesignerId}, sortBy=${currentSort})}">다음</a>
+                   th:href="@{/reviews(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, searched=true, city=${selectedCity}, district=${selectedDistrict}, neighborhood=${selectedNeighborhood}, salonId=${selectedSalonId}, designerId=${selectedDesignerId}, sortBy=${currentSort})}">다음</a>
             </div>
         </div>
     </div>

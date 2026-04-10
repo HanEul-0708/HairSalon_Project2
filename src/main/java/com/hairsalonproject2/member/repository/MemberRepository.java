@@ -24,9 +24,12 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 
     boolean existsByPhone(String phone);
 
+    boolean existsByNameAndRoleAndStatusNot(String name, MemberRole role, MemberStatus status);
+
     long countByRole(MemberRole role);
     long countByRoleAndStatus(MemberRole role, MemberStatus status);
     List<Member> findByRoleAndStatusOrderByCreatedAtAsc(MemberRole role, MemberStatus status);
+    List<Member> findAllByMemberIdStartingWith(String memberIdPrefix);
     Optional<Member> findFirstByRoleAndStatusAndDesignerIsNullOrderByCreatedAtAscMemberIdAsc(MemberRole role, MemberStatus status);
 
     @Query("""

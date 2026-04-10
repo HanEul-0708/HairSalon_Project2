@@ -4,11 +4,15 @@ import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.common.exception.BusinessException;
 import com.hairsalonproject2.common.exception.ErrorCode;
+import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.designer.repository.DesignerRepository;
 import com.hairsalonproject2.member.dto.request.MemberPasswordChangeRequest;
 import com.hairsalonproject2.member.dto.request.MemberSignupRequest;
 import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.repository.MemberRepository;
+import com.hairsalonproject2.salon.entity.Salon;
+import com.hairsalonproject2.salon.repository.SalonRepository;
+import com.hairsalonproject2.salon.service.SalonQueryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -36,6 +40,12 @@ class MemberServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private SalonRepository salonRepository;
+
+    @Mock
+    private SalonQueryService salonQueryService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -68,6 +78,59 @@ class MemberServiceTest {
         assertThat(savedMember.getEmail()).isEqualTo("tester@example.com");
         assertThat(savedMember.getRole()).isEqualTo(MemberRole.USER);
         assertThat(savedMember.getStatus()).isEqualTo(MemberStatus.ACTIVE);
+    }
+
+    @Test
+    void designerSignupUsesSalonNameAndLinksRepresentativeDesigner() {
+        MemberSignupRequest request = new MemberSignupRequest();
+        request.setRole(MemberRole.DESIGNER);
+        request.setMemberId("designer-salon-01");
+        request.setPassword("password123");
+        request.setPasswordConfirm("password123");
+        request.setPhone("010-1111-2222");
+        request.setEmail("designer@example.com");
+        request.setSalonId(7);
+
+        Salon salon = Salon.builder().salonId(7).name("광안 살롱").address("부산광역시 수영구 광안동").build();
+        Designer designer = Designer.builder().designerId(70).salon(salon).name("대표 디자이너").careerYears(11).build();
+
+        when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
+        when(salonRepository.findById(7)).thenReturn(Optional.of(salon));
+        when(designerRepository.existsBySalonSalonIdAndMemberIsNotNull(7)).thenReturn(false);
+        when(memberRepository.existsByNameAndRoleAndStatusNot("광안 살롱", MemberRole.DESIGNER, MemberStatus.DELETED)).thenReturn(false);
+        when(designerRepository.findFirstBySalonSalonIdOrderByCareerYearsDescDesignerIdDesc(7)).thenReturn(Optional.of(designer));
+        when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        memberService.signup(request);
+
+        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+        verify(memberRepository).save(memberCaptor.capture());
+        Member savedMember = memberCaptor.getValue();
+        assertThat(savedMember.getName()).isEqualTo("광안 살롱");
+        assertThat(savedMember.getRole()).isEqualTo(MemberRole.DESIGNER);
+        assertThat(designer.getMember()).isEqualTo(savedMember);
+    }
+
+    @Test
+    void designerSignupRejectsSalonThatAlreadyHasLinkedAccount() {
+        MemberSignupRequest request = new MemberSignupRequest();
+        request.setRole(MemberRole.DESIGNER);
+        request.setMemberId("designer-salon-01");
+        request.setPassword("password123");
+        request.setPasswordConfirm("password123");
+        request.setPhone("010-1111-2222");
+        request.setEmail("designer@example.com");
+        request.setSalonId(7);
+
+        Salon salon = Salon.builder().salonId(7).name("광안 살롱").build();
+
+        when(salonRepository.findById(7)).thenReturn(Optional.of(salon));
+        when(designerRepository.existsBySalonSalonIdAndMemberIsNotNull(7)).thenReturn(true);
+
+        assertThatThrownBy(() -> memberService.signup(request))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.DESIGNER_SIGNUP_ACCOUNT_ALREADY_EXISTS);
     }
 
     @Test

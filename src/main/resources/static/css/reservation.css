@@ -313,9 +313,109 @@
     opacity: 0.45;
 }
 
+.reservation-review-section {
+    margin-top: 28px;
+    padding: 28px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.reservation-review-section__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.reservation-review-section__header h2 {
+    margin: 4px 0 0;
+}
+
+.reservation-review-section__eyebrow {
+    margin: 0;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+
+.reservation-review-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.reservation-review-card {
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, #fff 0%, #fcfbf7 100%);
+}
+
+.reservation-review-card__meta,
+.reservation-review-card__footer,
+.reservation-review-card__reply {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.reservation-review-card__title {
+    margin: 0;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.reservation-review-card__sub {
+    margin: 6px 0 0;
+    color: var(--text-sub);
+    font-size: 0.9rem;
+}
+
+.reservation-review-card__rating {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: var(--radius-full);
+    background: rgba(201, 168, 76, 0.14);
+    color: #7a5c1e;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.reservation-review-card__content {
+    margin: 16px 0;
+    color: var(--text-main);
+    line-height: 1.65;
+}
+
+.reservation-review-card__reply {
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    background: var(--gold-soft);
+    color: var(--text-main);
+}
+
+.reservation-review-card__reply strong {
+    white-space: nowrap;
+}
+
+.reservation-review-card__footer {
+    color: var(--text-sub);
+    font-size: 0.85rem;
+}
+
 @media (max-width: 768px) {
     .reservation-form,
-    .reservation-list {
+    .reservation-list,
+    .reservation-review-section {
         padding: 20px;
     }
 
@@ -325,6 +425,17 @@
 
     .reservation-card {
         flex-direction: column;
+    }
+
+    .reservation-review-section__header,
+    .reservation-review-card__meta,
+    .reservation-review-card__footer,
+    .reservation-review-card__reply {
+        flex-direction: column;
+    }
+
+    .reservation-review-list {
+        grid-template-columns: 1fr;
     }
 
     .reservation-actions {

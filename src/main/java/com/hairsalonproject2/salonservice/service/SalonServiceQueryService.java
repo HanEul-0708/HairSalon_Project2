@@ -38,6 +38,9 @@ public class SalonServiceQueryService {
                         request.getKeyword(),
                         request.getSalonKeyword(),
                         request.getRegion(),
+                        request.getCity(),
+                        request.getDistrict(),
+                        request.getNeighborhood(),
                         request.getMaxPrice(),
                         request.getMaxDuration()
                 ).stream()
@@ -63,8 +66,31 @@ public class SalonServiceQueryService {
         return toDetail(service);
     }
 
-    public List<ServicePriceCompareResponse> compare(String serviceName, String region) {
-        return salonServiceRepository.compareServices(serviceName, region).stream().map(row -> ServicePriceCompareResponse.builder().serviceId(row.getServiceId()).salonId(row.getSalonId()).salonName(row.getSalonName()).address(row.getAddress()).serviceName(row.getServiceName()).price(row.getPrice()).duration(row.getDuration()).averageRating(row.getAverageRating()).build()).toList();
+    public List<ServicePriceCompareResponse> compare(String serviceName,
+                                                     String city,
+                                                     String district,
+                                                     String neighborhood) {
+        return salonServiceRepository.compareServices(serviceName, city, district, neighborhood).stream()
+                .map(row -> ServicePriceCompareResponse.builder()
+                        .serviceId(row.getServiceId())
+                        .salonId(row.getSalonId())
+                        .salonName(row.getSalonName())
+                        .address(row.getAddress())
+                        .serviceName(row.getServiceName())
+                        .price(row.getPrice())
+                        .duration(row.getDuration())
+                        .averageRating(row.getAverageRating())
+                        .build())
+                .toList();
+    }
+
+    public List<String> getServiceNameOptions() {
+        return salonServiceRepository.findAll().stream()
+                .map(SalonService::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
     }
 
     @Transactional

@@ -8,6 +8,7 @@
 
 .hero,
 .quick-features,
+.region-spotlight,
 .top-salons,
 .top-designers,
 .recent-reviews,
@@ -357,7 +358,94 @@
 
 
 /* =============================================
-   3. TOP 3 미용실
+   3. 지역 스포트라이트
+   ============================================= */
+
+.region-spotlight {
+    padding: 20px 0 10px;
+}
+
+.region-spotlight__panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 24px 28px;
+    border-radius: 24px;
+    background:
+            radial-gradient(circle at top left, rgba(201, 168, 76, 0.14), transparent 32%),
+            linear-gradient(135deg, #fffef9 0%, #fff8ec 100%);
+    border: 1px solid rgba(201, 168, 76, 0.28);
+    box-shadow: var(--shadow-sm);
+}
+
+.region-spotlight__eyebrow {
+    margin-bottom: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+
+.region-spotlight__title {
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.region-spotlight__desc {
+    color: var(--text-sub);
+    line-height: 1.7;
+}
+
+.region-spotlight__status {
+    min-width: 220px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(23, 23, 25, 0.96);
+    color: #fff;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+}
+
+.region-spotlight__label,
+.region-spotlight__timer {
+    display: block;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.84rem;
+}
+
+.region-spotlight__status strong {
+    display: block;
+    margin: 8px 0 6px;
+    color: var(--gold-light);
+    font-size: 1.2rem;
+}
+
+.region-spotlight__dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.region-spotlight__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(23, 23, 25, 0.18);
+    transition: var(--transition);
+}
+
+.region-spotlight__dot.is-active {
+    width: 28px;
+    border-radius: 999px;
+    background: var(--gold);
+}
+
+
+/* =============================================
+   4. TOP 3 미용실
    ============================================= */
 
 .top-salons {
@@ -468,7 +556,7 @@
 
 
 /* =============================================
-   4. 인기 디자이너
+   5. 인기 디자이너
    ============================================= */
 
 .top-designers {
@@ -570,7 +658,7 @@
 
 
 /* =============================================
-   5. 최근 리뷰
+   6. 최근 리뷰
    ============================================= */
 
 .recent-reviews {
@@ -653,9 +741,19 @@
     font-size: 0.82rem;
 }
 
+.region-empty-card {
+    grid-column: 1 / -1;
+    padding: 36px 20px;
+    border-radius: 22px;
+    background: var(--white);
+    border: 1px dashed var(--gold-border);
+    text-align: center;
+    color: #7b6e56;
+}
+
 
 /* =============================================
-   6. CTA 배너
+   7. CTA 배너
    ============================================= */
 
 .cta-banner {
@@ -756,6 +854,11 @@
 
     .designers__grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .region-spotlight__panel {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

@@ -81,18 +81,39 @@ function requestAvailability(url, value, onSuccess, onFailure) {
         .catch(onFailure);
 }
 
+function fetchJson(url) {
+    return fetch(url, {
+        method: "GET",
+        headers: {
+            "Accept": "application/json"
+        }
+    }).then(function (response) {
+        if (!response.ok) {
+            throw new Error("request failed");
+        }
+        return response.json();
+    });
+}
+
 function setupSignupValidation() {
     var signupForm = document.querySelector("form[data-signup-form]");
     if (!signupForm) {
         return;
     }
 
+    var roleInputs = signupForm.querySelectorAll("[data-signup-role]");
     var memberIdInput = signupForm.querySelector("#memberId");
     var passwordInput = signupForm.querySelector("#password");
     var passwordConfirmInput = signupForm.querySelector("#passwordConfirm");
     var nameInput = signupForm.querySelector("#name");
     var phoneInput = signupForm.querySelector("#phone");
     var emailInput = signupForm.querySelector("#email");
+    var citySelect = signupForm.querySelector("[data-signup-city]");
+    var districtSelect = signupForm.querySelector("[data-signup-district]");
+    var neighborhoodSelect = signupForm.querySelector("[data-signup-neighborhood]");
+    var salonSelect = signupForm.querySelector("[data-signup-salon]");
+    var designerSection = signupForm.querySelector("[data-designer-signup-section]");
+    var designerNameHint = signupForm.querySelector("[data-designer-name-hint]");
     var submitButton = signupForm.querySelector("[data-signup-submit]");
 
     var state = {
@@ -110,17 +131,37 @@ function setupSignupValidation() {
         emailTimer: null,
         submitted: false,
         touched: {
+            role: false,
             memberId: false,
             password: false,
             passwordConfirm: false,
             name: false,
             phone: false,
-            email: false
-        }
+            email: false,
+            salonId: false
+        },
+        userTypedName: nameInput.value || ""
     };
 
     function shouldShow(name) {
         return state.submitted || state.touched[name];
+    }
+
+    function currentRole() {
+        var selected = signupForm.querySelector("[data-signup-role]:checked");
+        return selected ? selected.value : "USER";
+    }
+
+    function isDesignerSignup() {
+        return currentRole() === "DESIGNER";
+    }
+
+    function roleState() {
+        var role = currentRole();
+        if (role === "USER" || role === "DESIGNER") {
+            return { valid: true, message: "", state: "success" };
+        }
+        return { valid: false, message: "회원 유형을 선택해 주세요.", state: "error" };
     }
 
     function memberIdState() {
@@ -172,6 +213,13 @@ function setupSignupValidation() {
     function nameState() {
         var value = nameInput.value.trim();
 
+        if (isDesignerSignup()) {
+            if (!salonSelect.value) {
+                return { valid: false, message: "미용실을 선택해 주세요.", state: "error" };
+            }
+            return { valid: true, message: "선택한 미용실 이름으로 계정명이 자동 설정됩니다.", state: "success" };
+        }
+
         if (!value) {
             return { valid: false, message: nameInput.dataset.requiredMessage, state: "error" };
         }
@@ -179,6 +227,18 @@ function setupSignupValidation() {
             return { valid: false, message: nameInput.dataset.invalidMessage, state: "error" };
         }
         return { valid: true, message: "올바르게 입력되었습니다.", state: "success" };
+    }
+
+    function salonState() {
+        if (!isDesignerSignup()) {
+            return { valid: true, message: "", state: "success" };
+        }
+
+        if (!salonSelect.value) {
+            return { valid: false, message: "가입할 미용실을 선택해 주세요.", state: "error" };
+        }
+
+        return { valid: true, message: "선택한 미용실 계정으로 가입합니다.", state: "success" };
     }
 
     function phoneState() {
@@ -234,28 +294,164 @@ function setupSignupValidation() {
     }
 
     function refreshUI() {
+        var role = roleState();
         var memberId = memberIdState();
         var password = passwordState();
         var passwordConfirm = passwordConfirmState();
         var name = nameState();
         var phone = phoneState();
         var email = emailState();
+        var salon = salonState();
 
+        renderField("role", role);
         renderField("memberId", memberId);
         renderField("password", password);
         renderField("passwordConfirm", passwordConfirm);
         renderField("name", name);
         renderField("phone", phone);
         renderField("email", email);
+        renderField("salonId", salon);
+
+        if (designerSection) {
+            designerSection.classList.toggle("d-none", !isDesignerSignup());
+        }
+        if (designerNameHint) {
+            designerNameHint.classList.toggle("d-none", !isDesignerSignup());
+        }
+        if (nameInput) {
+            nameInput.readOnly = isDesignerSignup();
+        }
 
         submitButton.disabled = !(
+            role.valid &&
             memberId.valid &&
             password.valid &&
             passwordConfirm.valid &&
             name.valid &&
             phone.valid &&
-            email.valid
+            email.valid &&
+            salon.valid
         );
+    }
+
+    function fillSalonNameFromSelection() {
+        if (!isDesignerSignup()) {
+            nameInput.value = state.userTypedName;
+            return;
+        }
+
+        var selectedOption = salonSelect.options[salonSelect.selectedIndex];
+        if (!selectedOption || !salonSelect.value) {
+            nameInput.value = "";
+            return;
+        }
+
+        nameInput.value = selectedOption.text.split(" | ")[0].trim();
+    }
+
+    function rebuildOptions(select, items, placeholder, selectedValue, mapper) {
+        if (!select) {
+            return;
+        }
+
+        var options = ['<option value="">' + placeholder + '</option>'];
+        items.forEach(function (item) {
+            var mapped = mapper(item);
+            var selected = String(mapped.value) === String(selectedValue || "") ? ' selected' : "";
+            options.push('<option value="' + mapped.value + '"' + selected + '>' + mapped.label + '</option>');
+        });
+        select.innerHTML = options.join("");
+    }
+
+    function loadDistrictOptions(selectedValue) {
+        var city = citySelect.value;
+        rebuildOptions(districtSelect, [], "구 선택", "", function (item) {
+            return { value: item, label: item };
+        });
+        rebuildOptions(neighborhoodSelect, [], "동 선택", "", function (item) {
+            return { value: item, label: item };
+        });
+        rebuildOptions(salonSelect, [], "미용실 선택", "", function (item) {
+            return { value: item.salonId, label: item.salonName + " | " + item.address };
+        });
+
+        if (!city) {
+            fillSalonNameFromSelection();
+            refreshUI();
+            return Promise.resolve();
+        }
+
+        return fetchJson("/members/signup/district-options?city=" + encodeURIComponent(city))
+            .then(function (items) {
+                rebuildOptions(districtSelect, items, "구 선택", selectedValue, function (item) {
+                    return { value: item, label: item };
+                });
+            })
+            .catch(function () {
+                setFieldFeedback(signupForm, '[data-feedback-for="salonId"]', "지역 정보를 불러오지 못했습니다.", "error");
+            });
+    }
+
+    function loadNeighborhoodOptions(selectedValue) {
+        var city = citySelect.value;
+        var district = districtSelect.value;
+        rebuildOptions(neighborhoodSelect, [], "동 선택", "", function (item) {
+            return { value: item, label: item };
+        });
+
+        if (!city || !district) {
+            return Promise.resolve();
+        }
+
+        return fetchJson(
+            "/members/signup/neighborhood-options?city=" + encodeURIComponent(city) +
+            "&district=" + encodeURIComponent(district)
+        ).then(function (items) {
+            rebuildOptions(neighborhoodSelect, items, "동 선택", selectedValue, function (item) {
+                return { value: item, label: item };
+            });
+        }).catch(function () {
+            setFieldFeedback(signupForm, '[data-feedback-for="salonId"]', "동 정보를 불러오지 못했습니다.", "error");
+        });
+    }
+
+    function loadSalonOptions(selectedValue) {
+        var params = [];
+
+        if (citySelect.value) {
+            params.push("city=" + encodeURIComponent(citySelect.value));
+        }
+        if (districtSelect.value) {
+            params.push("district=" + encodeURIComponent(districtSelect.value));
+        }
+        if (neighborhoodSelect.value) {
+            params.push("neighborhood=" + encodeURIComponent(neighborhoodSelect.value));
+        }
+
+        rebuildOptions(salonSelect, [], "미용실 선택", "", function (item) {
+            return { value: item.salonId, label: item.salonName + " | " + item.address };
+        });
+
+        if (!citySelect.value || !districtSelect.value) {
+            fillSalonNameFromSelection();
+            refreshUI();
+            return Promise.resolve();
+        }
+
+        return fetchJson("/members/signup/salon-options" + (params.length ? "?" + params.join("&") : ""))
+            .then(function (items) {
+                rebuildOptions(salonSelect, items, "미용실 선택", selectedValue, function (item) {
+                    return {
+                        value: item.salonId,
+                        label: item.salonName + " | " + (item.address || "")
+                    };
+                });
+                fillSalonNameFromSelection();
+                refreshUI();
+            })
+            .catch(function () {
+                setFieldFeedback(signupForm, '[data-feedback-for="salonId"]', "미용실 목록을 불러오지 못했습니다.", "error");
+            });
     }
 
     function scheduleMemberIdCheck() {
@@ -406,6 +602,20 @@ function setupSignupValidation() {
         state.touched.memberId = true;
         scheduleMemberIdCheck();
     });
+    roleInputs.forEach(function (input) {
+        input.addEventListener("change", function () {
+            state.touched.role = true;
+            if (!isDesignerSignup()) {
+                state.userTypedName = nameInput.value.trim();
+            }
+            if (isDesignerSignup()) {
+                fillSalonNameFromSelection();
+            } else {
+                nameInput.value = state.userTypedName;
+            }
+            refreshUI();
+        });
+    });
     passwordInput.addEventListener("input", function () {
         state.touched.password = true;
         refreshUI();
@@ -416,6 +626,9 @@ function setupSignupValidation() {
     });
     nameInput.addEventListener("input", function () {
         state.touched.name = true;
+        if (!isDesignerSignup()) {
+            state.userTypedName = nameInput.value;
+        }
         refreshUI();
     });
     phoneInput.addEventListener("input", function () {
@@ -426,15 +639,55 @@ function setupSignupValidation() {
         state.touched.email = true;
         scheduleEmailCheck();
     });
+    if (citySelect) {
+        citySelect.addEventListener("change", function () {
+            state.touched.salonId = true;
+            loadDistrictOptions("").then(function () {
+                fillSalonNameFromSelection();
+                refreshUI();
+            });
+        });
+    }
+    if (districtSelect) {
+        districtSelect.addEventListener("change", function () {
+            state.touched.salonId = true;
+            loadNeighborhoodOptions("").then(function () {
+                return loadSalonOptions("");
+            }).then(function () {
+                fillSalonNameFromSelection();
+                refreshUI();
+            });
+        });
+    }
+    if (neighborhoodSelect) {
+        neighborhoodSelect.addEventListener("change", function () {
+            state.touched.salonId = true;
+            loadSalonOptions("").then(function () {
+                fillSalonNameFromSelection();
+                refreshUI();
+            });
+        });
+    }
+    if (salonSelect) {
+        salonSelect.addEventListener("change", function () {
+            state.touched.salonId = true;
+            fillSalonNameFromSelection();
+            refreshUI();
+        });
+    }
 
     signupForm.addEventListener("submit", function (e) {
         state.submitted = true;
+        if (isDesignerSignup()) {
+            fillSalonNameFromSelection();
+        }
         refreshUI();
         if (submitButton.disabled) {
             e.preventDefault();
         }
     });
 
+    fillSalonNameFromSelection();
     refreshUI();
 }
 

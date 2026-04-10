@@ -6,6 +6,7 @@ import com.hairsalonproject2.member.dto.request.MemberPasswordChangeRequest;
 import com.hairsalonproject2.member.dto.request.MemberSignupRequest;
 import com.hairsalonproject2.member.dto.request.MemberUpdateRequest;
 import com.hairsalonproject2.member.dto.response.AvailabilityResponse;
+import com.hairsalonproject2.member.dto.response.DesignerSignupSalonOptionResponse;
 import com.hairsalonproject2.member.dto.response.MemberDetailResponse;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.member.service.MemberService;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -44,7 +46,9 @@ public class MemberController {
 
     @GetMapping("/signup")
     public String signupForm(Model model) {
-        model.addAttribute("memberSignupRequest", new MemberSignupRequest());
+        MemberSignupRequest request = new MemberSignupRequest();
+        model.addAttribute("memberSignupRequest", request);
+        prepareSignupModel(model, request);
         return "member/signup";
     }
 
@@ -53,6 +57,7 @@ public class MemberController {
                          BindingResult bindingResult,
                          Model model) {
         if (bindingResult.hasErrors()) {
+            prepareSignupModel(model, memberSignupRequest);
             return "member/signup";
         }
 
@@ -60,10 +65,32 @@ public class MemberController {
             memberService.signup(memberSignupRequest);
         } catch (BusinessException e) {
             model.addAttribute("signupErrorMessage", e.getErrorCode().getMessage());
+            prepareSignupModel(model, memberSignupRequest);
             return "member/signup";
         }
 
         return "redirect:/members/login?signup=true";
+    }
+
+    @GetMapping("/signup/district-options")
+    @ResponseBody
+    public List<String> signupDistrictOptions(@RequestParam String city) {
+        return memberService.getDesignerSignupDistrictOptions(city);
+    }
+
+    @GetMapping("/signup/neighborhood-options")
+    @ResponseBody
+    public List<String> signupNeighborhoodOptions(@RequestParam String city,
+                                                  @RequestParam String district) {
+        return memberService.getDesignerSignupNeighborhoodOptions(city, district);
+    }
+
+    @GetMapping("/signup/salon-options")
+    @ResponseBody
+    public List<DesignerSignupSalonOptionResponse> signupSalonOptions(@RequestParam(required = false) String city,
+                                                                      @RequestParam(required = false) String district,
+                                                                      @RequestParam(required = false) String neighborhood) {
+        return memberService.getAvailableDesignerSalons(city, district, neighborhood);
     }
 
     @GetMapping("/login")
@@ -201,5 +228,18 @@ public class MemberController {
         request.setPhone(member.getPhone());
         request.setEmail(member.getEmail());
         return request;
+    }
+
+    private void prepareSignupModel(Model model, MemberSignupRequest request) {
+        model.addAttribute("signupCityOptions", memberService.getDesignerSignupCityOptions());
+        model.addAttribute("signupDistrictOptions", memberService.getDesignerSignupDistrictOptions(request.getCity()));
+        model.addAttribute(
+                "signupNeighborhoodOptions",
+                memberService.getDesignerSignupNeighborhoodOptions(request.getCity(), request.getDistrict())
+        );
+        model.addAttribute(
+                "signupSalonOptions",
+                memberService.getAvailableDesignerSalons(request.getCity(), request.getDistrict(), request.getNeighborhood())
+        );
     }
 }

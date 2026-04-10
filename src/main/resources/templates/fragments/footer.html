@@ -1,16 +1,6 @@
-<!--
-    footer.html — 공통 푸터 조각 (골드 럭셔리 테마 최종본)
-    =========================================================
-    구성
-    - 골드 상단 라인
-    - 왼쪽: 브랜드 소개
-    - 오른쪽: 서비스 / 탐색 / 고객지원 링크
-    - 하단: 저작권
-
-    사용법
-    <footer th:replace="~{layout/footer :: footer}"></footer>
--->
-<footer th:fragment="footer" class="site-footer">
+<footer th:fragment="footer"
+        class="site-footer"
+        xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
     <div class="footer__gold-bar"></div>
 
@@ -19,46 +9,53 @@
             <div class="footer-brand__logo">HS</div>
 
             <div class="footer-brand__text">
-                <strong>HairSalon Project</strong>
+                <strong>HairSalon</strong>
                 <p>
-                    미용실 탐색, 가격 비교, 리뷰 확인,<br>
-                    예약까지 한 곳에서 이어지는<br>
-                    프리미엄 헤어 플랫폼
+                    미용실 탐색, 디자이너 비교, 시술 확인,<br>
+                    리뷰 탐색과 예약까지 한 번에 이어지는<br>
+                    프리미엄 헤어 예약 플랫폼
                 </p>
             </div>
         </div>
 
         <div class="footer-links">
             <div class="footer-links__group">
-                <h4>서비스</h4>
-                <a th:href="@{/salons}">미용실 찾기</a>
-                <a th:href="@{/designers}">디자이너</a>
-                <a th:href="@{/salon-services}">시술 안내</a>
+                <h4>메뉴</h4>
+                <a th:href="@{/}">홈</a>
+                <a th:href="@{/salons}">미용실 전체 보기</a>
+                <a th:href="@{/designers}">디자이너 전체 보기</a>
+                <a th:href="@{/reviews}">리뷰</a>
                 <a th:href="@{/reservations/new}">예약하기</a>
             </div>
 
             <div class="footer-links__group">
                 <h4>탐색</h4>
-                <a th:href="@{/salons/nearby}">가까운 미용실 찾기</a>
-                <a th:href="@{/salons/price-compare}">가격 비교</a>
-                <a th:href="@{/salons/recommend-by-service}">시술별 추천</a>
-                <a th:href="@{/salons/kakao-search}">카카오 검색</a>
+                <a th:href="@{/salons/map}">지역 검색</a>
+                <a th:href="@{/salon-services}">시술 안내</a>
+                <a th:href="@{/salon-services/compare}">가격 비교</a>
             </div>
 
             <div class="footer-links__group">
-                <h4>고객지원</h4>
+                <h4>고객센터</h4>
                 <a th:href="@{/boards/notices}">공지사항</a>
                 <a th:href="@{/boards/qna}">문의게시판</a>
-                <a th:href="@{/members/me}" sec:authorize="isAuthenticated()">마이페이지</a>
+            </div>
+
+            <div class="footer-links__group">
+                <h4>내 메뉴</h4>
                 <a th:href="@{/members/login}" sec:authorize="isAnonymous()">로그인</a>
-                <a th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">관리자</a>
+                <a th:href="@{/members/signup}" sec:authorize="isAnonymous()">회원가입</a>
+                <a th:href="@{/members/me}" sec:authorize="isAuthenticated()">마이페이지</a>
+                <a th:href="@{/members/me/reservations}" sec:authorize="hasRole('USER')">내 예약</a>
+                <a th:href="@{/designers/me/reservations}" sec:authorize="hasRole('DESIGNER')">예약 관리</a>
+                <a th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">관리자 메뉴</a>
             </div>
         </div>
     </div>
 
     <div class="footer__bottom">
-        <p>© 2026 HairSalon Project. All rights reserved.</p>
-        <p>Team Project · Premium Hair Booking Experience</p>
+        <p>© 2026 HairSalon. All rights reserved.</p>
+        <p>Premium Hair Booking Experience</p>
     </div>
 
 </footer>

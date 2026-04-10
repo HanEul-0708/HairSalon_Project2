@@ -29,11 +29,11 @@ public class DummyMemberSeeder implements ApplicationRunner {
     @Value("${app.seed.members.default-password:1234}")
     private String defaultPassword;
 
-    @Value("${app.seed.members.target-designer-count:20}")
-    private int targetDesignerCount;
+    @Value("${app.seed.members.batch-designer-count:${app.seed.members.target-designer-count:20}}")
+    private int batchDesignerCount;
 
-    @Value("${app.seed.members.target-user-count:40}")
-    private int targetUserCount;
+    @Value("${app.seed.members.batch-user-count:${app.seed.members.target-user-count:40}}")
+    private int batchUserCount;
 
     @Override
     @Transactional
@@ -48,8 +48,8 @@ public class DummyMemberSeeder implements ApplicationRunner {
     public int seedMembers() {
         String encodedPassword = passwordEncoder.encode(defaultPassword);
         int created = 0;
-        created += seedRole(MemberRole.DESIGNER, "designer", "디자이너", targetDesignerCount, encodedPassword, 2000);
-        created += seedRole(MemberRole.USER, "user", "회원", targetUserCount, encodedPassword, 3000);
+        created += seedRole(MemberRole.DESIGNER, "designer", "디자이너", batchDesignerCount, encodedPassword, 2000);
+        created += seedRole(MemberRole.USER, "user", "회원", batchUserCount, encodedPassword, 3000);
 
         if (created > 0) {
             log.info("Seeded {} dummy members for local profile.", created);
@@ -60,36 +60,54 @@ public class DummyMemberSeeder implements ApplicationRunner {
     private int seedRole(MemberRole role,
                          String idPrefix,
                          String namePrefix,
-                         int targetCount,
+                         int batchCount,
                          String encodedPassword,
                          int phoneBase) {
-        long existingCount = memberRepository.countByRoleAndStatus(role, MemberStatus.ACTIVE);
-        if (existingCount >= targetCount) {
+        if (batchCount <= 0) {
             return 0;
         }
 
+        int sequence = nextSequence(idPrefix);
         int created = 0;
-        int sequence = 1;
-        while (existingCount + created < targetCount) {
+        while (created < batchCount) {
             String memberId = idPrefix + sequence;
-            sequence++;
             if (memberRepository.existsByMemberId(memberId)) {
+                sequence++;
                 continue;
             }
 
             Member member = Member.builder()
                     .memberId(memberId)
                     .password(encodedPassword)
-                    .name(namePrefix + (sequence - 1))
-                    .phone(buildPhone(phoneBase + sequence - 1))
+                    .name(namePrefix + sequence)
+                    .phone(buildPhone(phoneBase + sequence))
                     .email(memberId + "@example.com")
                     .role(role)
                     .status(MemberStatus.ACTIVE)
                     .build();
             memberRepository.save(member);
             created++;
+            sequence++;
         }
         return created;
+    }
+
+    private int nextSequence(String idPrefix) {
+        return memberRepository.findAllByMemberIdStartingWith(idPrefix).stream()
+                .map(Member::getMemberId)
+                .map(memberId -> memberId.substring(idPrefix.length()))
+                .filter(suffix -> !suffix.isBlank())
+                .mapToInt(this::parseSequence)
+                .max()
+                .orElse(0) + 1;
+    }
+
+    private int parseSequence(String suffix) {
+        try {
+            return Integer.parseInt(suffix);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private String buildPhone(int number) {

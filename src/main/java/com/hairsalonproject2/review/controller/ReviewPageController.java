@@ -1,6 +1,7 @@
 package com.hairsalonproject2.review.controller;
 
 import com.hairsalonproject2.common.constant.ReservationStatus;
+import com.hairsalonproject2.common.util.AddressRegionUtils;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.service.ReservationService;
@@ -22,7 +23,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 @Controller
@@ -39,36 +39,48 @@ public class ReviewPageController {
     public String reviewListPage(@AuthenticationPrincipal CustomUserDetails userDetails,
                                  @RequestParam(defaultValue = "1") int page,
                                  @RequestParam(defaultValue = "false") boolean searched,
-                                 @RequestParam(required = false) String region,
+                                 @RequestParam(required = false) String city,
+                                 @RequestParam(required = false) String district,
+                                 @RequestParam(required = false) String neighborhood,
                                  @RequestParam(required = false) Integer salonId,
                                  @RequestParam(required = false) Integer designerId,
                                  @RequestParam(defaultValue = "latest") String sortBy,
                                  Model model) {
         String loginMemberId = userDetails == null ? null : userDetails.getMember().getMemberId();
-        String selectedRegion = normalizeText(region);
+        String selectedCity = normalizeText(city);
+        String selectedDistrict = normalizeText(district);
+        String selectedNeighborhood = normalizeText(neighborhood);
+
         List<ReviewResponse> latestReviews = reviewService.getAllReviews(loginMemberId, null, "latest");
-        List<String> regionOptions = latestReviews.stream()
-                .map(review -> extractRegion(review.getSalonAddress()))
-                .filter(value -> !value.isBlank())
-                .distinct()
-                .sorted()
+        List<String> addresses = latestReviews.stream()
+                .map(ReviewResponse::getSalonAddress)
+                .filter(address -> address != null && !address.isBlank())
                 .toList();
+
         List<SalonFilterOption> salonOptions = latestReviews.stream()
                 .filter(review -> review.getSalonId() != null)
                 .collect(java.util.stream.Collectors.toMap(
                         ReviewResponse::getSalonId,
-                        review -> new SalonFilterOption(
-                                review.getSalonId(),
-                                review.getSalonName(),
-                                extractRegion(review.getSalonAddress())
-                        ),
+                        review -> {
+                            AddressRegionUtils.RegionParts parts = AddressRegionUtils.parse(review.getSalonAddress());
+                            return new SalonFilterOption(
+                                    review.getSalonId(),
+                                    review.getSalonName(),
+                                    parts.city(),
+                                    parts.district(),
+                                    parts.neighborhood()
+                            );
+                        },
                         (left, right) -> left,
                         LinkedHashMap::new
                 ))
                 .values().stream()
-                .sorted(Comparator.comparing(SalonFilterOption::getRegion)
+                .sorted(Comparator.comparing(SalonFilterOption::getCity, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(SalonFilterOption::getDistrict, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(SalonFilterOption::getNeighborhood, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(SalonFilterOption::getSalonName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
+
         List<DesignerFilterOption> designerOptions = latestReviews.stream()
                 .filter(review -> review.getDesignerId() != null)
                 .collect(java.util.stream.Collectors.toMap(
@@ -91,12 +103,15 @@ public class ReviewPageController {
 
         List<ReviewResponse> allReviews = searched
                 ? filterReviews(
-                        reviewService.getAllReviews(loginMemberId, null, sortBy),
-                        selectedRegion,
-                        salonId,
-                        designerId
-                )
+                reviewService.getAllReviews(loginMemberId, null, sortBy),
+                selectedCity,
+                selectedDistrict,
+                selectedNeighborhood,
+                salonId,
+                designerId
+        )
                 : Collections.emptyList();
+
         int totalReviews = allReviews.size();
         int totalPages = searched && totalReviews > 0
                 ? (int) Math.ceil((double) totalReviews / REVIEWS_PER_PAGE)
@@ -116,10 +131,14 @@ public class ReviewPageController {
                 ? Collections.emptyList()
                 : java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());
         model.addAttribute("currentSort", sortBy);
-        model.addAttribute("selectedRegion", selectedRegion);
+        model.addAttribute("selectedCity", selectedCity);
+        model.addAttribute("selectedDistrict", selectedDistrict);
+        model.addAttribute("selectedNeighborhood", selectedNeighborhood);
         model.addAttribute("selectedSalonId", salonId);
         model.addAttribute("selectedDesignerId", designerId);
-        model.addAttribute("regionOptions", regionOptions);
+        model.addAttribute("cityOptions", AddressRegionUtils.cityOptions(addresses));
+        model.addAttribute("districtOptions", AddressRegionUtils.districtOptions(addresses, selectedCity));
+        model.addAttribute("neighborhoodOptions", AddressRegionUtils.neighborhoodOptions(addresses, selectedCity, selectedDistrict));
         model.addAttribute("designerOptions", designerOptions);
         model.addAttribute("salonOptions", salonOptions);
         model.addAttribute("totalReviewCount", totalReviews);
@@ -199,41 +218,16 @@ public class ReviewPageController {
     }
 
     private List<ReviewResponse> filterReviews(List<ReviewResponse> reviews,
-                                               String selectedRegion,
+                                               String city,
+                                               String district,
+                                               String neighborhood,
                                                Integer salonId,
                                                Integer designerId) {
         return reviews.stream()
-                .filter(review -> selectedRegion.isBlank()
-                        || Objects.equals(extractRegion(review.getSalonAddress()), selectedRegion))
+                .filter(review -> AddressRegionUtils.matches(review.getSalonAddress(), city, district, neighborhood))
                 .filter(review -> salonId == null || Objects.equals(review.getSalonId(), salonId))
                 .filter(review -> designerId == null || Objects.equals(review.getDesignerId(), designerId))
                 .toList();
-    }
-
-    private String extractRegion(String address) {
-        String normalizedAddress = normalizeText(address);
-        if (normalizedAddress.isBlank()) {
-            return "";
-        }
-
-        String token = normalizedAddress.split("\\s+")[0];
-        return normalizeRegionName(token);
-    }
-
-    private String normalizeRegionName(String rawRegion) {
-        String normalized = normalizeText(rawRegion);
-        if (normalized.isBlank()) {
-            return "";
-        }
-
-        String[] suffixes = {"특별자치도", "특별자치시", "광역시", "특별시", "자치도", "자치시", "도", "시"};
-        for (String suffix : suffixes) {
-            if (normalized.endsWith(suffix) && normalized.length() > suffix.length()) {
-                return normalized.substring(0, normalized.length() - suffix.length());
-            }
-        }
-
-        return normalized;
     }
 
     private String normalizeText(String value) {
@@ -243,12 +237,16 @@ public class ReviewPageController {
     public static final class SalonFilterOption {
         private final Integer salonId;
         private final String salonName;
-        private final String region;
+        private final String city;
+        private final String district;
+        private final String neighborhood;
 
-        public SalonFilterOption(Integer salonId, String salonName, String region) {
+        public SalonFilterOption(Integer salonId, String salonName, String city, String district, String neighborhood) {
             this.salonId = salonId;
             this.salonName = salonName;
-            this.region = region == null ? "" : region;
+            this.city = city == null ? "" : city;
+            this.district = district == null ? "" : district;
+            this.neighborhood = neighborhood == null ? "" : neighborhood;
         }
 
         public Integer getSalonId() {
@@ -259,8 +257,16 @@ public class ReviewPageController {
             return salonName;
         }
 
-        public String getRegion() {
-            return region;
+        public String getCity() {
+            return city;
+        }
+
+        public String getDistrict() {
+            return district;
+        }
+
+        public String getNeighborhood() {
+            return neighborhood;
         }
     }
 

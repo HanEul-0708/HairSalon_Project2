@@ -1,6 +1,9 @@
 package com.hairsalonproject2.review.service;
 
 import com.hairsalonproject2.common.constant.ReservationStatus;
+import com.hairsalonproject2.common.util.AddressRegionUtils;
+import com.hairsalonproject2.designer.projection.DesignerRatingRow;
+import com.hairsalonproject2.designer.repository.DesignerRepository;
 import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.repository.MemberRepository;
 import com.hairsalonproject2.reservation.entity.Reservation;
@@ -28,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +44,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewImageRepository reviewImageRepository;
     private final ReviewLikeRepository reviewLikeRepository;
     private final MemberRepository memberRepository;
+    private final DesignerRepository designerRepository;
     private final SalonRatingSyncService salonRatingSyncService;
 
     @Override
@@ -134,6 +140,16 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
+    public List<ReviewResponse> getReviewsByDesignerMember(String memberId, String loginMemberId) {
+        return designerRepository.findByMember_MemberId(memberId)
+                .map(designer -> reviewRepository.findByDesigner_Salon_SalonId(designer.getSalon().getSalonId()).stream()
+                        .map(review -> toResponse(review, loginMemberId))
+                        .sorted(Comparator.comparing(ReviewResponse::getCreatedAt).reversed())
+                        .toList())
+                .orElseGet(List::of);
+    }
+
+    @Override
     @Transactional
     public ReviewResponse updateReview(String loginMemberId, boolean isAdmin, Integer reviewId, ReviewUpdateRequest request) {
         Review review = reviewRepository.findById(reviewId)
@@ -165,8 +181,41 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public List<DesignerRankingResponse> getTop3Designers() {
-        return reviewRepository.findTopDesignersByAverageRatingAndReviewCount(1L)
-                .stream()
+        return getTop3Designers(null, null, null);
+    }
+
+    @Override
+    public List<DesignerRankingResponse> getTop3Designers(String city, String district, String neighborhood) {
+        Map<Integer, DesignerRatingRow> ratings = designerRepository.findDesignerRatingRows().stream()
+                .collect(Collectors.toMap(
+                        DesignerRatingRow::getDesignerId,
+                        row -> row
+                ));
+
+        return designerRepository.findAll().stream()
+                .filter(designer -> matchesRegion(
+                        designer.getSalon().getAddress(),
+                        designer.getSalon().getRoadAddress(),
+                        city,
+                        district,
+                        neighborhood
+                ))
+                .map(designer -> {
+                    DesignerRatingRow row = ratings.get(designer.getDesignerId());
+                    return new DesignerRankingResponse(
+                            designer.getDesignerId(),
+                            designer.getName(),
+                            designer.getSalon().getName(),
+                            designer.getCareerYears(),
+                            row == null ? 0D : row.getAverageRating(),
+                            row == null ? 0L : row.getReviewCount()
+                    );
+                })
+                .filter(row -> row.getReviewCount() >= 1L)
+                .sorted(Comparator.comparing(DesignerRankingResponse::getAverageRating, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(DesignerRankingResponse::getReviewCount, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(DesignerRankingResponse::getCareerYears, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(DesignerRankingResponse::getDesignerName, String.CASE_INSENSITIVE_ORDER))
                 .limit(3)
                 .toList();
     }
@@ -191,7 +240,19 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public List<ReviewResponse> getRecentReviews() {
+        return getRecentReviews(null, null, null);
+    }
+
+    @Override
+    public List<ReviewResponse> getRecentReviews(String city, String district, String neighborhood) {
         return reviewRepository.findAll().stream()
+                .filter(review -> matchesRegion(
+                        review.getDesigner().getSalon().getAddress(),
+                        review.getDesigner().getSalon().getRoadAddress(),
+                        city,
+                        district,
+                        neighborhood
+                ))
                 .map(review -> toResponse(review, null))
                 .sorted(Comparator.comparing(ReviewResponse::getCreatedAt).reversed())
                 .limit(3)
@@ -299,5 +360,10 @@ public class ReviewServiceImpl implements ReviewService {
 
     private Integer safeLikeCount(Review review) {
         return review.getLikeCount() == null ? 0 : review.getLikeCount();
+    }
+
+    private boolean matchesRegion(String address, String roadAddress, String city, String district, String neighborhood) {
+        return AddressRegionUtils.matches(address, city, district, neighborhood)
+                || AddressRegionUtils.matches(roadAddress, city, district, neighborhood);
     }
 }

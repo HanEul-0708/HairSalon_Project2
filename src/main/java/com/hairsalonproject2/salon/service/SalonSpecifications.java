@@ -11,7 +11,14 @@ public final class SalonSpecifications {
     }
 
     public static Specification<Salon> bySearch(SalonSearchRequest request) {
-        return Specification.<Salon>unrestricted().and(keywordContains(request.getKeyword())).and(regionContains(request.getRegion())).and(minRatingAtLeast(request.getMinRating())).and(reservableEquals(request.getReservable()));
+        return Specification.<Salon>unrestricted()
+                .and(keywordContains(request.getKeyword()))
+                .and(regionContains(request.getRegion()))
+                .and(cityContains(request.getCity()))
+                .and(districtContains(request.getDistrict()))
+                .and(neighborhoodContains(request.getNeighborhood()))
+                .and(minRatingAtLeast(request.getMinRating()))
+                .and(reservableEquals(request.getReservable()));
     }
 
     private static Specification<Salon> keywordContains(String keyword) {
@@ -29,6 +36,38 @@ public final class SalonSpecifications {
             return null;
         }
         return (root, query, cb) -> cb.or(cb.like(cb.lower(root.get("address")), "%" + region.toLowerCase() + "%"), cb.like(cb.lower(root.get("roadAddress")), "%" + region.toLowerCase() + "%"));
+    }
+
+    private static Specification<Salon> cityContains(String city) {
+        if (city == null || city.isBlank()) {
+            return null;
+        }
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("address")), city.toLowerCase() + "%"),
+                cb.like(cb.lower(root.get("roadAddress")), city.toLowerCase() + "%")
+        );
+    }
+
+    private static Specification<Salon> districtContains(String district) {
+        if (district == null || district.isBlank()) {
+            return null;
+        }
+        String pattern = "% " + district.toLowerCase() + "%";
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("address")), pattern),
+                cb.like(cb.lower(root.get("roadAddress")), pattern)
+        );
+    }
+
+    private static Specification<Salon> neighborhoodContains(String neighborhood) {
+        if (neighborhood == null || neighborhood.isBlank()) {
+            return null;
+        }
+        String pattern = "% " + neighborhood.toLowerCase() + "%";
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("address")), pattern),
+                cb.like(cb.lower(root.get("roadAddress")), pattern)
+        );
     }
 
     private static Specification<Salon> minRatingAtLeast(BigDecimal minRating) {

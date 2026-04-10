@@ -4,6 +4,7 @@ import com.hairsalonproject2.common.config.SecurityConfig;
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.member.dto.response.MemberDetailResponse;
+import com.hairsalonproject2.member.dto.response.DesignerSignupSalonOptionResponse;
 import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.member.service.CustomUserDetailsService;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -54,10 +56,33 @@ class MemberControllerSecurityTest {
 
     @Test
     void anonymousUserCanOpenSignupPage() throws Exception {
+        when(memberService.getDesignerSignupCityOptions()).thenReturn(List.of("부산광역시"));
+        when(memberService.getDesignerSignupDistrictOptions(null)).thenReturn(List.of());
+        when(memberService.getDesignerSignupNeighborhoodOptions(null, null)).thenReturn(List.of());
+        when(memberService.getAvailableDesignerSalons(null, null, null)).thenReturn(List.of());
+
         mockMvc.perform(get("/members/signup"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("member/signup"))
                 .andExpect(model().attributeExists("memberSignupRequest"));
+    }
+
+    @Test
+    void anonymousUserCanFetchDesignerSignupSalonOptions() throws Exception {
+        when(memberService.getAvailableDesignerSalons("부산광역시", "수영구", "광안동"))
+                .thenReturn(List.of(DesignerSignupSalonOptionResponse.builder()
+                        .salonId(1)
+                        .salonName("광안 살롱")
+                        .address("부산광역시 수영구 광안동")
+                        .build()));
+
+        mockMvc.perform(get("/members/signup/salon-options")
+                        .param("city", "부산광역시")
+                        .param("district", "수영구")
+                        .param("neighborhood", "광안동"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .json("[{\"salonId\":1,\"salonName\":\"광안 살롱\",\"address\":\"부산광역시 수영구 광안동\"}]"));
     }
 
     @Test
@@ -127,6 +152,7 @@ class MemberControllerSecurityTest {
     void signupPostWithValidRequestRedirectsToLogin() throws Exception {
         mockMvc.perform(post("/members/signup")
                         .with(csrf())
+                        .param("role", "USER")
                         .param("memberId", "user01")
                         .param("password", "password123")
                         .param("passwordConfirm", "password123")
@@ -141,8 +167,14 @@ class MemberControllerSecurityTest {
 
     @Test
     void signupPostWithInvalidRequestReturnsSignupView() throws Exception {
+        when(memberService.getDesignerSignupCityOptions()).thenReturn(List.of("부산광역시"));
+        when(memberService.getDesignerSignupDistrictOptions(null)).thenReturn(List.of());
+        when(memberService.getDesignerSignupNeighborhoodOptions(null, null)).thenReturn(List.of());
+        when(memberService.getAvailableDesignerSalons(null, null, null)).thenReturn(List.of());
+
         mockMvc.perform(post("/members/signup")
                         .with(csrf())
+                        .param("role", "USER")
                         .param("memberId", "u")
                         .param("password", "123")
                         .param("passwordConfirm", "123")

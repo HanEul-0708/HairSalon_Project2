@@ -3,6 +3,7 @@ package com.hairsalonproject2.salonservice.controller;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceCreateRequest;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceSearchRequest;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceUpdateRequest;
+import com.hairsalonproject2.salon.service.SalonQueryService;
 import com.hairsalonproject2.salonservice.service.SalonServiceQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ public class ServiceController {
     private static final int SERVICES_PER_PAGE = 8;
 
     private final SalonServiceQueryService salonServiceQueryService;
+    private final SalonQueryService salonQueryService;
 
     @GetMapping("/new")
     public String createForm(Model model) {
@@ -42,6 +44,10 @@ public class ServiceController {
         model.addAttribute("services", resultPage.getContent());
         model.addAttribute("search", request);
         model.addAttribute("searched", request.hasSearchRequest());
+        model.addAttribute("cityOptions", salonQueryService.getCityOptions());
+        model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(request.getCity()));
+        model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(request.getCity(), request.getDistrict()));
+        model.addAttribute("regionAddresses", salonQueryService.getAddressOptions());
         model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
         model.addAttribute("totalPages", resultPage.getTotalPages());
         model.addAttribute("totalServiceCount", resultPage.getTotalElements());
@@ -58,10 +64,21 @@ public class ServiceController {
     }
 
     @GetMapping("/compare")
-    public String compare(@RequestParam(required = false) String serviceName, @RequestParam(required = false) String region, Model model) {
-        model.addAttribute("comparisons", salonServiceQueryService.compare(serviceName, region));
+    public String compare(@RequestParam(required = false) String serviceName,
+                          @RequestParam(required = false) String city,
+                          @RequestParam(required = false) String district,
+                          @RequestParam(required = false) String neighborhood,
+                          Model model) {
+        model.addAttribute("comparisons", salonServiceQueryService.compare(serviceName, city, district, neighborhood));
+        model.addAttribute("cityOptions", salonQueryService.getCityOptions());
+        model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(city));
+        model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(city, district));
+        model.addAttribute("regionAddresses", salonQueryService.getAddressOptions());
+        model.addAttribute("serviceNameOptions", salonServiceQueryService.getServiceNameOptions());
         model.addAttribute("serviceName", serviceName);
-        model.addAttribute("region", region);
+        model.addAttribute("city", city);
+        model.addAttribute("district", district);
+        model.addAttribute("neighborhood", neighborhood);
         return "service/compare";
     }
 

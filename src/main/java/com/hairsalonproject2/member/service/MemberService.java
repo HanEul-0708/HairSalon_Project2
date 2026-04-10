@@ -4,14 +4,20 @@ import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.common.exception.BusinessException;
 import com.hairsalonproject2.common.exception.ErrorCode;
+import com.hairsalonproject2.common.util.AddressRegionUtils;
+import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.designer.repository.DesignerRepository;
 import com.hairsalonproject2.member.dto.request.MemberPasswordChangeRequest;
 import com.hairsalonproject2.member.dto.request.MemberSignupRequest;
 import com.hairsalonproject2.member.dto.request.MemberUpdateRequest;
+import com.hairsalonproject2.member.dto.response.DesignerSignupSalonOptionResponse;
 import com.hairsalonproject2.member.dto.response.MemberDetailResponse;
 import com.hairsalonproject2.member.dto.response.MemberSummaryResponse;
 import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.repository.MemberRepository;
+import com.hairsalonproject2.salon.entity.Salon;
+import com.hairsalonproject2.salon.repository.SalonRepository;
+import com.hairsalonproject2.salon.service.SalonQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,14 +38,16 @@ public class MemberService {
 
     private final DesignerRepository designerRepository;
     private final MemberRepository memberRepository;
+    private final SalonRepository salonRepository;
+    private final SalonQueryService salonQueryService;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public void signup(MemberSignupRequest request) {
         String normalizedMemberId = normalizeMemberId(request.getMemberId());
-        String normalizedName = normalizeName(request.getName());
         String normalizedPhone = normalizePhone(request.getPhone());
         String normalizedEmail = normalizeEmail(request.getEmail());
+        MemberRole signupRole = resolveSignupRole(request.getRole());
 
         if (!request.getPassword().equals(request.getPasswordConfirm())) {
             throw new BusinessException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
@@ -57,17 +65,61 @@ public class MemberService {
             throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_PHONE);
         }
 
+        String resolvedName = resolveSignupName(request, signupRole);
+
         Member member = Member.builder()
                 .memberId(normalizedMemberId)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .name(normalizedName)
+                .name(resolvedName)
                 .phone(normalizedPhone)
                 .email(normalizedEmail)
-                .role(MemberRole.USER)
+                .role(signupRole)
                 .status(MemberStatus.ACTIVE)
                 .build();
 
-        memberRepository.save(member);
+        Member savedMember = memberRepository.save(member);
+
+        if (signupRole == MemberRole.DESIGNER) {
+            Designer designer = findRepresentativeDesigner(request.getSalonId());
+            designer.setMember(savedMember);
+        }
+    }
+
+    public List<String> getDesignerSignupCityOptions() {
+        return salonQueryService.getCityOptions();
+    }
+
+    public List<String> getDesignerSignupDistrictOptions(String city) {
+        return salonQueryService.getDistrictOptions(city);
+    }
+
+    public List<String> getDesignerSignupNeighborhoodOptions(String city, String district) {
+        return salonQueryService.getNeighborhoodOptions(city, district);
+    }
+
+    public List<DesignerSignupSalonOptionResponse> getAvailableDesignerSalons(String city,
+                                                                              String district,
+                                                                              String neighborhood) {
+        if (city == null || city.isBlank() || district == null || district.isBlank()) {
+            return List.of();
+        }
+
+        return salonRepository.findAll().stream()
+                .filter(salon -> matchesRegion(salon, city, district, neighborhood))
+                .filter(salon -> !hasLinkedDesignerAccount(salon))
+                .sorted((left, right) -> {
+                    int cityCompare = safe(left.getName()).compareToIgnoreCase(safe(right.getName()));
+                    if (cityCompare != 0) {
+                        return cityCompare;
+                    }
+                    return Integer.compare(left.getSalonId(), right.getSalonId());
+                })
+                .map(salon -> DesignerSignupSalonOptionResponse.builder()
+                        .salonId(salon.getSalonId())
+                        .salonName(salon.getName())
+                        .address(resolveSalonAddress(salon))
+                        .build())
+                .toList();
     }
 
     public MemberDetailResponse getMyDetail(String memberId) {
@@ -322,5 +374,70 @@ public class MemberService {
 
         String normalized = email.trim().toLowerCase(Locale.ROOT);
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private MemberRole resolveSignupRole(MemberRole requestedRole) {
+        if (requestedRole == null) {
+            return MemberRole.USER;
+        }
+        if (requestedRole != MemberRole.USER && requestedRole != MemberRole.DESIGNER) {
+            throw new BusinessException(ErrorCode.INVALID_SIGNUP_ROLE);
+        }
+        return requestedRole;
+    }
+
+    private String resolveSignupName(MemberSignupRequest request, MemberRole signupRole) {
+        if (signupRole == MemberRole.DESIGNER) {
+            Salon salon = getDesignerSignupSalon(request.getSalonId());
+            if (hasLinkedDesignerAccount(salon)) {
+                throw new BusinessException(ErrorCode.DESIGNER_SIGNUP_ACCOUNT_ALREADY_EXISTS);
+            }
+            return salon.getName();
+        }
+
+        String normalizedName = normalizeName(request.getName());
+        if (normalizedName == null) {
+            throw new BusinessException(ErrorCode.INVALID_MEMBER_NAME);
+        }
+        return normalizedName;
+    }
+
+    private Salon getDesignerSignupSalon(Integer salonId) {
+        if (salonId == null) {
+            throw new BusinessException(ErrorCode.DESIGNER_SIGNUP_SALON_REQUIRED);
+        }
+
+        return salonRepository.findById(salonId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DESIGNER_SIGNUP_SALON_NOT_FOUND));
+    }
+
+    private Designer findRepresentativeDesigner(Integer salonId) {
+        return designerRepository.findFirstBySalonSalonIdOrderByCareerYearsDescDesignerIdDesc(salonId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DESIGNER_SIGNUP_TARGET_DESIGNER_NOT_FOUND));
+    }
+
+    private boolean hasLinkedDesignerAccount(Salon salon) {
+        return designerRepository.existsBySalonSalonIdAndMemberIsNotNull(salon.getSalonId())
+                || memberRepository.existsByNameAndRoleAndStatusNot(
+                salon.getName(),
+                MemberRole.DESIGNER,
+                MemberStatus.DELETED
+        );
+    }
+
+    private boolean matchesRegion(Salon salon, String city, String district, String neighborhood) {
+        return AddressRegionUtils.matches(salon.getAddress(), city, district, neighborhood)
+                || AddressRegionUtils.matches(salon.getRoadAddress(), city, district, neighborhood);
+    }
+
+    private String resolveSalonAddress(Salon salon) {
+        if (salon.getAddress() != null && !salon.getAddress().isBlank()) {
+            return salon.getAddress();
+        }
+        return salon.getRoadAddress();
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 }
