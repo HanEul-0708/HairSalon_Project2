@@ -20,9 +20,22 @@
 }
 
 .salon-list-page .page-header {
+    position: relative;
     background: transparent;
     border-bottom: none;
     margin: 0;
+    padding-left: clamp(14px, 1.3vw, 24px);
+}
+
+.salon-list-page .page-header::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #c9a84c 0%, #8f7134 100%);
 }
 
 .salon-tab-nav {
@@ -199,11 +212,11 @@
 
 .salon-search-form--primary {
     grid-template-columns:
-        minmax(250px, 2.15fr)
-        minmax(132px, 0.95fr)
-        minmax(132px, 0.95fr)
-        minmax(150px, 0.9fr)
-        minmax(138px, 0.9fr)
+        minmax(182px, 1.28fr)
+        minmax(136px, 0.92fr)
+        minmax(258px, 1.88fr)
+        minmax(126px, 0.78fr)
+        minmax(122px, 0.78fr)
         minmax(148px, 1fr);
 }
 
@@ -217,7 +230,7 @@
 
 .salon-search-form__stack {
     display: grid;
-    grid-template-rows: minmax(50px, auto) auto;
+    grid-template-rows: 48px 40px;
     gap: 10px;
     align-content: start;
     align-self: stretch;
@@ -229,6 +242,7 @@
     gap: 10px;
     align-items: center;
     min-height: 40px;
+    height: 40px;
 }
 
 .salon-search-form__shortcut-group--empty {
@@ -243,17 +257,18 @@
 
 .salon-search-form__actions {
     display: grid;
+    grid-template-rows: 48px 40px;
     gap: 10px;
-    align-self: start;
+    align-self: stretch;
     justify-self: end;
     width: min(100%, 168px);
     min-width: 148px;
 }
 
-.salon-search-form input,
+.salon-search-form input:not([type='hidden']):not([type='checkbox']):not([type='range']),
 .salon-search-form select {
     width: 100%;
-    min-height: 50px;
+    min-height: 48px;
     padding: 0 16px;
     border: 1px solid var(--border-dark);
     border-radius: 14px;
@@ -265,7 +280,7 @@
     transition: var(--transition);
 }
 
-.salon-search-form input::placeholder {
+.salon-search-form input:not([type='range'])::placeholder {
     color: #9a907e;
 }
 
@@ -282,7 +297,13 @@
     padding-right: 40px;
 }
 
-.salon-search-form input:focus,
+.salon-search-form__control--sort {
+    padding-left: 14px;
+    padding-right: 34px;
+    font-size: 0.91rem;
+}
+
+.salon-search-form input:not([type='range']):focus,
 .salon-search-form select:focus {
     outline: none;
     border-color: var(--gold);
@@ -294,6 +315,12 @@
     letter-spacing: -0.01em;
 }
 
+.salon-search-form__stack > .salon-search-form__control--keyword,
+.salon-search-form__stack > .salon-search-form__control--region {
+    min-height: 0;
+    height: 100%;
+}
+
 .salon-search-form__control--region,
 .salon-search-form__control--rating,
 .salon-search-form__control--sort {
@@ -303,25 +330,191 @@
 .salon-search-form__control--toggle {
     width: 100%;
     justify-self: stretch;
+    min-height: 48px;
+    height: 48px;
 }
 
-.salon-search-form__control--rating {
-    padding-right: 12px;
+.salon-rating-slider {
+    --salon-rating-header-width: 122px;
+    --salon-rating-value-width: 62px;
+    display: grid;
+    grid-template-columns: var(--salon-rating-header-width) minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    min-height: 0;
+    height: 48px;
+    padding: 0 14px 0 16px;
+    border: 1px solid var(--border-dark);
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fffef9 0%, #f6efe1 52%, #fbf6ea 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.78),
+        0 1px 3px rgba(32, 24, 11, 0.04);
 }
 
-.salon-search-check {
-    min-height: 50px;
+.salon-rating-slider__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--salon-rating-value-width);
+    align-items: center;
+    gap: 8px;
+    width: var(--salon-rating-header-width);
+    min-width: var(--salon-rating-header-width);
+}
+
+.salon-rating-slider__label {
+    color: #6d5a37;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.salon-rating-slider__value {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 0 16px;
+    width: var(--salon-rating-value-width);
+    min-width: var(--salon-rating-value-width);
+    padding: 0;
+    height: 28px;
+    border: 1px solid #ddcda5;
+    border-radius: 999px;
+    background: rgba(255, 250, 239, 0.94);
+    color: #5e4c2d;
+    font-size: 0.8rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.salon-rating-slider__control {
+    display: grid;
+    grid-template-rows: 16px 8px;
+    gap: 2px;
+    min-width: 0;
+    width: 100%;
+    align-items: center;
+}
+
+.salon-rating-slider__input {
+    width: 100%;
+    min-height: 0;
+    height: 16px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.salon-rating-slider__input:focus {
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+.salon-rating-slider__input::-webkit-slider-runnable-track {
+    height: 5px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #c9a84c 0%, #e8c96d var(--rating-progress, 0%), #e9dfca var(--rating-progress, 0%), #e9dfca 100%);
+}
+
+.salon-rating-slider__input::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    margin-top: -6.5px;
+    border: 2px solid #fff7e4;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2f281d 0%, #5e4c2d 100%);
+    box-shadow: 0 3px 8px rgba(53, 39, 12, 0.25);
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.salon-rating-slider__input::-moz-range-track {
+    height: 5px;
+    border: none;
+    border-radius: 999px;
+    background: #e9dfca;
+}
+
+.salon-rating-slider__input::-moz-range-progress {
+    height: 5px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #c9a84c 0%, #e8c96d 100%);
+}
+
+.salon-rating-slider__input::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #fff7e4;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2f281d 0%, #5e4c2d 100%);
+    box-shadow: 0 3px 8px rgba(53, 39, 12, 0.25);
+}
+
+.salon-rating-slider__ticks {
+    display: grid;
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+    align-items: end;
+    height: 8px;
+    padding: 0 8px;
+    pointer-events: none;
+}
+
+.salon-rating-slider__tick {
+    justify-self: center;
+    border-radius: 999px;
+    background: rgba(146, 121, 73, 0.7);
+}
+
+.salon-rating-slider__tick--major {
+    width: 2px;
+    height: 8px;
+    background: rgba(112, 86, 39, 0.95);
+}
+
+.salon-rating-slider__tick--minor {
+    width: 1px;
+    height: 5px;
+    background: rgba(174, 152, 111, 0.82);
+}
+
+.salon-search-form__shortcut-group--rating {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    align-items: stretch;
+}
+
+.salon-search-form__shortcut-group--rating .salon-tab-nav__link {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    height: 40px;
+    padding: 0 10px;
+    font-size: clamp(0.76rem, 0.68rem + 0.18vw, 0.84rem);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+
+.salon-search-check {
+    min-height: 48px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 12px;
     border: 1px solid var(--border-dark);
     border-radius: 14px;
     background: #fcfbf7;
     color: var(--text-main);
-    font-size: 0.94rem;
-    font-weight: 500;
+    font-size: 0.9rem;
+    font-weight: 600;
     line-height: 1.2;
     text-align: center;
     white-space: nowrap;
@@ -351,18 +544,27 @@
 
 .salon-search-form__submit {
     min-width: 132px;
-    min-height: 50px;
+    min-height: 48px;
+    height: 48px;
     padding: 0 22px;
     border-radius: 14px;
     font-size: 0.95rem;
     font-weight: 700;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     justify-self: stretch;
     width: 100%;
 }
 
 .salon-tab-nav__link--compact {
     width: 100%;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     margin-left: 0;
 }
 

@@ -175,6 +175,14 @@ class SalonControllerWebMvcTest {
     }
 
     @Test
+    void topRated45PresetLoadsOnUnifiedSalonPage() throws Exception {
+        mockMvc.perform(get("/salons").param("preset", "top-rated-4-5"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("salon/list"))
+                .andExpect(model().attribute("activePreset", "top-rated-4-5"));
+    }
+
+    @Test
     void recommendRouteRedirectsToSalonPreset() throws Exception {
         mockMvc.perform(get("/salons/recommend-by-service").param("styleKeyword", "perm"))
                 .andExpect(status().is3xxRedirection())

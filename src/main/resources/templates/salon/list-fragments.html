@@ -62,21 +62,57 @@
         </div>
 
         <div class="salon-search-form__stack salon-search-form__stack--rating">
-            <select class="salon-search-form__control salon-search-form__control--rating" name="minRating">
-                <option value="" th:selected="${search.minRating == null}">최소 평점</option>
-                <option value="0" th:selected="${search.minRating != null and search.minRating.intValue() == 0}">0점</option>
-                <option value="1" th:selected="${search.minRating != null and search.minRating.intValue() == 1}">1점</option>
-                <option value="2" th:selected="${search.minRating != null and search.minRating.intValue() == 2}">2점</option>
-                <option value="3" th:selected="${search.minRating != null and search.minRating.intValue() == 3}">3점</option>
-                <option value="4" th:selected="${search.minRating != null and search.minRating.intValue() == 4}">4점</option>
-                <option value="5" th:selected="${search.minRating != null and search.minRating.intValue() == 5}">5점</option>
-            </select>
-            <div class="salon-search-form__shortcut-group">
+            <div class="salon-rating-slider"
+                 data-rating-slider
+                 th:attr="data-rating-active=${minRatingSliderActive}">
+                <input type="hidden"
+                       name="minRating"
+                       th:value="${minRatingSliderActive ? minRatingSliderValue : ''}">
+                <div class="salon-rating-slider__header">
+                    <span class="salon-rating-slider__label">최소 평점</span>
+                    <strong class="salon-rating-slider__value"
+                            data-rating-slider-value
+                            th:text="${minRatingSliderLabel}">
+                        전체
+                    </strong>
+                </div>
+                <div class="salon-rating-slider__control">
+                    <input class="salon-search-form__control salon-search-form__control--rating salon-rating-slider__input"
+                           type="range"
+                           min="0"
+                           max="5"
+                           step="0.5"
+                           value="0"
+                           data-rating-slider-input
+                           aria-label="최소 평점"
+                           th:value="${minRatingSliderValue}">
+                    <div class="salon-rating-slider__ticks" aria-hidden="true">
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="salon-search-form__shortcut-group salon-search-form__shortcut-group--rating">
                 <a th:href="@{/salons(preset='top-rated')}"
                    class="salon-tab-nav__link"
                    data-preset-mode="top-rated"
                    th:classappend="${activePreset == 'top-rated'} ? ' is-active' : ''">
                     평점 4점+
+                </a>
+                <a th:href="@{/salons(preset='top-rated-4-5')}"
+                   class="salon-tab-nav__link"
+                   data-preset-mode="top-rated-4-5"
+                   th:classappend="${activePreset == 'top-rated-4-5'} ? ' is-active' : ''">
+                    평점 4.5점+
                 </a>
             </div>
         </div>
@@ -86,7 +122,7 @@
                    name="reservable"
                    value="true"
                    th:checked="${search.reservable != null and search.reservable}">
-            예약 가능만 보기
+            예약 가능
         </label>
 
         <select class="salon-search-form__control salon-search-form__control--sort" name="sort">

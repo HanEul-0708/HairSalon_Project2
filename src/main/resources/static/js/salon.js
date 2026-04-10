@@ -29,10 +29,12 @@ function bindAutoSubmitForm(form) {
 
     var textInputs = Array.from(form.querySelectorAll("input[type='text']"));
     var controls = Array.from(form.querySelectorAll("select, input[type='checkbox']"));
+    var ratingSliderInput = form.querySelector("[data-rating-slider-input]");
     var presetLinks = Array.from(form.querySelectorAll("[data-preset-mode]"));
     var resetButton = form.querySelector("[data-search-reset]");
     var submitTimerId = 0;
     var isComposing = false;
+    var isDraggingRatingSlider = false;
 
     form.addEventListener("submit", function (event) {
         event.preventDefault();
@@ -80,6 +82,42 @@ function bindAutoSubmitForm(form) {
         });
     });
 
+    if (ratingSliderInput) {
+        syncRatingSlider(form, ratingSliderInput, false);
+
+        function beginRatingSliderDrag() {
+            isDraggingRatingSlider = true;
+        }
+
+        function endRatingSliderDrag() {
+            isDraggingRatingSlider = false;
+        }
+
+        ratingSliderInput.addEventListener("pointerdown", beginRatingSliderDrag);
+        ratingSliderInput.addEventListener("pointerup", endRatingSliderDrag);
+        ratingSliderInput.addEventListener("pointercancel", endRatingSliderDrag);
+        ratingSliderInput.addEventListener("mousedown", beginRatingSliderDrag);
+        ratingSliderInput.addEventListener("mouseup", endRatingSliderDrag);
+        ratingSliderInput.addEventListener("touchstart", beginRatingSliderDrag, { passive: true });
+        ratingSliderInput.addEventListener("touchend", endRatingSliderDrag);
+        ratingSliderInput.addEventListener("touchcancel", endRatingSliderDrag);
+        ratingSliderInput.addEventListener("blur", endRatingSliderDrag);
+
+        ratingSliderInput.addEventListener("input", function () {
+            syncRatingSlider(form, ratingSliderInput, true);
+            if (!isDraggingRatingSlider) {
+                scheduleSubmit(180);
+            }
+        });
+
+        ratingSliderInput.addEventListener("change", function () {
+            endRatingSliderDrag();
+            syncRatingSlider(form, ratingSliderInput, true);
+            window.clearTimeout(submitTimerId);
+            form.requestSubmit();
+        });
+    }
+
     if (resetButton) {
         resetButton.addEventListener("click", function () {
             var resetUrl = form.dataset.resetUrl || form.getAttribute("action") || "/salons";
@@ -121,7 +159,7 @@ function applyPresetMode(form, presetMode) {
     var currentPreset = getCurrentPresetMode(form);
     var presetInput = form.querySelector("input[name='preset']");
     var keywordInput = form.querySelector("input[name='keyword']");
-    var minRatingSelect = form.querySelector("select[name='minRating']");
+    var ratingSliderInput = form.querySelector("[data-rating-slider-input]");
 
     if (currentPreset === normalizedPreset) {
         return false;
@@ -150,11 +188,130 @@ function applyPresetMode(form, presetMode) {
 
     presetInput.value = normalizedPreset;
 
-    if (normalizedPreset === "top-rated" && minRatingSelect) {
-        minRatingSelect.value = "4";
+    var presetRatingValue = getPresetRatingValue(normalizedPreset);
+    if (presetRatingValue !== null && ratingSliderInput) {
+        setRatingSliderValue(form, ratingSliderInput, presetRatingValue, false);
     }
 
     return true;
+}
+
+function getPresetRatingValue(presetMode) {
+    if (presetMode === "top-rated") {
+        return 4;
+    }
+    if (presetMode === "top-rated-4-5") {
+        return 4.5;
+    }
+    return null;
+}
+
+function normalizeRatingValue(rawValue) {
+    var numericValue = Number.parseFloat(rawValue);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+        return "";
+    }
+
+    if (Math.abs(numericValue - Math.round(numericValue)) < 0.001) {
+        return String(Math.round(numericValue));
+    }
+
+    return numericValue.toFixed(1);
+}
+
+function formatRatingValueText(ratingValue) {
+    if (!ratingValue) {
+        return "전체";
+    }
+
+    var numericValue = Number.parseFloat(ratingValue);
+    if (!Number.isFinite(numericValue)) {
+        return ratingValue + "점";
+    }
+
+    return numericValue.toFixed(1) + "점";
+}
+
+function updateRatingSliderProgress(sliderInput, ratingValue) {
+    if (!sliderInput) {
+        return;
+    }
+
+    var sliderValue = Number.parseFloat(ratingValue || sliderInput.value || "0");
+    var percent = Math.max(0, Math.min(100, (sliderValue / 5) * 100));
+    sliderInput.style.setProperty("--rating-progress", percent + "%");
+}
+
+function syncRatingPresetState(form, ratingValue) {
+    if (!form) {
+        return;
+    }
+
+    var currentPreset = getCurrentPresetMode(form);
+    if (currentPreset !== "top-rated" && currentPreset !== "top-rated-4-5") {
+        return;
+    }
+
+    var presetInput = form.querySelector("input[name='preset']");
+    if (ratingValue === "4") {
+        if (!presetInput) {
+            presetInput = document.createElement("input");
+            presetInput.type = "hidden";
+            presetInput.name = "preset";
+            form.insertBefore(presetInput, form.firstChild);
+        }
+        presetInput.value = "top-rated";
+        return;
+    }
+
+    if (ratingValue === "4.5") {
+        if (!presetInput) {
+            presetInput = document.createElement("input");
+            presetInput.type = "hidden";
+            presetInput.name = "preset";
+            form.insertBefore(presetInput, form.firstChild);
+        }
+        presetInput.value = "top-rated-4-5";
+        return;
+    }
+
+    if (presetInput) {
+        presetInput.remove();
+    }
+}
+
+function syncRatingSlider(form, sliderInput, shouldSyncPreset) {
+    if (!form || !sliderInput) {
+        return;
+    }
+
+    var ratingValue = normalizeRatingValue(sliderInput.value);
+    var ratingValueElement = form.querySelector("[data-rating-slider-value]");
+    var hiddenMinRatingInput = form.querySelector("input[name='minRating']");
+
+    if (hiddenMinRatingInput) {
+        hiddenMinRatingInput.value = ratingValue;
+    }
+
+    if (ratingValueElement) {
+        ratingValueElement.textContent = formatRatingValueText(ratingValue);
+    }
+
+    updateRatingSliderProgress(sliderInput, ratingValue);
+
+    if (shouldSyncPreset) {
+        syncRatingPresetState(form, ratingValue);
+    }
+}
+
+function setRatingSliderValue(form, sliderInput, ratingValue, shouldSyncPreset) {
+    if (!sliderInput) {
+        return;
+    }
+
+    var normalizedValue = normalizeRatingValue(ratingValue);
+    sliderInput.value = normalizedValue || "0";
+    syncRatingSlider(form, sliderInput, shouldSyncPreset);
 }
 
 function submitSalonSearchForm(form) {

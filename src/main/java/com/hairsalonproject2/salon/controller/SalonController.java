@@ -311,6 +311,9 @@ public class SalonController {
         model.addAttribute("showKakaoSyncAction", spec.showKakaoSyncAction());
         model.addAttribute("emptyMessage", spec.emptyMessage());
         model.addAttribute("activePreset", spec.activePreset());
+        model.addAttribute("minRatingSliderActive", hasMinRatingSliderValue(request));
+        model.addAttribute("minRatingSliderValue", getMinRatingSliderValue(request));
+        model.addAttribute("minRatingSliderLabel", getMinRatingSliderLabel(request));
         model.addAttribute("kakaoResults", List.of());
         model.addAttribute("kakaoResultsMessage", null);
         model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
@@ -414,11 +417,33 @@ public class SalonController {
         }
     }
 
+    private boolean hasMinRatingSliderValue(SalonSearchRequest request) {
+        return request != null
+                && request.getMinRating() != null
+                && request.getMinRating().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private String getMinRatingSliderValue(SalonSearchRequest request) {
+        if (!hasMinRatingSliderValue(request)) {
+            return "0";
+        }
+
+        return request.getMinRating().stripTrailingZeros().toPlainString();
+    }
+
+    private String getMinRatingSliderLabel(SalonSearchRequest request) {
+        if (!hasMinRatingSliderValue(request)) {
+            return "전체";
+        }
+
+        return getMinRatingSliderValue(request) + "점";
+    }
+
     private void applyStandardPreset(SalonSearchRequest request, String styleKeyword, StandardPreset preset) {
         request.setServiceKeywordSearchEnabled(preset == StandardPreset.RECOMMEND_BY_SERVICE);
 
-        if (preset == StandardPreset.TOP_RATED && request.getMinRating() == null) {
-            request.setMinRating(BigDecimal.valueOf(4.0));
+        if (preset.minRating != null && request.getMinRating() == null) {
+            request.setMinRating(preset.minRating);
         }
 
         if (preset == StandardPreset.RECOMMEND_BY_SERVICE
@@ -446,6 +471,20 @@ public class SalonController {
                     true,
                     true,
                     "평점 4점 이상 조건에 맞는 미용실이 없습니다.",
+                    preset.value
+            );
+            case TOP_RATED_45 -> new SalonListPageSpec(
+                    "살롱 통합 탐색",
+                    "목록, 지점 지도, 카카오 외부 검색을 한 화면에서 비교하면서 평점 4.5점 이상 조건을 적용합니다.",
+                    "평점 4.5점 이상 프리셋",
+                    "더 높은 평점의 내부 살롱과 외부 검색 결과를 같은 화면에서 바로 비교할 수 있습니다.",
+                    "/salons",
+                    true,
+                    "이름, 주소, 설명",
+                    "필터 적용",
+                    true,
+                    true,
+                    "평점 4.5점 이상 조건에 맞는 미용실이 없습니다.",
                     preset.value
             );
             case RECOMMEND_BY_SERVICE -> new SalonListPageSpec(
@@ -533,16 +572,19 @@ public class SalonController {
     }
 
     private enum StandardPreset {
-        ALL("all", null),
-        TOP_RATED("top-rated", "rating"),
-        RECOMMEND_BY_SERVICE("recommend-by-service", "rating");
+        ALL("all", null, null),
+        TOP_RATED("top-rated", "rating", BigDecimal.valueOf(4.0)),
+        TOP_RATED_45("top-rated-4-5", "rating", BigDecimal.valueOf(4.5)),
+        RECOMMEND_BY_SERVICE("recommend-by-service", "rating", null);
 
         private final String value;
         private final String sort;
+        private final BigDecimal minRating;
 
-        StandardPreset(String value, String sort) {
+        StandardPreset(String value, String sort, BigDecimal minRating) {
             this.value = value;
             this.sort = sort;
+            this.minRating = minRating;
         }
 
         private static StandardPreset from(String value) {
