@@ -2,6 +2,7 @@ package com.hairsalonproject2.salon.controller;
 
 import com.hairsalonproject2.common.integration.kakao.KakaoAddressSearchResult;
 import com.hairsalonproject2.common.integration.kakao.KakaoLocalSearchClient;
+import com.hairsalonproject2.common.integration.kakao.KakaoPlaceSearchResult;
 import com.hairsalonproject2.salon.dto.request.SalonCreateRequest;
 import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
 import com.hairsalonproject2.salon.dto.request.SalonUpdateRequest;
@@ -372,12 +373,14 @@ public class SalonController {
 
         KakaoAddressSearchResult result = coordinate.get();
         return Optional.of(SalonBranchMarkerResponse.builder()
+                .markerKey("internal-" + salon.getSalonId())
                 .salonId(salon.getSalonId())
                 .name(salon.getName())
                 .address(salon.getAddress())
                 .roadAddress(salon.getRoadAddress())
                 .phone(salon.getPhone())
                 .detailUrl("/salons/" + salon.getSalonId())
+                .external(false)
                 .longitude(result.getLongitude())
                 .latitude(result.getLatitude())
                 .build());
@@ -403,12 +406,91 @@ public class SalonController {
             return;
         }
 
-        model.addAttribute("kakaoResults", kakaoLocalSearchClient.searchSalons(
+        List<KakaoPlaceSearchResult> kakaoResults = kakaoLocalSearchClient.searchSalons(
                 request.getKeyword(),
                 request.getRegion(),
                 1,
                 15
-        ));
+        );
+        model.addAttribute("kakaoResults", kakaoResults);
+        mergeExternalBranchMarkers(model, kakaoResults);
+    }
+
+    private void mergeExternalBranchMarkers(Model model, List<KakaoPlaceSearchResult> kakaoResults) {
+        if (kakaoResults == null || kakaoResults.isEmpty()) {
+            return;
+        }
+
+        List<SalonBranchMarkerResponse> mergedMarkers = new ArrayList<>();
+        Object currentMarkers = model.asMap().get("branchMarkers");
+        if (currentMarkers instanceof List<?> markerList) {
+            for (Object marker : markerList) {
+                if (marker instanceof SalonBranchMarkerResponse branchMarker) {
+                    mergedMarkers.add(branchMarker);
+                }
+            }
+        }
+
+        int unresolvedCount = 0;
+        for (KakaoPlaceSearchResult place : kakaoResults) {
+            Optional<SalonBranchMarkerResponse> externalMarker = createExternalBranchMarker(place);
+            if (externalMarker.isPresent()) {
+                mergedMarkers.add(externalMarker.get());
+            } else {
+                unresolvedCount += 1;
+            }
+        }
+
+        if (mergedMarkers.isEmpty()) {
+            return;
+        }
+
+        model.addAttribute("branchMarkers", mergedMarkers);
+
+        boolean hasInternalMarker = mergedMarkers.stream().anyMatch(marker -> !marker.isExternal());
+        boolean hasExternalMarker = mergedMarkers.stream().anyMatch(SalonBranchMarkerResponse::isExternal);
+
+        if (hasInternalMarker && hasExternalMarker) {
+            model.addAttribute(
+                    "branchMapStatus",
+                    unresolvedCount > 0
+                            ? "?대? ?대”怨?移댁뭅???몃? 寃곌낵瑜?吏?꾩뿉 ?쒖떆?섎릺, ?쇰? ?몃? 寃곌낵?뒗 醫뚰몴 ?뺣낫媛 ?놁뼱 ?쒖쇅?섏뿀?듬땲??"
+                            : "?대? ?대”怨?移댁뭅???몃? 寃곌낵瑜?吏?꾩뿉 ?쒖떆?⑸땲??"
+            );
+            return;
+        }
+
+        if (hasExternalMarker) {
+            model.addAttribute(
+                    "branchMapStatus",
+                    unresolvedCount > 0
+                            ? "移댁뭅???몃? 寃곌낵瑜?吏?꾩뿉 ?쒖떆?섎릺, ?쇰? 寃곌낵?뒗 醫뚰몴 ?뺣낫媛 ?놁뼱 ?쒖쇅?섏뿀?듬땲??"
+                            : "移댁뭅???몃? 寃곌낵瑜?吏?꾩뿉 ?쒖떆?⑸땲??"
+            );
+        }
+    }
+
+    private Optional<SalonBranchMarkerResponse> createExternalBranchMarker(KakaoPlaceSearchResult place) {
+        if (place == null
+                || place.getExternalId() == null
+                || place.getExternalId().isBlank()
+                || place.getLatitude() == null
+                || place.getLongitude() == null) {
+            return Optional.empty();
+        }
+
+        return Optional.of(SalonBranchMarkerResponse.builder()
+                .markerKey("kakao-" + place.getExternalId())
+                .name(place.getPlaceName())
+                .address(place.getAddressName())
+                .roadAddress(place.getRoadAddressName())
+                .phone(place.getPhone())
+                .detailUrl(place.getPlaceUrl())
+                .external(true)
+                .externalLabel("KAKAO")
+                .longitude(place.getLongitude())
+                .latitude(place.getLatitude())
+                .build());
     }
 
     private void normalizeSearch(SalonSearchRequest request) {

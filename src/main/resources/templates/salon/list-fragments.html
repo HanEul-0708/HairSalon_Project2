@@ -4,12 +4,13 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <th:block th:fragment="hero(pageTitle, pageDescription, presetTitle, presetDescription)">
-    <div class="page-header">
+    <section class="catalog-hero">
+        <p class="catalog-hero__eyebrow">Salon Explorer</p>
         <h1 th:text="${pageTitle}">살롱 통합 탐색</h1>
-        <p th:text="${pageDescription}">
+        <p th:text="${presetDescription != null and !#strings.isEmpty(presetDescription) ? presetDescription : pageDescription}">
             내부 살롱 목록, 지점 안내 지도, 카카오 외부 검색 결과를 한 페이지에서 확인합니다.
         </p>
-    </div>
+    </section>
 </th:block>
 
 <th:block th:fragment="primarySearch(search, searchAction, activePreset, keywordPlaceholder, submitLabel, currentLocationActionEnabled)">
@@ -212,23 +213,37 @@
             <p>표시할 카카오 검색 결과가 없습니다.</p>
         </div>
 
-        <div class="salon-grid" th:if="${kakaoResults != null and !#lists.isEmpty(kakaoResults)}">
-            <div class="salon-card" th:each="place : ${kakaoResults}">
-                <div class="salon-card__image">KAKAO</div>
+        <div class="salon-grid salon-grid--external"
+             th:if="${kakaoResults != null and !#lists.isEmpty(kakaoResults)}">
+            <div class="salon-card salon-branch-card"
+                 th:each="place : ${kakaoResults}">
+                <div class="salon-card__image">
+                    <img th:if="${place.thumbnailUrl != null and !#strings.isEmpty(place.thumbnailUrl)}"
+                         th:src="${place.thumbnailUrl}"
+                         th:alt="${place.placeName + ' 이미지'}"
+                         loading="lazy">
+                    <span th:unless="${place.thumbnailUrl != null and !#strings.isEmpty(place.thumbnailUrl)}">KAKAO</span>
+                </div>
                 <div class="salon-card__body">
                     <div class="salon-card__title-row">
                         <h2 class="salon-card__name" th:text="${place.placeName}">외부 살롱명</h2>
                         <span class="salon-status-badge salon-status-badge--on">외부 결과</span>
                     </div>
-                    <p class="salon-card__meta"
-                       th:text="${#strings.isEmpty(place.roadAddressName) ? place.addressName : place.roadAddressName}">
-                        주소
-                    </p>
-                    <p class="salon-card__meta"
-                       th:text="${#strings.isEmpty(place.phone) ? '전화 정보 없음' : place.phone}">
-                        전화번호
-                    </p>
-                    <div class="salon-card__footer">
+                    <div class="salon-branch-card__info">
+                        <p class="salon-card__meta">
+                            <strong>주소</strong>
+                            <span th:text="${#strings.isEmpty(place.roadAddressName) ? place.addressName : place.roadAddressName}">
+                                주소
+                            </span>
+                        </p>
+                        <p class="salon-card__meta">
+                            <strong>전화</strong>
+                            <span th:text="${#strings.isEmpty(place.phone) ? '전화 정보 없음' : place.phone}">
+                                전화번호
+                            </span>
+                        </p>
+                    </div>
+                    <div class="salon-card__footer salon-card__footer--single">
                         <a class="btn btn-outline"
                            th:if="${place.placeUrl != null and !#strings.isEmpty(place.placeUrl)}"
                            th:href="${place.placeUrl}"
@@ -236,6 +251,10 @@
                            rel="noopener">
                             카카오 상세
                         </a>
+                        <span class="btn btn-outline salon-card__action-placeholder"
+                              th:unless="${place.placeUrl != null and !#strings.isEmpty(place.placeUrl)}">
+                            링크 없음
+                        </span>
                     </div>
                 </div>
             </div>

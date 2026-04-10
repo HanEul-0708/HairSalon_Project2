@@ -2,6 +2,7 @@ package com.hairsalonproject2.salon.controller;
 
 import com.hairsalonproject2.admin.controller.AdminDesignerController;
 import com.hairsalonproject2.common.integration.kakao.KakaoLocalSearchClient;
+import com.hairsalonproject2.designer.controller.DesignerController;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
 import com.hairsalonproject2.salon.dto.response.SalonSummaryResponse;
 import com.hairsalonproject2.salon.service.ExternalSalonSyncService;
@@ -17,6 +18,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,6 +29,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -59,6 +63,9 @@ class SalonControllerWebMvcTest {
     private ServiceController serviceController;
 
     @InjectMocks
+    private DesignerController designerController;
+
+    @InjectMocks
     private AdminDesignerController adminDesignerController;
 
     private MockMvc mockMvc;
@@ -74,13 +81,17 @@ class SalonControllerWebMvcTest {
                         .build()
         ));
         when(salonServiceQueryService.list(any())).thenReturn(List.of());
+        when(salonServiceQueryService.list(any(), anyInt(), anyInt()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 8), 0));
+        when(designerQueryService.search(any(), anyInt(), anyInt()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 9), 0));
         when(kakaoLocalSearchClient.isConfigured()).thenReturn(false);
 
         InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
         viewResolver.setPrefix("/templates/");
         viewResolver.setSuffix(".html");
 
-        mockMvc = MockMvcBuilders.standaloneSetup(salonController, serviceController, adminDesignerController)
+        mockMvc = MockMvcBuilders.standaloneSetup(salonController, serviceController, designerController, adminDesignerController)
                 .setControllerAdvice(new BDomainPageExceptionHandler())
                 .setViewResolvers(viewResolver)
                 .build();
@@ -115,6 +126,50 @@ class SalonControllerWebMvcTest {
                         )))
                 .andExpect(status().isOk())
                 .andExpect(view().name("service/form"));
+    }
+
+    @Test
+    void designerListLoadsWithoutExplicitSearchFlag() throws Exception {
+        mockMvc.perform(get("/designers"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("designer/list"))
+                .andExpect(model().attribute("searched", true));
+    }
+
+    @Test
+    void designerRankingRouteRedirectsToSortedList() throws Exception {
+        mockMvc.perform(get("/designers/ranking"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/designers?sortBy=likes"));
+    }
+
+    @Test
+    void newDesignerRouteRedirectsToNewestList() throws Exception {
+        mockMvc.perform(get("/designers/new"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/designers?sortBy=newest"));
+    }
+
+    @Test
+    void salonServiceListLoadsWithoutExplicitSearchFlag() throws Exception {
+        mockMvc.perform(get("/salon-services"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("service/list"))
+                .andExpect(model().attribute("searched", true));
+    }
+
+    @Test
+    void popularServiceRouteRedirectsToSortedList() throws Exception {
+        mockMvc.perform(get("/salon-services/popular"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/salon-services?sortBy=rating"));
+    }
+
+    @Test
+    void trendServiceRouteRedirectsToTrendList() throws Exception {
+        mockMvc.perform(get("/salon-services/trend"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/salon-services?sortBy=trend"));
     }
 
     @Test

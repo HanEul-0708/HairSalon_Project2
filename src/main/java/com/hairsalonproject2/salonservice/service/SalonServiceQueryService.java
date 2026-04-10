@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,15 +36,12 @@ public class SalonServiceQueryService {
     }
 
     public Page<SalonServiceSummaryResponse> list(SalonServiceSearchRequest request, int page, int size) {
-        List<SalonServiceSummaryResponse> filtered = salonServiceRepository.searchServices(
-                        request.getKeyword(),
-                        request.getSalonKeyword(),
-                        request.getRegion(),
-                        request.getMaxPrice(),
-                        request.getMaxDuration()
-                ).stream()
-                .map(this::toSummary)
-                .sorted(serviceComparator(request.getSortBy()))
+        SalonServiceSearchRequest safeRequest = request == null ? new SalonServiceSearchRequest() : request;
+        List<SalonServiceSummaryResponse> searchResults = searchServices(safeRequest);
+        Map<String, Long> trendFrequency = buildTrendFrequency(searchResults);
+
+        List<SalonServiceSummaryResponse> filtered = searchResults.stream()
+                .sorted(serviceComparator(safeRequest.getSortBy(), trendFrequency))
                 .toList();
 
         int safeSize = Math.max(size, 1);
@@ -110,7 +109,8 @@ public class SalonServiceQueryService {
         return SalonServiceDetailResponse.builder().serviceId(service.getServiceId()).salonId(service.getSalon().getSalonId()).salonName(service.getSalon().getName()).name(service.getName()).price(service.getPrice()).duration(service.getDuration()).description(service.getDescription()).build();
     }
 
-    private Comparator<SalonServiceSummaryResponse> serviceComparator(String sortBy) {
+    private Comparator<SalonServiceSummaryResponse> serviceComparator(String sortBy,
+                                                                     Map<String, Long> trendFrequency) {
         if ("duration".equalsIgnoreCase(sortBy)) {
             return Comparator.comparing(SalonServiceSummaryResponse::getDuration)
                     .thenComparing(SalonServiceSummaryResponse::getPrice)
@@ -130,8 +130,46 @@ public class SalonServiceQueryService {
                     .thenComparing(SalonServiceSummaryResponse::getPrice);
         }
 
+        if ("trend".equalsIgnoreCase(sortBy)) {
+            return Comparator.comparing(
+                            (SalonServiceSummaryResponse service) -> trendFrequency.getOrDefault(normalizeServiceName(service.getName()), 0L),
+                            Comparator.reverseOrder())
+                    .thenComparing(
+                            SalonServiceSummaryResponse::getAverageRating,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(SalonServiceSummaryResponse::getPrice)
+                    .thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
+        }
+
         return Comparator.comparing(SalonServiceSummaryResponse::getPrice)
                 .thenComparing(SalonServiceSummaryResponse::getDuration)
                 .thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
+    }
+
+    private List<SalonServiceSummaryResponse> searchServices(SalonServiceSearchRequest request) {
+        return salonServiceRepository.searchServices(
+                        request.getKeyword(),
+                        request.getSalonKeyword(),
+                        request.getRegion(),
+                        request.getMaxPrice(),
+                        request.getMaxDuration()
+                ).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    private Map<String, Long> buildTrendFrequency(List<SalonServiceSummaryResponse> services) {
+        return services.stream()
+                .collect(Collectors.groupingBy(
+                        service -> normalizeServiceName(service.getName()),
+                        Collectors.counting()
+                ));
+    }
+
+    private String normalizeServiceName(String name) {
+        if (name == null) {
+            return "";
+        }
+        return name.trim().replaceAll("\\s+", " ").toLowerCase();
     }
 }

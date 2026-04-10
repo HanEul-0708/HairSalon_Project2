@@ -6,12 +6,11 @@ import com.hairsalonproject2.salonservice.dto.request.SalonServiceUpdateRequest;
 import com.hairsalonproject2.salonservice.service.SalonServiceQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
 @RequiredArgsConstructor
@@ -31,13 +30,12 @@ public class ServiceController {
     public String list(@ModelAttribute SalonServiceSearchRequest request,
                        @RequestParam(defaultValue = "1") int page,
                        Model model) {
-        Page<?> resultPage = request.hasSearchRequest()
-                ? salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE)
-                : new PageImpl<>(java.util.Collections.emptyList(), PageRequest.of(0, SERVICES_PER_PAGE), 0);
+        request.setSearched(true);
+        Page<?> resultPage = salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE);
 
         model.addAttribute("services", resultPage.getContent());
         model.addAttribute("search", request);
-        model.addAttribute("searched", request.hasSearchRequest());
+        model.addAttribute("searched", true);
         model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
         model.addAttribute("totalPages", resultPage.getTotalPages());
         model.addAttribute("totalServiceCount", resultPage.getTotalElements());
@@ -45,6 +43,22 @@ public class ServiceController {
                 ? java.util.Collections.emptyList()
                 : java.util.stream.IntStream.rangeClosed(1, resultPage.getTotalPages()).boxed().toList());
         return "service/list";
+    }
+
+    @GetMapping("/popular")
+    public String popular(@ModelAttribute SalonServiceSearchRequest request) {
+        if (request.getSortBy() == null || request.getSortBy().isBlank()) {
+            request.setSortBy("rating");
+        }
+        return buildListRedirect(request);
+    }
+
+    @GetMapping("/trend")
+    public String trend(@ModelAttribute SalonServiceSearchRequest request) {
+        if (request.getSortBy() == null || request.getSortBy().isBlank()) {
+            request.setSortBy("trend");
+        }
+        return buildListRedirect(request);
     }
 
     @GetMapping("/{serviceId}")
@@ -98,5 +112,30 @@ public class ServiceController {
     public String delete(@PathVariable Integer serviceId) {
         salonServiceQueryService.delete(serviceId);
         return "redirect:/salon-services";
+    }
+
+    private String buildListRedirect(SalonServiceSearchRequest request) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/salon-services");
+
+        if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
+            builder.queryParam("keyword", request.getKeyword());
+        }
+        if (request.getSalonKeyword() != null && !request.getSalonKeyword().isBlank()) {
+            builder.queryParam("salonKeyword", request.getSalonKeyword());
+        }
+        if (request.getRegion() != null && !request.getRegion().isBlank()) {
+            builder.queryParam("region", request.getRegion());
+        }
+        if (request.getMaxPrice() != null) {
+            builder.queryParam("maxPrice", request.getMaxPrice());
+        }
+        if (request.getMaxDuration() != null) {
+            builder.queryParam("maxDuration", request.getMaxDuration());
+        }
+        if (request.getSortBy() != null && !request.getSortBy().isBlank()) {
+            builder.queryParam("sortBy", request.getSortBy());
+        }
+
+        return "redirect:" + builder.build().encode().toUriString();
     }
 }

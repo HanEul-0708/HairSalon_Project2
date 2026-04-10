@@ -295,7 +295,7 @@ hr {
 main {
     display: block;
     width: 100%;
-    padding: var(--spacing-xl) 0;
+    padding: 0 !important;
 }
 
 .layout-main {

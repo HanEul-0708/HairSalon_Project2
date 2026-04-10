@@ -4,13 +4,12 @@ import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -40,13 +39,12 @@ public class DesignerController {
     public String list(@ModelAttribute DesignerSearchRequest request,
                        @RequestParam(defaultValue = "1") int page,
                        Model model) {
-        Page<?> resultPage = request.hasSearchRequest()
-                ? designerQueryService.search(request, page - 1, DESIGNERS_PER_PAGE)
-                : new PageImpl<>(java.util.Collections.emptyList(), PageRequest.of(0, DESIGNERS_PER_PAGE), 0);
+        request.setSearched(true);
+        Page<?> resultPage = designerQueryService.search(request, page - 1, DESIGNERS_PER_PAGE);
 
         model.addAttribute("designers", resultPage.getContent());
         model.addAttribute("search", request);
-        model.addAttribute("searched", request.hasSearchRequest());
+        model.addAttribute("searched", true);
         model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
         model.addAttribute("totalPages", resultPage.getTotalPages());
         model.addAttribute("totalDesignerCount", resultPage.getTotalElements());
@@ -54,6 +52,22 @@ public class DesignerController {
                 ? java.util.Collections.emptyList()
                 : java.util.stream.IntStream.rangeClosed(1, resultPage.getTotalPages()).boxed().toList());
         return "designer/list";
+    }
+
+    @GetMapping("/ranking")
+    public String ranking(@ModelAttribute DesignerSearchRequest request) {
+        if (request.getSortBy() == null || request.getSortBy().isBlank()) {
+            request.setSortBy("likes");
+        }
+        return buildListRedirect(request);
+    }
+
+    @GetMapping("/new")
+    public String newlyAdded(@ModelAttribute DesignerSearchRequest request) {
+        if (request.getSortBy() == null || request.getSortBy().isBlank()) {
+            request.setSortBy("newest");
+        }
+        return buildListRedirect(request);
     }
 
     /**
@@ -106,5 +120,30 @@ public class DesignerController {
 
     private boolean isAuthenticated(Authentication authentication) {
         return authentication != null && !(authentication instanceof AnonymousAuthenticationToken);
+    }
+
+    private String buildListRedirect(DesignerSearchRequest request) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/designers");
+
+        if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
+            builder.queryParam("keyword", request.getKeyword());
+        }
+        if (request.getSalonKeyword() != null && !request.getSalonKeyword().isBlank()) {
+            builder.queryParam("salonKeyword", request.getSalonKeyword());
+        }
+        if (request.getMinRating() != null) {
+            builder.queryParam("minRating", request.getMinRating());
+        }
+        if (request.getMinCareerYears() != null) {
+            builder.queryParam("minCareerYears", request.getMinCareerYears());
+        }
+        if (request.getMinReviewCount() != null) {
+            builder.queryParam("minReviewCount", request.getMinReviewCount());
+        }
+        if (request.getSortBy() != null && !request.getSortBy().isBlank()) {
+            builder.queryParam("sortBy", request.getSortBy());
+        }
+
+        return "redirect:" + builder.build().encode().toUriString();
     }
 }

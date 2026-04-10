@@ -48,19 +48,20 @@ public class DesignerQueryService {
     }
 
     public Page<DesignerSummaryResponse> search(DesignerSearchRequest request, int page, int size) {
+        DesignerSearchRequest safeRequest = request == null ? new DesignerSearchRequest() : request;
         Map<Integer, DesignerRatingRow> ratings = designerRepository.findDesignerRatingRows()
                 .stream()
                 .collect(Collectors.toMap(DesignerRatingRow::getDesignerId, Function.identity()));
 
-        List<DesignerSummaryResponse> filtered = designerRepository.findAll(DesignerSpecifications.bySearch(request))
+        List<DesignerSummaryResponse> filtered = designerRepository.findAll(DesignerSpecifications.bySearch(safeRequest))
                 .stream()
                 .map(d -> toSummary(d, ratings.get(d.getDesignerId())))
-                .filter(d -> request.getMinRating() == null
-                        || d.getAverageRating().compareTo(request.getMinRating()) >= 0)
-                .filter(d -> request.getMinReviewCount() == null
-                        || d.getReviewCount() >= request.getMinReviewCount())
+                .filter(d -> safeRequest.getMinRating() == null
+                        || d.getAverageRating().compareTo(safeRequest.getMinRating()) >= 0)
+                .filter(d -> safeRequest.getMinReviewCount() == null
+                        || d.getReviewCount() >= safeRequest.getMinReviewCount())
                 .sorted(
-                        designerComparator(request.getSortBy())
+                        designerComparator(safeRequest.getSortBy())
                 )
                 .toList();
 
@@ -279,6 +280,19 @@ public class DesignerQueryService {
                     .thenComparing(
                             DesignerSummaryResponse::getAverageRating,
                             Comparator.nullsLast(Comparator.reverseOrder()));
+        }
+
+        if ("newest".equalsIgnoreCase(sortBy)) {
+            return Comparator.comparing(
+                            DesignerSummaryResponse::getCreatedAt,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                            DesignerSummaryResponse::getAverageRating,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                            DesignerSummaryResponse::getLikeCount,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(DesignerSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
         }
 
         return Comparator.comparing(

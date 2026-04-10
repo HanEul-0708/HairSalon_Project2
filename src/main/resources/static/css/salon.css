@@ -11,7 +11,6 @@
 }
 
 .salon-list-page {
-    padding-top: 0;
     max-width: clamp(1200px, 74vw, 1600px);
 }
 
@@ -19,23 +18,28 @@
     padding-top: 0;
 }
 
-.salon-list-page .page-header {
-    position: relative;
-    background: transparent;
-    border-bottom: none;
-    margin: 0;
-    padding-left: clamp(14px, 1.3vw, 24px);
+#salon-list-hero {
+    margin-bottom: 32px;
 }
 
-.salon-list-page .page-header::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 10px;
-    bottom: 10px;
-    width: 3px;
-    border-radius: 999px;
-    background: linear-gradient(180deg, #c9a84c 0%, #8f7134 100%);
+#salon-list-hero .catalog-hero {
+    margin-bottom: 0;
+}
+
+#salon-list-hero .catalog-hero > h1 {
+    margin: 0 0 8px;
+    color: var(--gold);
+    font-size: clamp(1.9rem, 2.8vw, 2.3rem);
+    line-height: 1.24;
+    letter-spacing: -0.03em;
+}
+
+#salon-list-hero .catalog-hero > p:last-child {
+    margin: 0 auto;
+    max-width: 700px;
+    color: #7b6e56;
+    font-size: 1rem;
+    line-height: 1.72;
 }
 
 .salon-tab-nav {
@@ -234,6 +238,7 @@
     gap: 10px;
     align-content: start;
     align-self: stretch;
+    min-width: 0;
 }
 
 .salon-search-form__shortcut-group {
@@ -243,6 +248,33 @@
     align-items: center;
     min-height: 40px;
     height: 40px;
+    width: 100%;
+}
+
+.salon-search-form__stack--keyword > .salon-search-form__shortcut-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+}
+
+.salon-search-form__stack--keyword > .salon-search-form__shortcut-group .salon-tab-nav__link {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.salon-search-form__stack--region > .salon-search-form__shortcut-group {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.salon-search-form__stack--region > .salon-search-form__shortcut-group .salon-tab-nav__link--map-action {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 .salon-search-form__shortcut-group--empty {
@@ -570,8 +602,14 @@
 
 .salon-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(216px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(216px, 216px));
+    justify-content: start;
     gap: 16px;
+}
+
+.salon-grid--external {
+    grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
+    justify-content: start;
 }
 
 .salon-card {
@@ -601,8 +639,27 @@
     font-size: 1rem;
 }
 
+.salon-card__image img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
 .salon-card__body {
     padding: 16px;
+}
+
+.salon-grid--external .salon-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.salon-grid--external .salon-card__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
 }
 
 .salon-card__name {
@@ -626,12 +683,29 @@
     gap: 8px;
 }
 
+.salon-card__footer--single {
+    grid-template-columns: 1fr;
+}
+
+.salon-grid--external .salon-card__footer {
+    margin-top: auto;
+}
+
 .salon-grid .salon-card__footer .btn {
     min-height: 38px;
     padding: 0 12px;
     border-radius: 12px;
     font-size: 0.82rem;
     justify-content: center;
+}
+
+.salon-card__action-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    opacity: 0.7;
+    pointer-events: none;
 }
 
 .salon-branch-card__info {
@@ -805,7 +879,11 @@
 
 @media (max-width: 1024px) {
     .salon-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(200px, 200px));
+    }
+
+    .salon-grid--external {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
 
     .salon-mode-grid {
