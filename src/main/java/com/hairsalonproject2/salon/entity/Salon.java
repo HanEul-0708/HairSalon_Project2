@@ -41,12 +41,6 @@ public class Salon {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(precision = 10, scale = 7)
-    private BigDecimal latitude;
-
-    @Column(precision = 10, scale = 7)
-    private BigDecimal longitude;
-
     @Column(name = "image_url", length = 255)
     private String imageUrl;
 

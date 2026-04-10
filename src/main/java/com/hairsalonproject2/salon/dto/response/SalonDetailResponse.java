@@ -19,8 +19,6 @@ public class SalonDetailResponse {
     private String roadAddress;
     private String phone;
     private String description;
-    private BigDecimal latitude;
-    private BigDecimal longitude;
     private String imageUrl;
     private String placeUrl;
     private Boolean reservable;

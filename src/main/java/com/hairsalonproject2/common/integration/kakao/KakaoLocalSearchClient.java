@@ -13,18 +13,33 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @RequiredArgsConstructor
 public class KakaoLocalSearchClient {
     private final ObjectMapper objectMapper;
     private final RestClient restClient = RestClient.create();
+    private final Map<String, Optional<KakaoAddressSearchResult>> addressSearchCache = new ConcurrentHashMap<>();
 
     @Value("${kakao.rest-api-key:}")
     private String restApiKey;
 
+    @Value("${kakao.javascript-key:}")
+    private String javascriptKey;
+
+    public boolean isConfigured() {
+        return restApiKey != null && !restApiKey.isBlank();
+    }
+
+    public boolean isJavascriptConfigured() {
+        return javascriptKey != null && !javascriptKey.isBlank();
+    }
+
     public List<KakaoPlaceSearchResult> searchSalons(String keyword, String region, int page, int size) {
-        if (restApiKey == null || restApiKey.isBlank()) {
+        if (!isConfigured()) {
             return List.of();
         }
 
@@ -38,8 +53,6 @@ public class KakaoLocalSearchClient {
                 .queryParam("query", query)
                 .queryParam("page", page)
                 .queryParam("size", size)
-                // query 값(한글 포함)을 제대로 percent-encoding 해야 합니다.
-                // build(true)는 "이미 인코딩된 URI"로 취급해서 한글이 그대로 들어갈 수 있습니다.
                 .build(false)
                 .toUriString();
 
@@ -62,8 +75,6 @@ public class KakaoLocalSearchClient {
                         .roadAddressName(node.path("road_address_name").asText())
                         .phone(node.path("phone").asText())
                         .placeUrl(node.path("place_url").asText())
-                        .longitude(new BigDecimal(node.path("x").asText("0")))
-                        .latitude(new BigDecimal(node.path("y").asText("0")))
                         .build());
             }
 
@@ -71,6 +82,19 @@ public class KakaoLocalSearchClient {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse Kakao API response", e);
         }
+    }
+
+    public Optional<KakaoAddressSearchResult> searchAddress(String address) {
+        if (!isConfigured()) {
+            return Optional.empty();
+        }
+
+        String normalizedAddress = normalize(address);
+        if (normalizedAddress.isBlank()) {
+            return Optional.empty();
+        }
+
+        return addressSearchCache.computeIfAbsent(normalizedAddress, this::requestAddressSafely);
     }
 
     String buildSalonQuery(String keyword, String region) {
@@ -94,5 +118,47 @@ public class KakaoLocalSearchClient {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private Optional<KakaoAddressSearchResult> requestAddressSafely(String address) {
+        try {
+            return requestAddress(address);
+        } catch (Exception ex) {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<KakaoAddressSearchResult> requestAddress(String address) throws Exception {
+        String uri = UriComponentsBuilder
+                .fromUriString("https://dapi.kakao.com/v2/local/search/address.json")
+                .queryParam("query", address)
+                .build(false)
+                .toUriString();
+
+        String body = restClient.get()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + restApiKey)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .body(String.class);
+
+        JsonNode root = objectMapper.readTree(body);
+        JsonNode first = root.path("documents").path(0);
+        if (first.isMissingNode() || first.isNull()) {
+            return Optional.empty();
+        }
+
+        String longitude = first.path("x").asText("");
+        String latitude = first.path("y").asText("");
+        if (longitude.isBlank() || latitude.isBlank()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(KakaoAddressSearchResult.builder()
+                .addressName(first.path("address_name").asText(""))
+                .roadAddressName(first.path("road_address").path("address_name").asText(""))
+                .longitude(new BigDecimal(longitude))
+                .latitude(new BigDecimal(latitude))
+                .build());
     }
 }

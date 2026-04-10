@@ -15,11 +15,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,53 +45,69 @@ class SalonQueryServiceTest {
     private SalonQueryService salonQueryService;
 
     @Test
-    void distanceSortExcludesSalonsWithoutCoordinates() {
+    void recommendedSearchReturnsMatchedSalonsWithoutCoordinateFiltering() {
         SalonSearchRequest request = new SalonSearchRequest();
-        request.setLatitude(BigDecimal.valueOf(37.5665));
-        request.setLongitude(BigDecimal.valueOf(126.9780));
-        request.setSort("distance");
 
-        Salon nearbySalon = Salon.builder()
+        Salon firstSalon = Salon.builder()
                 .salonId(1)
-                .name("가까운 살롱")
-                .address("서울 중구")
-                .latitude(BigDecimal.valueOf(37.5670))
-                .longitude(BigDecimal.valueOf(126.9785))
+                .name("First Salon")
+                .address("Seoul Jung-gu")
                 .reservable(true)
                 .build();
 
-        Salon noCoordinateSalon = Salon.builder()
+        Salon secondSalon = Salon.builder()
                 .salonId(2)
-                .name("좌표 없는 살롱")
-                .address("서울 강남구")
+                .name("Second Salon")
+                .address("Seoul Gangnam-gu")
                 .reservable(true)
                 .build();
 
-        when(salonRepository.findAll(any(Specification.class))).thenReturn(List.of(nearbySalon, noCoordinateSalon));
+        when(salonRepository.findAll(any(Specification.class))).thenReturn(List.of(firstSalon, secondSalon));
 
         List<SalonSummaryResponse> results = salonQueryService.search(request);
 
-        assertThat(results).extracting(SalonSummaryResponse::getSalonId).containsExactly(1);
+        assertThat(results).extracting(SalonSummaryResponse::getSalonId).containsExactly(1, 2);
     }
 
     @Test
     void keywordSearchUsesSalonServiceKeywordRepository() {
         SalonSearchRequest request = new SalonSearchRequest();
-        request.setKeyword("펌");
+        request.setKeyword("perm");
+        request.setServiceKeywordSearchEnabled(true);
 
         Salon salon = Salon.builder()
                 .salonId(10)
-                .name("펌 전문 살롱")
-                .address("서울 서초구")
+                .name("Keyword Salon")
+                .address("Seoul Seocho-gu")
                 .reservable(true)
                 .build();
 
-        when(salonServiceRepository.findDistinctSalonIdsByKeyword("펌")).thenReturn(List.of(10));
+        when(salonServiceRepository.findDistinctSalonIdsByKeyword("perm")).thenReturn(List.of(10));
         when(salonRepository.findAll(any(Specification.class))).thenReturn(List.of(salon));
 
         List<SalonSummaryResponse> results = salonQueryService.search(request);
 
-        verify(salonServiceRepository).findDistinctSalonIdsByKeyword("펌");
+        verify(salonServiceRepository).findDistinctSalonIdsByKeyword("perm");
+        assertThat(results).hasSize(1);
+    }
+
+    @Test
+    void defaultKeywordSearchDoesNotUseSalonServiceKeywordRepository() {
+        SalonSearchRequest request = new SalonSearchRequest();
+        request.setKeyword("gangnam");
+
+        Salon salon = Salon.builder()
+                .salonId(20)
+                .name("Gangnam Salon")
+                .address("Seoul Gangnam-gu")
+                .reservable(true)
+                .build();
+
+        when(salonRepository.findAll(any(Specification.class))).thenReturn(List.of(salon));
+
+        List<SalonSummaryResponse> results = salonQueryService.search(request);
+
+        verify(salonServiceRepository, never()).findDistinctSalonIdsByKeyword(any());
         assertThat(results).hasSize(1);
     }
 }

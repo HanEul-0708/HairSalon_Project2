@@ -61,8 +61,6 @@ public class ExternalSalonSyncService {
             salon.setAddress(normalize(place.getAddressName()));
             salon.setRoadAddress(normalize(place.getRoadAddressName()));
             salon.setPhone(normalize(place.getPhone()));
-            salon.setLatitude(place.getLatitude());
-            salon.setLongitude(place.getLongitude());
             salon.setPlaceUrl(normalize(place.getPlaceUrl()));
             if (salon.getReservable() == null) {
                 salon.setReservable(Boolean.FALSE);

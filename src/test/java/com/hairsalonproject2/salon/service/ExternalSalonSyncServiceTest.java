@@ -20,7 +20,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,8 +67,6 @@ class ExternalSalonSyncServiceTest {
                 .roadAddressName("1 Teheran-ro")
                 .phone("02-123-4567")
                 .placeUrl("https://place.map.kakao.com/1")
-                .latitude(new BigDecimal("37.1234567"))
-                .longitude(new BigDecimal("127.1234567"))
                 .build();
 
         when(kakaoLocalSearchClient.searchSalons("Test", "Gangnam", 1, 15)).thenReturn(List.of(result));
@@ -106,8 +103,6 @@ class ExternalSalonSyncServiceTest {
                 .roadAddressName(" ")
                 .phone(" ")
                 .placeUrl("")
-                .latitude(new BigDecimal("37.1234567"))
-                .longitude(new BigDecimal("127.1234567"))
                 .build();
 
         when(kakaoLocalSearchClient.searchSalons("Test", "Gangnam", 1, 15)).thenReturn(List.of(result));
@@ -139,8 +134,6 @@ class ExternalSalonSyncServiceTest {
                 .externalId("kakao-3")
                 .placeName("Test Hair")
                 .addressName("Seoul Gangnam")
-                .latitude(new BigDecimal("37.1234567"))
-                .longitude(new BigDecimal("127.1234567"))
                 .build();
         Salon existingSalon = new Salon();
         existingSalon.setSalonId(3);
@@ -163,8 +156,6 @@ class ExternalSalonSyncServiceTest {
                 .externalId("kakao-4")
                 .placeName("Rule Hair")
                 .addressName("Seoul Gangnam")
-                .latitude(new BigDecimal("37.1234567"))
-                .longitude(new BigDecimal("127.1234567"))
                 .build();
         List<Designer> designers = List.of(Designer.builder().name("Rule Hair Stylist").careerYears(5).build());
         List<SalonService> services = List.of(SalonService.builder().name("Perm").price(120000).duration(150).build());
@@ -198,8 +189,6 @@ class ExternalSalonSyncServiceTest {
                 .externalId("kakao-5")
                 .placeName("Link Hair")
                 .addressName("Seoul Gangnam")
-                .latitude(new BigDecimal("37.1234567"))
-                .longitude(new BigDecimal("127.1234567"))
                 .build();
         Designer junior = Designer.builder().designerId(10).name("Link Hair Stylist").careerYears(2).build();
         Designer senior = Designer.builder().designerId(11).name("Link Hair Director").careerYears(9).build();

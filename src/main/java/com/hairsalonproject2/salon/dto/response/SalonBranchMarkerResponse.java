@@ -7,13 +7,13 @@ import java.math.BigDecimal;
 
 @Getter
 @Builder
-public class SalonMapResultResponse {
+public class SalonBranchMarkerResponse {
     private Integer salonId;
     private String name;
     private String address;
     private String roadAddress;
-    private String placeUrl;
-    private BigDecimal latitude;
+    private String phone;
+    private String detailUrl;
     private BigDecimal longitude;
+    private BigDecimal latitude;
 }
-
