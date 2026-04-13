@@ -1,5 +1,6 @@
 package com.hairsalonproject2.review.controller;
 
+import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.review.dto.ReviewImageResponse;
 import com.hairsalonproject2.review.service.ReviewImageService;
@@ -23,7 +24,7 @@ public class ReviewImageController {
                                            @RequestParam("file") MultipartFile file,
                                            @RequestParam(value = "sortOrder", required = false) Integer sortOrder) {
         return reviewImageService.uploadReviewImage(
-                userDetails.getMember().getMemberId(),
+                memberId(userDetails),
                 isAdmin(userDetails),
                 reviewId,
                 file,
@@ -40,7 +41,7 @@ public class ReviewImageController {
     public String deleteImage(@AuthenticationPrincipal CustomUserDetails userDetails,
                               @PathVariable Integer imageId) {
         reviewImageService.deleteImage(
-                userDetails.getMember().getMemberId(),
+                memberId(userDetails),
                 isAdmin(userDetails),
                 imageId
         );
@@ -48,6 +49,10 @@ public class ReviewImageController {
     }
 
     private boolean isAdmin(CustomUserDetails userDetails) {
-        return userDetails.getMember().getRole().name().equals("ADMIN");
+        return userDetails.getMember().getRole() == MemberRole.ADMIN;
+    }
+
+    private String memberId(CustomUserDetails userDetails) {
+        return userDetails.getMember().getMemberId();
     }
 }

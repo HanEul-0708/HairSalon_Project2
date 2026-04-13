@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,7 +54,7 @@ public class ReviewServiceImpl implements ReviewService {
         Reservation reservation = reservationRepository.findById(request.getReservationId())
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
 
-        if (!reservation.getMember().getMemberId().equals(loginMemberId)) {
+        if (!Objects.equals(reservation.getMember().getMemberId(), loginMemberId)) {
             throw new IllegalArgumentException("Only the reservation owner can write a review.");
         }
 
@@ -135,7 +136,7 @@ public class ReviewServiceImpl implements ReviewService {
     public List<ReviewResponse> getReviewsByMember(String memberId, String loginMemberId) {
         return reviewRepository.findByMember_MemberId(memberId).stream()
                 .map(review -> toResponse(review, loginMemberId))
-                .sorted(Comparator.comparing(ReviewResponse::getCreatedAt).reversed())
+                .sorted(latestReviewFirst())
                 .toList();
     }
 
@@ -144,7 +145,7 @@ public class ReviewServiceImpl implements ReviewService {
         return designerRepository.findByMember_MemberId(memberId)
                 .map(designer -> reviewRepository.findByDesigner_Salon_SalonId(designer.getSalon().getSalonId()).stream()
                         .map(review -> toResponse(review, loginMemberId))
-                        .sorted(Comparator.comparing(ReviewResponse::getCreatedAt).reversed())
+                        .sorted(latestReviewFirst())
                         .toList())
                 .orElseGet(List::of);
     }
@@ -215,7 +216,10 @@ public class ReviewServiceImpl implements ReviewService {
                 .sorted(Comparator.comparing(DesignerRankingResponse::getAverageRating, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(DesignerRankingResponse::getReviewCount, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(DesignerRankingResponse::getCareerYears, Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(DesignerRankingResponse::getDesignerName, String.CASE_INSENSITIVE_ORDER))
+                        .thenComparing(
+                                DesignerRankingResponse::getDesignerName,
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                        ))
                 .limit(3)
                 .toList();
     }
@@ -254,7 +258,7 @@ public class ReviewServiceImpl implements ReviewService {
                         neighborhood
                 ))
                 .map(review -> toResponse(review, null))
-                .sorted(Comparator.comparing(ReviewResponse::getCreatedAt).reversed())
+                .sorted(latestReviewFirst())
                 .limit(3)
                 .toList();
     }
@@ -295,7 +299,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     private void validateReviewAccess(Review review, String loginMemberId, boolean isAdmin) {
-        if (!isAdmin && !review.getMember().getMemberId().equals(loginMemberId)) {
+        if (!isAdmin && !Objects.equals(review.getMember().getMemberId(), loginMemberId)) {
             throw new AccessDeniedException("You can only manage your own review.");
         }
     }
@@ -339,16 +343,27 @@ public class ReviewServiceImpl implements ReviewService {
 
     private Comparator<ReviewResponse> resolveComparator(String sortBy) {
         if ("rating".equalsIgnoreCase(sortBy)) {
-            return Comparator.comparing(ReviewResponse::getRating).reversed()
-                    .thenComparing(ReviewResponse::getCreatedAt, Comparator.reverseOrder());
+            return Comparator.comparing(
+                            ReviewResponse::getRating,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(latestReviewFirst());
         }
 
         if ("likes".equalsIgnoreCase(sortBy)) {
-            return Comparator.comparing(ReviewResponse::getLikeCount).reversed()
-                    .thenComparing(ReviewResponse::getCreatedAt, Comparator.reverseOrder());
+            return Comparator.comparing(
+                            ReviewResponse::getLikeCount,
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(latestReviewFirst());
         }
 
-        return Comparator.comparing(ReviewResponse::getCreatedAt).reversed();
+        return latestReviewFirst();
+    }
+
+    private Comparator<ReviewResponse> latestReviewFirst() {
+        return Comparator.comparing(
+                ReviewResponse::getCreatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())
+        );
     }
 
     private boolean isLikedByCurrentUser(Integer reviewId, String loginMemberId) {

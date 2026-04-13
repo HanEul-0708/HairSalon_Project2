@@ -13,6 +13,15 @@ public interface SalonServiceRepository extends JpaRepository<SalonService, Inte
     boolean existsBySalonSalonId(Integer salonId);
 
     @Query("""
+            select distinct ss.salon.salonId
+            from SalonService ss
+            where lower(ss.name) like lower(concat('%', :keyword, '%'))
+               or lower(coalesce(ss.description, '')) like lower(concat('%', :keyword, '%'))
+            order by ss.salon.salonId asc
+            """)
+    List<Integer> findDistinctSalonIdsByKeyword(@Param("keyword") String keyword);
+
+    @Query("""
             select ss from SalonService ss
             where (:keyword is null or lower(ss.name) like lower(concat('%', :keyword, '%')))
             order by ss.price asc, ss.serviceId asc

@@ -8,8 +8,7 @@ import java.util.List;
 @Getter
 @Builder
 public class SalonMapResultsPayload {
-    private List<SalonMapResultResponse> results;
+    private List<SalonBranchMarkerResponse> results;
     private String debug;
     private String error;
 }
-

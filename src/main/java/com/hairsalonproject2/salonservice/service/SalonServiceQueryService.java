@@ -1,5 +1,6 @@
 package com.hairsalonproject2.salonservice.service;
 
+import com.hairsalonproject2.common.support.PageUtils;
 import com.hairsalonproject2.salon.entity.Salon;
 import com.hairsalonproject2.salon.repository.SalonRepository;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceCreateRequest;
@@ -13,8 +14,6 @@ import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,35 +33,27 @@ public class SalonServiceQueryService {
     }
 
     public Page<SalonServiceSummaryResponse> list(SalonServiceSearchRequest request, int page, int size) {
+        SalonServiceSearchRequest safeRequest = request == null ? new SalonServiceSearchRequest() : request;
         List<SalonServiceSummaryResponse> filtered = salonServiceRepository.searchServices(
-                        request.getKeyword(),
-                        request.getSalonKeyword(),
-                        request.getRegion(),
-                        request.getCity(),
-                        request.getDistrict(),
-                        request.getNeighborhood(),
-                        request.getMaxPrice(),
-                        request.getMaxDuration()
+                        safeRequest.getKeyword(),
+                        safeRequest.getSalonKeyword(),
+                        safeRequest.getRegion(),
+                        safeRequest.getCity(),
+                        safeRequest.getDistrict(),
+                        safeRequest.getNeighborhood(),
+                        safeRequest.getMaxPrice(),
+                        safeRequest.getMaxDuration()
                 ).stream()
                 .map(this::toSummary)
-                .sorted(serviceComparator(request.getSortBy()))
+                .sorted(serviceComparator(safeRequest.getSortBy()))
                 .toList();
 
-        int safeSize = Math.max(size, 1);
-        int maxPage = filtered.isEmpty() ? 0 : (filtered.size() - 1) / safeSize;
-        int safePage = Math.min(Math.max(page, 0), maxPage);
-        int fromIndex = Math.min(safePage * safeSize, filtered.size());
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-
-        return new PageImpl<>(
-                filtered.subList(fromIndex, toIndex),
-                PageRequest.of(safePage, safeSize),
-                filtered.size()
-        );
+        return PageUtils.sliceZeroBased(filtered, page, size);
     }
 
     public SalonServiceDetailResponse getDetail(Integer serviceId) {
-        SalonService service = salonServiceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("SalonService not found: " + serviceId));
+        SalonService service = salonServiceRepository.findById(serviceId)
+                .orElseThrow(() -> new EntityNotFoundException("SalonService not found: " + serviceId));
         return toDetail(service);
     }
 
@@ -95,16 +86,25 @@ public class SalonServiceQueryService {
 
     @Transactional
     public Integer create(SalonServiceCreateRequest request) {
-        Salon salon = salonRepository.findById(request.getSalonId()).orElseThrow(() -> new EntityNotFoundException("Salon not found: " + request.getSalonId()));
+        Salon salon = salonRepository.findById(request.getSalonId())
+                .orElseThrow(() -> new EntityNotFoundException("Salon not found: " + request.getSalonId()));
 
-        SalonService service = SalonService.builder().salon(salon).name(request.getName()).price(request.getPrice()).duration(request.getDuration()).description(request.getDescription()).build();
+        SalonService service = SalonService.builder()
+                .salon(salon)
+                .name(request.getName())
+                .price(request.getPrice())
+                .duration(request.getDuration())
+                .description(request.getDescription())
+                .build();
         return salonServiceRepository.save(service).getServiceId();
     }
 
     @Transactional
     public void update(Integer serviceId, SalonServiceUpdateRequest request) {
-        SalonService service = salonServiceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("SalonService not found: " + serviceId));
-        Salon salon = salonRepository.findById(request.getSalonId()).orElseThrow(() -> new EntityNotFoundException("Salon not found: " + request.getSalonId()));
+        SalonService service = salonServiceRepository.findById(serviceId)
+                .orElseThrow(() -> new EntityNotFoundException("SalonService not found: " + serviceId));
+        Salon salon = salonRepository.findById(request.getSalonId())
+                .orElseThrow(() -> new EntityNotFoundException("Salon not found: " + request.getSalonId()));
 
         service.setSalon(salon);
         service.setName(request.getName());
@@ -133,26 +133,50 @@ public class SalonServiceQueryService {
     }
 
     private SalonServiceDetailResponse toDetail(SalonService service) {
-        return SalonServiceDetailResponse.builder().serviceId(service.getServiceId()).salonId(service.getSalon().getSalonId()).salonName(service.getSalon().getName()).name(service.getName()).price(service.getPrice()).duration(service.getDuration()).description(service.getDescription()).build();
+        return SalonServiceDetailResponse.builder()
+                .serviceId(service.getServiceId())
+                .salonId(service.getSalon().getSalonId())
+                .salonName(service.getSalon().getName())
+                .name(service.getName())
+                .price(service.getPrice())
+                .duration(service.getDuration())
+                .description(service.getDescription())
+                .build();
     }
 
     private Comparator<SalonServiceSummaryResponse> serviceComparator(String sortBy) {
         if ("duration".equalsIgnoreCase(sortBy)) {
-            return Comparator.comparing(SalonServiceSummaryResponse::getDuration)
-                    .thenComparing(SalonServiceSummaryResponse::getPrice)
-                    .thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
+            return Comparator.comparing(
+                            SalonServiceSummaryResponse::getDuration,
+                            Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(
+                            SalonServiceSummaryResponse::getPrice,
+                            Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(
+                            SalonServiceSummaryResponse::getName,
+                            Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
         }
 
         if ("price".equalsIgnoreCase(sortBy)) {
-            return Comparator.comparing(SalonServiceSummaryResponse::getPrice)
-                    .thenComparing(SalonServiceSummaryResponse::getDuration)
-                    .thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
+            return Comparator.comparing(
+                            SalonServiceSummaryResponse::getPrice,
+                            Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(
+                            SalonServiceSummaryResponse::getDuration,
+                            Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(
+                            SalonServiceSummaryResponse::getName,
+                            Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
         }
 
         return Comparator.comparing(
                         SalonServiceSummaryResponse::getAverageRating,
                         Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(SalonServiceSummaryResponse::getPrice)
-                .thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
+                .thenComparing(
+                        SalonServiceSummaryResponse::getPrice,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(
+                        SalonServiceSummaryResponse::getName,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
     }
 }

@@ -1,5 +1,6 @@
 package com.hairsalonproject2.review.controller;
 
+import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.review.dto.DesignerRankingResponse;
 import com.hairsalonproject2.review.dto.MonthlyReviewStatResponse;
@@ -28,7 +29,7 @@ public class ReviewController {
     @PostMapping
     public ReviewResponse createReview(@AuthenticationPrincipal CustomUserDetails userDetails,
                                        @Valid @RequestBody ReviewCreateRequest request) {
-        return reviewService.createReview(userDetails.getMember().getMemberId(), request);
+        return reviewService.createReview(memberId(userDetails), request);
     }
 
     @GetMapping("/{reviewId}")
@@ -55,7 +56,7 @@ public class ReviewController {
                                        @PathVariable Integer reviewId,
                                        @Valid @RequestBody ReviewUpdateRequest request) {
         return reviewService.updateReview(
-                userDetails.getMember().getMemberId(),
+                memberId(userDetails),
                 isAdmin(userDetails),
                 reviewId,
                 request
@@ -66,7 +67,7 @@ public class ReviewController {
     public void deleteReview(@AuthenticationPrincipal CustomUserDetails userDetails,
                              @PathVariable Integer reviewId) {
         reviewService.deleteReview(
-                userDetails.getMember().getMemberId(),
+                memberId(userDetails),
                 isAdmin(userDetails),
                 reviewId
         );
@@ -75,7 +76,7 @@ public class ReviewController {
     @PostMapping("/{reviewId}/likes")
     public ReviewLikeToggleResponse toggleLike(@PathVariable Integer reviewId,
                                                @AuthenticationPrincipal CustomUserDetails userDetails) {
-        return reviewService.toggleLike(reviewId, userDetails.getMember().getMemberId());
+        return reviewService.toggleLike(reviewId, memberId(userDetails));
     }
 
     @GetMapping("/designer/{designerId}/average-rating")
@@ -111,10 +112,14 @@ public class ReviewController {
     }
 
     private boolean isAdmin(CustomUserDetails userDetails) {
-        return userDetails.getMember().getRole().name().equals("ADMIN");
+        return userDetails.getMember().getRole() == MemberRole.ADMIN;
     }
 
     private String getLoginMemberId(CustomUserDetails userDetails) {
-        return userDetails == null ? null : userDetails.getMember().getMemberId();
+        return userDetails == null ? null : memberId(userDetails);
+    }
+
+    private String memberId(CustomUserDetails userDetails) {
+        return userDetails.getMember().getMemberId();
     }
 }

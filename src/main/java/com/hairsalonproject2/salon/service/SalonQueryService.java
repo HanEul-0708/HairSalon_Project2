@@ -1,6 +1,9 @@
 package com.hairsalonproject2.salon.service;
 
 import com.hairsalonproject2.common.support.GeoUtils;
+import com.hairsalonproject2.common.support.PageUtils;
+import com.hairsalonproject2.common.integration.kakao.KakaoAddressSearchResult;
+import com.hairsalonproject2.common.integration.kakao.KakaoLocalSearchClient;
 import com.hairsalonproject2.common.util.AddressRegionUtils;
 import com.hairsalonproject2.designer.dto.response.DesignerSummaryResponse;
 import com.hairsalonproject2.designer.projection.DesignerRatingRow;
@@ -24,8 +27,6 @@ import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.function.Function;
@@ -50,6 +52,7 @@ public class SalonQueryService {
     private final SalonLikeRepository salonLikeRepository;
     private final MemberRepository memberRepository;
     private final ReviewRepository reviewRepository;
+    private final KakaoLocalSearchClient kakaoLocalSearchClient;
 
     public List<SalonSummaryResponse> search(SalonSearchRequest request) {
         SalonSearchRequest safeRequest = request == null ? new SalonSearchRequest() : request;
@@ -59,21 +62,14 @@ public class SalonQueryService {
     public Page<SalonSummaryResponse> search(SalonSearchRequest request, int page, int size) {
         SalonSearchRequest safeRequest = request == null ? new SalonSearchRequest() : request;
         List<SalonSummaryResponse> responses = searchInternal(safeRequest);
-        int safeSize = Math.max(size, 1);
-        int maxPage = responses.isEmpty() ? 0 : (responses.size() - 1) / safeSize;
-        int safePage = Math.min(Math.max(page, 0), maxPage);
-        int fromIndex = Math.min(safePage * safeSize, responses.size());
-        int toIndex = Math.min(fromIndex + safeSize, responses.size());
-
-        return new PageImpl<>(
-                responses.subList(fromIndex, toIndex),
-                PageRequest.of(safePage, safeSize),
-                responses.size()
-        );
+        return PageUtils.sliceZeroBased(responses, page, size);
     }
 
     private List<SalonSummaryResponse> searchInternal(SalonSearchRequest request) {
-        List<Salon> salons = salonRepository.findAll(SalonSpecifications.bySearch(request));
+        List<Integer> keywordMatchedSalonIds = resolveKeywordMatchedSalonIds(request);
+        List<Salon> salons = salonRepository.findAll(
+                SalonSpecifications.bySearch(request, keywordMatchedSalonIds)
+        );
         List<SalonSummaryResponse> responses = new ArrayList<>();
 
         for (Salon salon : salons) {
@@ -288,16 +284,23 @@ public class SalonQueryService {
 
     @Transactional
     public Integer create(SalonCreateRequest request) {
+        AddressCoordinates addressCoordinates = resolveAddressCoordinates(
+                request.getAddress(),
+                request.getRoadAddress(),
+                request.getLatitude(),
+                request.getLongitude()
+        );
+
         Salon salon = Salon.builder()
                 .externalId(request.getExternalId())
                 .sourceType(request.getSourceType())
                 .name(request.getName())
                 .address(request.getAddress())
-                .roadAddress(request.getRoadAddress())
+                .roadAddress(addressCoordinates.roadAddress())
                 .phone(request.getPhone())
                 .description(request.getDescription())
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
+                .latitude(addressCoordinates.latitude())
+                .longitude(addressCoordinates.longitude())
                 .imageUrl(request.getImageUrl())
                 .placeUrl(request.getPlaceUrl())
                 .reservable(request.getReservable() != null ? request.getReservable() : Boolean.TRUE)
@@ -310,14 +313,20 @@ public class SalonQueryService {
     public void update(Integer salonId, SalonUpdateRequest request) {
         Salon salon = salonRepository.findById(salonId)
                 .orElseThrow(() -> new EntityNotFoundException("Salon not found: " + salonId));
+        AddressCoordinates addressCoordinates = resolveAddressCoordinates(
+                request.getAddress(),
+                request.getRoadAddress(),
+                request.getLatitude(),
+                request.getLongitude()
+        );
 
         salon.setName(request.getName());
         salon.setAddress(request.getAddress());
-        salon.setRoadAddress(request.getRoadAddress());
+        salon.setRoadAddress(addressCoordinates.roadAddress());
         salon.setPhone(request.getPhone());
         salon.setDescription(request.getDescription());
-        salon.setLatitude(request.getLatitude());
-        salon.setLongitude(request.getLongitude());
+        salon.setLatitude(addressCoordinates.latitude());
+        salon.setLongitude(addressCoordinates.longitude());
         salon.setImageUrl(request.getImageUrl());
         salon.setPlaceUrl(request.getPlaceUrl());
         salon.setReservable(request.getReservable() != null ? request.getReservable() : Boolean.TRUE);
@@ -403,7 +412,7 @@ public class SalonQueryService {
 
     private List<String> extractReviewKeywords(Integer salonId) {
         List<String> reviewContents = reviewRepository.findByDesigner_Salon_SalonId(salonId).stream()
-                .map(review -> review.getContent() == null ? "" : review.getContent().toLowerCase())
+                .map(review -> normalizeText(review.getContent()))
                 .toList();
 
         if (reviewContents.isEmpty()) {
@@ -417,9 +426,10 @@ public class SalonQueryService {
 
         Map<String, Integer> keywordCounts = new LinkedHashMap<>();
         for (String keyword : candidateKeywords) {
+            String normalizedKeyword = normalizeText(keyword);
             int count = 0;
             for (String content : reviewContents) {
-                if (content.contains(keyword.toLowerCase())) {
+                if (content.contains(normalizedKeyword)) {
                     count++;
                 }
             }
@@ -435,6 +445,58 @@ public class SalonQueryService {
                 .toList();
     }
 
+    private String normalizeText(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT);
+    }
+
+    private List<Integer> resolveKeywordMatchedSalonIds(SalonSearchRequest request) {
+        String keyword = request.getKeyword();
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+
+        return salonServiceRepository.findDistinctSalonIdsByKeyword(keyword.trim());
+    }
+
+    private AddressCoordinates resolveAddressCoordinates(String address,
+                                                         String roadAddress,
+                                                         BigDecimal latitude,
+                                                         BigDecimal longitude) {
+        if (latitude != null && longitude != null) {
+            return new AddressCoordinates(roadAddress, latitude, longitude);
+        }
+
+        String queryAddress = firstPresent(roadAddress, address);
+        if (queryAddress == null) {
+            return new AddressCoordinates(roadAddress, latitude, longitude);
+        }
+
+        return kakaoLocalSearchClient.searchAddress(queryAddress)
+                .map(result -> applyAddressSearchResult(roadAddress, latitude, longitude, result))
+                .orElseGet(() -> new AddressCoordinates(roadAddress, latitude, longitude));
+    }
+
+    private AddressCoordinates applyAddressSearchResult(String roadAddress,
+                                                        BigDecimal latitude,
+                                                        BigDecimal longitude,
+                                                        KakaoAddressSearchResult result) {
+        return new AddressCoordinates(
+                firstPresent(roadAddress, result.getRoadAddressName()),
+                latitude == null ? result.getLatitude() : latitude,
+                longitude == null ? result.getLongitude() : longitude
+        );
+    }
+
+    private String firstPresent(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first.trim();
+        }
+        if (second != null && !second.isBlank()) {
+            return second.trim();
+        }
+        return null;
+    }
+
     private List<String> getAllAddresses() {
         return salonRepository.findAll().stream()
                 .map(salon -> {
@@ -445,5 +507,8 @@ public class SalonQueryService {
                 })
                 .filter(address -> address != null && !address.isBlank())
                 .toList();
+    }
+
+    private record AddressCoordinates(String roadAddress, BigDecimal latitude, BigDecimal longitude) {
     }
 }

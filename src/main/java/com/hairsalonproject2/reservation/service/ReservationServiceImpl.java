@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -253,13 +254,13 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
 
-        if (!isAdmin && !reservation.getMember().getMemberId().equals(loginMemberId)) {
+        if (!isAdmin && !Objects.equals(reservation.getMember().getMemberId(), loginMemberId)) {
             throw new AccessDeniedException("You can only access your own reservation.");
         }
     }
 
     public void validateMemberAccess(String targetMemberId, String loginMemberId, boolean isAdmin) {
-        if (!isAdmin && !targetMemberId.equals(loginMemberId)) {
+        if (!isAdmin && !Objects.equals(targetMemberId, loginMemberId)) {
             throw new AccessDeniedException("You can only access your own reservations.");
         }
     }

@@ -37,8 +37,7 @@ public class SecurityConfig {
      */
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(customUserDetailsService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(customUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
@@ -100,7 +99,6 @@ public class SecurityConfig {
                                 "/reviews/**",
                                 "/boards/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/reviews").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/members/me/delete").authenticated()
                         .anyRequest().authenticated()

@@ -93,6 +93,19 @@ class ReviewServiceImplTest {
                 .containsExactly("Senior", "Junior");
     }
 
+    @Test
+    void getAllReviewsSortsNullCreatedAtLast() {
+        Salon salon = Salon.builder().salonId(3).name("Salon Three").address("Seoul").build();
+        Review nullCreatedAtReview = reviewForSalon(salon, 11, "Senior", 101, null);
+        Review latestReview = reviewForSalon(salon, 12, "Junior", 102, LocalDateTime.of(2026, 4, 10, 12, 0));
+
+        when(reviewRepository.findAll()).thenReturn(List.of(nullCreatedAtReview, latestReview));
+
+        assertThat(reviewService.getAllReviews(null, null, "latest"))
+                .extracting("reviewId")
+                .containsExactly(102, 101);
+    }
+
     private Reservation reservationWithStatus(ReservationStatus status) {
         Member member = Member.builder()
                 .memberId("user01")

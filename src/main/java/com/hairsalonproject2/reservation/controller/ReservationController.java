@@ -1,5 +1,6 @@
 package com.hairsalonproject2.reservation.controller;
 
+import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.reservation.dto.ReservationCreateRequest;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
@@ -13,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -78,18 +80,22 @@ public class ReservationController {
 
     private void validateReservationAccess(CustomUserDetails userDetails, Integer reservationId) {
         ReservationResponse reservation = reservationService.getReservation(reservationId);
-        if (!isAdmin(userDetails) && !reservation.getMemberId().equals(userDetails.getMember().getMemberId())) {
+        if (!isAdmin(userDetails) && !Objects.equals(reservation.getMemberId(), memberId(userDetails))) {
             throw new org.springframework.security.access.AccessDeniedException("You can only access your own reservation.");
         }
     }
 
     private boolean isAdmin(CustomUserDetails userDetails) {
-        return userDetails.getMember().getRole().name().equals("ADMIN");
+        return userDetails.getMember().getRole() == MemberRole.ADMIN;
     }
 
     private void validateMemberAccess(CustomUserDetails userDetails, String memberId) {
-        if (!isAdmin(userDetails) && !memberId.equals(userDetails.getMember().getMemberId())) {
+        if (!isAdmin(userDetails) && !Objects.equals(memberId, memberId(userDetails))) {
             throw new org.springframework.security.access.AccessDeniedException("You can only access your own reservations.");
         }
+    }
+
+    private String memberId(CustomUserDetails userDetails) {
+        return userDetails.getMember().getMemberId();
     }
 }

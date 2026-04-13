@@ -9,6 +9,8 @@ import com.hairsalonproject2.board.dto.response.BoardResponse;
 import com.hairsalonproject2.board.service.BoardService;
 import com.hairsalonproject2.board.service.BoardViewGuard;
 import com.hairsalonproject2.common.constant.BoardType;
+import com.hairsalonproject2.common.support.PageUtils;
+import com.hairsalonproject2.member.service.CustomUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -16,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -28,7 +29,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -86,7 +86,7 @@ public class BoardController {
     @PostMapping("/qna/{boardId}/report")
     @PreAuthorize("isAuthenticated()")
     public String reportQna(@PathVariable Integer boardId,
-                            @AuthenticationPrincipal UserDetails userDetails) {
+                            @AuthenticationPrincipal CustomUserDetails userDetails) {
         boolean reported = boardService.reportBoard(boardId, userDetails.getUsername());
         if (reported) {
             return "redirect:/boards/qna/" + boardId + "?reported=true";
@@ -107,7 +107,7 @@ public class BoardController {
     public String qnaCreate(@Valid BoardCreateRequest request,
                             BindingResult bindingResult,
                             @RequestParam(value = "files", required = false) List<MultipartFile> files,
-                            @AuthenticationPrincipal UserDetails userDetails,
+                            @AuthenticationPrincipal CustomUserDetails userDetails,
                             Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("boardType", BoardType.QNA.name());
@@ -122,7 +122,7 @@ public class BoardController {
     public String replyQna(@PathVariable Integer boardId,
                            @Valid BoardReplyRequest request,
                            BindingResult bindingResult,
-                           @AuthenticationPrincipal UserDetails userDetails) {
+                           @AuthenticationPrincipal CustomUserDetails userDetails) {
         if (request.getParentId() == null || boardId.intValue() != request.getParentId().intValue()) {
             return "redirect:/boards/qna/" + boardId;
         }
@@ -146,7 +146,7 @@ public class BoardController {
     public String noticeCreate(@Valid BoardCreateRequest request,
                                BindingResult bindingResult,
                                @RequestParam(value = "files", required = false) List<MultipartFile> files,
-                               @AuthenticationPrincipal UserDetails userDetails,
+                               @AuthenticationPrincipal CustomUserDetails userDetails,
                                Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("boardType", BoardType.NOTICE.name());
@@ -159,7 +159,7 @@ public class BoardController {
     @GetMapping("/{boardId}/edit")
     @PreAuthorize("isAuthenticated()")
     public String editForm(@PathVariable Integer boardId,
-                           @AuthenticationPrincipal UserDetails userDetails,
+                           @AuthenticationPrincipal CustomUserDetails userDetails,
                            Model model) {
         BoardType boardType = boardService.getBoardType(boardId);
         if (!canEditBoard(boardId, boardType, userDetails)) {
@@ -180,7 +180,7 @@ public class BoardController {
                        @Valid BoardUpdateRequest request,
                        BindingResult bindingResult,
                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
-                       @AuthenticationPrincipal UserDetails userDetails,
+                       @AuthenticationPrincipal CustomUserDetails userDetails,
                        Model model) {
         BoardType boardType = boardService.getBoardType(boardId);
         if (bindingResult.hasErrors()) {
@@ -196,7 +196,7 @@ public class BoardController {
     @DeleteMapping("/{boardId}")
     @PreAuthorize("isAuthenticated()")
     public String delete(@PathVariable Integer boardId,
-                         @AuthenticationPrincipal UserDetails userDetails) {
+                         @AuthenticationPrincipal CustomUserDetails userDetails) {
         boolean isAdmin = userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         BoardType type = boardService.getBoardType(boardId);
@@ -214,21 +214,7 @@ public class BoardController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("boardType", boardType.name());
         model.addAttribute("size", size);
-        model.addAttribute("pageNumbers", getPageNumbers(boardPage));
-    }
-
-    private List<Integer> getPageNumbers(Page<?> page) {
-        if (page.getTotalPages() <= 0) {
-            return List.of();
-        }
-        int current = page.getNumber();
-        int start = Math.max(0, current - 2);
-        int end = Math.min(page.getTotalPages() - 1, current + 2);
-        List<Integer> numbers = new ArrayList<>();
-        for (int i = start; i <= end; i++) {
-            numbers.add(i);
-        }
-        return numbers;
+        model.addAttribute("pageNumbers", PageUtils.zeroBasedPageWindow(boardPage, 2));
     }
 
     private BoardDetailResponse getBoardDetailWithViewGuard(Integer boardId,
@@ -247,7 +233,7 @@ public class BoardController {
                 : "/boards/qna/" + boardId;
     }
 
-    private boolean canEditBoard(Integer boardId, BoardType boardType, UserDetails userDetails) {
+    private boolean canEditBoard(Integer boardId, BoardType boardType, CustomUserDetails userDetails) {
         if (boardType == BoardType.NOTICE && isAdmin(userDetails)) {
             return true;
         }
@@ -255,7 +241,7 @@ public class BoardController {
         return boardService.isMyBoard(boardId, userDetails.getUsername());
     }
 
-    private boolean isAdmin(UserDetails userDetails) {
+    private boolean isAdmin(CustomUserDetails userDetails) {
         return userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }

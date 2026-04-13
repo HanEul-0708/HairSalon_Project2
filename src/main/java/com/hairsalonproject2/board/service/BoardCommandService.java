@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -87,7 +88,7 @@ public class BoardCommandService {
         Board board = findBoard(boardId);
         boolean canEditNoticeAsAdmin = isAdmin && board.getType() == BoardType.NOTICE;
 
-        if (!canEditNoticeAsAdmin && !board.getMember().getMemberId().equals(memberId)) {
+        if (!canEditNoticeAsAdmin && !isWriter(board, memberId)) {
             throw new BoardException("수정 권한이 없습니다.");
         }
 
@@ -109,8 +110,7 @@ public class BoardCommandService {
     public void delete(Integer boardId, String memberId, boolean isAdmin) {
         Board board = findBoard(boardId);
 
-        boolean isWriter = board.getMember().getMemberId().equals(memberId);
-        if (!isAdmin && !isWriter) {
+        if (!isAdmin && !isWriter(board, memberId)) {
             throw new BoardException("삭제 권한이 없습니다.");
         }
 
@@ -125,6 +125,11 @@ public class BoardCommandService {
     private Board findBoard(Integer boardId) {
         return boardRepository.findById(boardId)
                 .orElseThrow(() -> new BoardException("존재하지 않는 게시글입니다."));
+    }
+
+    private boolean isWriter(Board board, String memberId) {
+        return board.getMember() != null
+                && Objects.equals(board.getMember().getMemberId(), memberId);
     }
 
     private void validateReplyParent(Board parent) {

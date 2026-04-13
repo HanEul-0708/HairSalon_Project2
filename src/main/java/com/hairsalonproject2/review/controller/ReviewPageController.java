@@ -1,6 +1,8 @@
 package com.hairsalonproject2.review.controller;
 
+import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.ReservationStatus;
+import com.hairsalonproject2.common.support.PageUtils;
 import com.hairsalonproject2.common.util.AddressRegionUtils;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
@@ -10,6 +12,7 @@ import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.repository.ReviewRepository;
 import com.hairsalonproject2.review.service.ReviewService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -112,24 +115,16 @@ public class ReviewPageController {
         )
                 : Collections.emptyList();
 
+        Page<ReviewResponse> reviewPage = PageUtils.sliceOneBased(allReviews, page, REVIEWS_PER_PAGE);
         int totalReviews = allReviews.size();
-        int totalPages = searched && totalReviews > 0
-                ? (int) Math.ceil((double) totalReviews / REVIEWS_PER_PAGE)
-                : 0;
-        int currentPage = totalPages == 0 ? 1 : Math.min(Math.max(page, 1), totalPages);
-        int fromIndex = totalReviews == 0 ? 0 : (currentPage - 1) * REVIEWS_PER_PAGE;
-        int toIndex = totalReviews == 0 ? 0 : Math.min(fromIndex + REVIEWS_PER_PAGE, totalReviews);
-
-        List<ReviewResponse> pagedReviews = totalReviews == 0
-                ? Collections.emptyList()
-                : allReviews.subList(fromIndex, toIndex);
+        int totalPages = reviewPage.getTotalPages();
+        int currentPage = PageUtils.currentPage(reviewPage);
+        List<ReviewResponse> pagedReviews = reviewPage.getContent();
 
         model.addAttribute("reviews", pagedReviews);
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
-        model.addAttribute("pageNumbers", totalPages == 0
-                ? Collections.emptyList()
-                : java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());
+        model.addAttribute("pageNumbers", PageUtils.pageNumbers(reviewPage));
         model.addAttribute("currentSort", sortBy);
         model.addAttribute("selectedCity", selectedCity);
         model.addAttribute("selectedDistrict", selectedDistrict);
@@ -181,7 +176,7 @@ public class ReviewPageController {
         }
 
         ReservationResponse reservation = reservationService.getReservation(reservationId);
-        if (!reservation.getMemberId().equals(userDetails.getMember().getMemberId())) {
+        if (!Objects.equals(reservation.getMemberId(), userDetails.getMember().getMemberId())) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
                     "You can only write a review for your own reservation.");
         }
@@ -205,8 +200,8 @@ public class ReviewPageController {
             return false;
         }
 
-        return userDetails.getMember().getRole().name().equals("ADMIN")
-                || review.getMemberId().equals(userDetails.getMember().getMemberId());
+        return userDetails.getMember().getRole() == MemberRole.ADMIN
+                || Objects.equals(review.getMemberId(), userDetails.getMember().getMemberId());
     }
 
     private String getLoginMemberId(CustomUserDetails userDetails) {
@@ -243,7 +238,7 @@ public class ReviewPageController {
 
         public SalonFilterOption(Integer salonId, String salonName, String city, String district, String neighborhood) {
             this.salonId = salonId;
-            this.salonName = salonName;
+            this.salonName = normalizeOptionText(salonName);
             this.city = city == null ? "" : city;
             this.district = district == null ? "" : district;
             this.neighborhood = neighborhood == null ? "" : neighborhood;
@@ -277,7 +272,7 @@ public class ReviewPageController {
 
         public DesignerFilterOption(Integer designerId, String designerName, Integer salonId) {
             this.designerId = designerId;
-            this.designerName = designerName;
+            this.designerName = normalizeOptionText(designerName);
             this.salonId = salonId;
         }
 
@@ -292,5 +287,9 @@ public class ReviewPageController {
         public Integer getSalonId() {
             return salonId;
         }
+    }
+
+    private static String normalizeOptionText(String value) {
+        return value == null ? "" : value;
     }
 }

@@ -1,16 +1,14 @@
 package com.hairsalonproject2.designer.controller;
 
 import com.hairsalonproject2.common.constant.MemberRole;
+import com.hairsalonproject2.common.support.PageUtils;
 import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.salon.service.SalonQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +44,7 @@ public class DesignerController {
                        Model model) {
         Page<?> resultPage = request.hasSearchRequest()
                 ? designerQueryService.search(request, page - 1, DESIGNERS_PER_PAGE)
-                : new PageImpl<>(java.util.Collections.emptyList(), PageRequest.of(0, DESIGNERS_PER_PAGE), 0);
+                : PageUtils.empty(DESIGNERS_PER_PAGE);
 
         model.addAttribute("designers", resultPage.getContent());
         model.addAttribute("search", request);
@@ -55,12 +53,10 @@ public class DesignerController {
         model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(request.getCity()));
         model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(request.getCity(), request.getDistrict()));
         model.addAttribute("regionAddresses", salonQueryService.getAddressOptions());
-        model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
+        model.addAttribute("currentPage", PageUtils.currentPage(resultPage));
         model.addAttribute("totalPages", resultPage.getTotalPages());
         model.addAttribute("totalDesignerCount", resultPage.getTotalElements());
-        model.addAttribute("pageNumbers", resultPage.getTotalPages() == 0
-                ? java.util.Collections.emptyList()
-                : java.util.stream.IntStream.rangeClosed(1, resultPage.getTotalPages()).boxed().toList());
+        model.addAttribute("pageNumbers", PageUtils.pageNumbers(resultPage));
         return "designer/list";
     }
 
@@ -69,56 +65,61 @@ public class DesignerController {
      * GET /designers/{designerId}
      */
     @GetMapping("/{designerId}")
-    public String detail(@PathVariable Integer designerId, Authentication authentication, Model model) {
-        String loginMemberId = isAuthenticated(authentication) ? authentication.getName() : null;
+    public String detail(@PathVariable Integer designerId,
+                         @AuthenticationPrincipal CustomUserDetails userDetails,
+                         Model model) {
+        String loginMemberId = isAuthenticated(userDetails) ? memberId(userDetails) : null;
         model.addAttribute("designer", designerQueryService.getDetail(designerId, loginMemberId));
         return "designer/detail";
     }
 
     @GetMapping("/likes")
-    public String likedDesigners(Authentication authentication, Model model) {
-        if (!isAuthenticated(authentication)) {
+    public String likedDesigners(@AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
+        if (!isAuthenticated(userDetails)) {
             return "redirect:/members/login";
         }
-        CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
-        if (principal.getMember().getRole() == MemberRole.DESIGNER) {
-            model.addAttribute("members", designerQueryService.getMembersWhoLikedDesigner(principal.getMember().getMemberId()));
+        if (userDetails.getMember().getRole() == MemberRole.DESIGNER) {
+            model.addAttribute("members", designerQueryService.getMembersWhoLikedDesigner(memberId(userDetails)));
             return "designer/liked-members";
         }
 
-        model.addAttribute("designers", designerQueryService.getLikedDesigners(principal.getMember().getMemberId()));
+        model.addAttribute("designers", designerQueryService.getLikedDesigners(memberId(userDetails)));
         return "designer/liked-list";
     }
 
     @PostMapping("/{designerId}/likes")
     public String like(@PathVariable Integer designerId,
-                       Authentication authentication,
+                       @AuthenticationPrincipal CustomUserDetails userDetails,
                        RedirectAttributes redirectAttributes) {
-        if (!isAuthenticated(authentication)) {
+        if (!isAuthenticated(userDetails)) {
             redirectAttributes.addFlashAttribute("message", "로그인이 필요합니다.");
             return "redirect:/members/login";
         }
 
-        boolean created = designerQueryService.like(designerId, authentication.getName());
+        boolean created = designerQueryService.like(designerId, memberId(userDetails));
         redirectAttributes.addFlashAttribute("message", created ? "좋아요 완료" : "이미 좋아요한 디자이너입니다.");
         return "redirect:/designers/" + designerId;
     }
 
     @PostMapping("/{designerId}/likes/delete")
     public String unlike(@PathVariable Integer designerId,
-                         Authentication authentication,
+                         @AuthenticationPrincipal CustomUserDetails userDetails,
                          RedirectAttributes redirectAttributes) {
-        if (!isAuthenticated(authentication)) {
+        if (!isAuthenticated(userDetails)) {
             redirectAttributes.addFlashAttribute("message", "로그인이 필요합니다.");
             return "redirect:/members/login";
         }
 
-        boolean deleted = designerQueryService.unlike(designerId, authentication.getName());
+        boolean deleted = designerQueryService.unlike(designerId, memberId(userDetails));
         redirectAttributes.addFlashAttribute("message", deleted ? "좋아요 취소 완료" : "좋아요 정보가 없습니다.");
         return "redirect:/designers/" + designerId;
     }
 
-    private boolean isAuthenticated(Authentication authentication) {
-        return authentication != null && !(authentication instanceof AnonymousAuthenticationToken);
+    private boolean isAuthenticated(CustomUserDetails userDetails) {
+        return userDetails != null;
+    }
+
+    private String memberId(CustomUserDetails userDetails) {
+        return userDetails.getUsername();
     }
 }

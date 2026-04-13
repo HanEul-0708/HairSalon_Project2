@@ -1,13 +1,16 @@
 package com.hairsalonproject2.salon.controller;
 
 import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
+import com.hairsalonproject2.salon.dto.response.SalonMapResultsPayload;
 import com.hairsalonproject2.salon.service.ExternalSalonSyncService;
+import com.hairsalonproject2.salon.service.SalonMapService;
 import com.hairsalonproject2.salon.service.SalonQueryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.ui.ConcurrentModel;
@@ -30,11 +33,14 @@ class SalonControllerTest {
     @Mock
     private ExternalSalonSyncService externalSalonSyncService;
 
+    @Mock
+    private SalonMapService salonMapService;
+
     @InjectMocks
     private SalonController salonController;
 
     @Test
-    void listSyncsFromKakaoBeforeSearchingWhenUserSubmitsSearch() {
+    void listSearchesStoredSalonsWithoutKakaoSync() {
         SalonSearchRequest request = new SalonSearchRequest();
         request.setSearched(true);
         request.setKeyword("준오헤어");
@@ -50,7 +56,7 @@ class SalonControllerTest {
         String viewName = salonController.list(request, 1, model);
 
         assertThat(viewName).isEqualTo("salon/list");
-        verify(externalSalonSyncService).syncFromSearch("준오헤어", "성수");
+        verify(externalSalonSyncService, never()).syncFromSearch(any(), any());
         verify(salonQueryService).search(request, 0, 9);
     }
 
@@ -89,5 +95,21 @@ class SalonControllerTest {
         assertThat(model.getAttribute("district")).isEqualTo("강남구");
         assertThat(model.getAttribute("neighborhood")).isEqualTo("역삼동");
         assertThat(model.getAttribute("kakaoJavascriptKey")).isEqualTo("test-js-key");
+    }
+
+    @Test
+    void mapResultsDelegatesToMapService() {
+        SalonMapResultsPayload payload = SalonMapResultsPayload.builder()
+                .results(List.of())
+                .debug("카카오 검색어: '서울특별시 강남구 준오헤어 미용실', 결과 0건")
+                .build();
+        when(salonMapService.getMapResults("준오헤어", null, "서울특별시", "강남구", null))
+                .thenReturn(payload);
+
+        ResponseEntity<SalonMapResultsPayload> response =
+                salonController.mapResults("준오헤어", null, "서울특별시", "강남구", null);
+
+        assertThat(response.getBody()).isSameAs(payload);
+        verify(salonMapService).getMapResults("준오헤어", null, "서울특별시", "강남구", null);
     }
 }

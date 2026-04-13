@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -170,7 +171,7 @@ public class ReservationDummySeeder {
     }
 
     private boolean matchesSpecialty(SalonService service, DesignerSpecialty specialty) {
-        String name = service.getName() == null ? "" : service.getName().toLowerCase();
+        String name = service.getName() == null ? "" : service.getName().toLowerCase(Locale.ROOT);
         return switch (specialty) {
             case CUT -> name.contains("커트");
             case PERM -> name.contains("펌");

@@ -6,11 +6,11 @@ import com.hairsalonproject2.board.dto.response.BoardResponse;
 import com.hairsalonproject2.board.service.BoardDummySeeder;
 import com.hairsalonproject2.board.service.BoardService;
 import com.hairsalonproject2.common.constant.BoardType;
+import com.hairsalonproject2.member.service.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -96,7 +96,7 @@ public class AdminBoardController {
     @DeleteMapping("/{boardId}")
     public String delete(@PathVariable Integer boardId,
                          @RequestParam(required = false) String reason,
-                         @AuthenticationPrincipal UserDetails userDetails) {
+                         @AuthenticationPrincipal CustomUserDetails userDetails) {
         boardService.adminDelete(boardId, userDetails.getUsername(), reason);
         return "redirect:/admin/boards";
     }

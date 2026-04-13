@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -52,6 +53,17 @@ public class ExternalSalonSyncService {
         List<Integer> savedIds = new ArrayList<>();
 
         for (KakaoPlaceSearchResult place : results) {
+            if (hasInvalidCoordinates(place)) {
+                log.warn(
+                        "Skip Kakao salon with invalid coordinates. externalId='{}', name='{}', latitude='{}', longitude='{}'",
+                        place.getExternalId(),
+                        place.getPlaceName(),
+                        place.getLatitude(),
+                        place.getLongitude()
+                );
+                continue;
+            }
+
             Salon salon = salonRepository.findByExternalId(place.getExternalId()).orElseGet(Salon::new);
             boolean isNewSalon = salon.getSalonId() == null;
 
@@ -81,6 +93,13 @@ public class ExternalSalonSyncService {
             savedIds.add(savedSalon.getSalonId());
         }
         return savedIds;
+    }
+
+    private boolean hasInvalidCoordinates(KakaoPlaceSearchResult place) {
+        return place.getLatitude() == null
+                || place.getLongitude() == null
+                || (BigDecimal.ZERO.compareTo(place.getLatitude()) == 0
+                && BigDecimal.ZERO.compareTo(place.getLongitude()) == 0);
     }
 
     private List<Designer> createDefaultDesigners(Salon salon) {

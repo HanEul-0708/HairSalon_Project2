@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * BoardAdminService
@@ -49,7 +50,7 @@ public class BoardAdminService {
         Board board = findBoard(boardId);
         Member reporter = findMember(reporterId);
 
-        if (board.getMember().getMemberId().equals(reporterId)) {
+        if (isWriter(board, reporterId)) {
             throw new BoardException("본인 글은 신고할 수 없습니다.");
         }
 
@@ -107,6 +108,11 @@ public class BoardAdminService {
     private Member findMember(String memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new BoardException("존재하지 않는 회원입니다."));
+    }
+
+    private boolean isWriter(Board board, String memberId) {
+        return board.getMember() != null
+                && Objects.equals(board.getMember().getMemberId(), memberId);
     }
 
     private String normalizeReason(String reason, String defaultValue) {

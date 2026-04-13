@@ -1,5 +1,6 @@
 package com.hairsalonproject2.designer.service;
 
+import com.hairsalonproject2.common.support.PageUtils;
 import com.hairsalonproject2.designer.dto.request.DesignerCreateRequest;
 import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
 import com.hairsalonproject2.designer.dto.request.DesignerUpdateRequest;
@@ -20,8 +21,6 @@ import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,31 +48,22 @@ public class DesignerQueryService {
     }
 
     public Page<DesignerSummaryResponse> search(DesignerSearchRequest request, int page, int size) {
+        DesignerSearchRequest safeRequest = request == null ? new DesignerSearchRequest() : request;
         Map<Integer, DesignerRatingRow> ratings = designerRepository.findDesignerRatingRows()
                 .stream()
                 .collect(Collectors.toMap(DesignerRatingRow::getDesignerId, Function.identity()));
 
-        List<DesignerSummaryResponse> filtered = designerRepository.findAll(DesignerSpecifications.bySearch(request))
+        List<DesignerSummaryResponse> filtered = designerRepository.findAll(DesignerSpecifications.bySearch(safeRequest))
                 .stream()
                 .map(d -> toSummary(d, ratings.get(d.getDesignerId())))
-                .filter(d -> request.getMinRating() == null
-                        || d.getAverageRating().compareTo(request.getMinRating()) >= 0)
+                .filter(d -> safeRequest.getMinRating() == null
+                        || d.getAverageRating().compareTo(safeRequest.getMinRating()) >= 0)
                 .sorted(
-                        designerComparator(request.getSortBy())
+                        designerComparator(safeRequest.getSortBy())
                 )
                 .toList();
 
-        int safeSize = Math.max(size, 1);
-        int maxPage = filtered.isEmpty() ? 0 : (filtered.size() - 1) / safeSize;
-        int safePage = Math.min(Math.max(page, 0), maxPage);
-        int fromIndex = Math.min(safePage * safeSize, filtered.size());
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-
-        return new PageImpl<>(
-                filtered.subList(fromIndex, toIndex),
-                PageRequest.of(safePage, safeSize),
-                filtered.size()
-        );
+        return PageUtils.sliceZeroBased(filtered, page, size);
     }
 
     public DesignerDetailResponse getDetail(Integer designerId, String loginMemberId) {

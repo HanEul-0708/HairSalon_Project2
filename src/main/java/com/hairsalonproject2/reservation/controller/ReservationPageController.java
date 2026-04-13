@@ -3,6 +3,7 @@ package com.hairsalonproject2.reservation.controller;
 import com.hairsalonproject2.common.constant.PaymentMethod;
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.ReservationStatus;
+import com.hairsalonproject2.common.support.PageUtils;
 import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
 import com.hairsalonproject2.designer.dto.response.DesignerSummaryResponse;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
@@ -20,6 +21,7 @@ import com.hairsalonproject2.salon.service.SalonQueryService;
 import com.hairsalonproject2.salonservice.dto.response.SalonServiceSummaryResponse;
 import com.hairsalonproject2.salonservice.service.SalonServiceQueryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -58,17 +60,16 @@ public class ReservationPageController {
                 (designerReservationView
                         ? reservationService.getReservationsByDesignerMember(loginMemberId)
                         : reservationService.getMyReservations(loginMemberId)).stream()
-                        .sorted(Comparator.comparing(ReservationResponse::getCreatedAt).reversed())
+                        .sorted(Comparator.comparing(
+                                ReservationResponse::getCreatedAt,
+                                Comparator.nullsLast(Comparator.reverseOrder())
+                        ))
                         .toList();
 
-        int totalReservations = reservations.size();
-        int totalPages = Math.max(1, (int) Math.ceil((double) totalReservations / RESERVATIONS_PER_PAGE));
-        int currentPage = Math.min(Math.max(page, 1), totalPages);
-        int fromIndex = (currentPage - 1) * RESERVATIONS_PER_PAGE;
-        int toIndex = Math.min(fromIndex + RESERVATIONS_PER_PAGE, totalReservations);
-        List<ReservationResponse> pagedReservations = totalReservations == 0
-                ? Collections.emptyList()
-                : reservations.subList(fromIndex, toIndex);
+        Page<ReservationResponse> reservationPage = PageUtils.sliceOneBased(reservations, page, RESERVATIONS_PER_PAGE);
+        int totalPages = Math.max(1, reservationPage.getTotalPages());
+        int currentPage = PageUtils.currentPage(reservationPage);
+        List<ReservationResponse> pagedReservations = reservationPage.getContent();
 
         List<Integer> reservationIds = pagedReservations.stream()
                 .map(ReservationResponse::getReservationId)
@@ -96,7 +97,7 @@ public class ReservationPageController {
         model.addAttribute("reviewableReservationMap", reviewableReservationMap);
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
-        model.addAttribute("pageNumbers", java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());
+        model.addAttribute("pageNumbers", PageUtils.pageNumbers(totalPages));
         model.addAttribute("isDesignerReservationView", designerReservationView);
         model.addAttribute("reservationPagePath",
                 designerReservationView ? "/designers/me/reservations" : "/members/me/reservations");
@@ -137,7 +138,7 @@ public class ReservationPageController {
         reservationServiceImpl.validateReservationAccess(
                 reservationId,
                 userDetails.getMember().getMemberId(),
-                userDetails.getMember().getRole().name().equals("ADMIN")
+                userDetails.getMember().getRole() == MemberRole.ADMIN
         );
 
         model.addAttribute("reservation", reservationService.getReservation(reservationId));

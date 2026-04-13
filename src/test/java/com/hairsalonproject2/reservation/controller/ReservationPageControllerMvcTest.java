@@ -91,6 +91,20 @@ class ReservationPageControllerMvcTest {
     }
 
     @Test
+    void userReservationPageHandlesNullCreatedAt() throws Exception {
+        ReservationResponse reservation = sampleReservation("user01", "Designer A", null);
+
+        when(reservationServiceImpl.getMyReservations("user01")).thenReturn(List.of(reservation));
+        when(reviewRepository.findByReservation_ReservationIdIn(List.of(1))).thenReturn(List.of());
+        when(reviewService.getReviewsByMember("user01", "user01")).thenReturn(List.of());
+
+        mockMvc.perform(get("/members/me/reservations").with(authenticationFor("user01", MemberRole.USER)))
+                .andExpect(status().isOk())
+                .andExpect(view().name("reservation/list"))
+                .andExpect(model().attributeExists("reservations"));
+    }
+
+    @Test
     void designerReservationPageShowsAssignedReservationsAndReceivedReviews() throws Exception {
         ReservationResponse reservation = sampleReservation("user01", "Designer Kim");
         ReviewResponse review = sampleReview("user01", "Designer Kim");
@@ -111,6 +125,12 @@ class ReservationPageControllerMvcTest {
     }
 
     private ReservationResponse sampleReservation(String memberId, String designerName) {
+        return sampleReservation(memberId, designerName, LocalDateTime.of(2026, 4, 8, 9, 0));
+    }
+
+    private ReservationResponse sampleReservation(String memberId,
+                                                  String designerName,
+                                                  LocalDateTime createdAt) {
         return ReservationResponse.builder()
                 .reservationId(1)
                 .memberId(memberId)
@@ -123,7 +143,7 @@ class ReservationPageControllerMvcTest {
                 .status(ReservationStatus.COMPLETED)
                 .totalPrice(30000)
                 .paymentMethodLabel("Card")
-                .createdAt(LocalDateTime.of(2026, 4, 8, 9, 0))
+                .createdAt(createdAt)
                 .build();
     }
 

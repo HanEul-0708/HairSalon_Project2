@@ -10,6 +10,7 @@ import com.hairsalonproject2.member.service.CustomUserDetailsService;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.service.ReservationService;
 import com.hairsalonproject2.review.dto.ReviewDetailResponse;
+import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.repository.ReviewRepository;
 import com.hairsalonproject2.review.service.ReviewService;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -59,6 +61,17 @@ class ReviewPageControllerAccessTest {
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @Test
+    void reviewListHandlesNullFilterOptionNames() throws Exception {
+        when(reviewService.getAllReviews(null, null, "latest"))
+                .thenReturn(List.of(sampleReview(1, null, 1, null, "서울특별시 강남구 역삼동")));
+
+        mockMvc.perform(get("/reviews"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("review/list"))
+                .andExpect(model().attributeExists("salonOptions", "designerOptions"));
+    }
 
     @Test
     void ownerCanOpenReviewWritePage() throws Exception {
@@ -141,6 +154,35 @@ class ReviewPageControllerAccessTest {
                 .status(status)
                 .createdAt(LocalDateTime.of(2026, 4, 8, 9, 0))
                 .build();
+    }
+
+    private ReviewResponse sampleReview(Integer salonId,
+                                        String salonName,
+                                        Integer designerId,
+                                        String designerName,
+                                        String salonAddress) {
+        return new ReviewResponse(
+                1,
+                1,
+                LocalDate.of(2026, 4, 8),
+                LocalTime.of(10, 0),
+                "user01",
+                "Writer",
+                designerId,
+                designerName,
+                salonId,
+                salonName,
+                salonAddress,
+                "Cut",
+                (byte) 5,
+                "Great",
+                null,
+                null,
+                LocalDateTime.of(2026, 4, 8, 11, 0),
+                null,
+                0,
+                false
+        );
     }
 
     private RequestPostProcessor authenticationFor(String memberId, MemberRole role) {

@@ -3,6 +3,7 @@ package com.hairsalonproject2.common.util;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * FileUtil — 파일 관련 공통 유틸리티 모음
@@ -38,7 +39,7 @@ public class FileUtil {
         if (filename == null || !filename.contains(".")) {
             throw new IllegalArgumentException("확장자가 없는 파일입니다: " + filename);
         }
-        return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+        return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase(Locale.ROOT);
     }
 
     /**

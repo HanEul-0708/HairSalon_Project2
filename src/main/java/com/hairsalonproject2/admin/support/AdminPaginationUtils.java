@@ -1,8 +1,7 @@
 package com.hairsalonproject2.admin.support;
 
+import com.hairsalonproject2.common.support.PageUtils;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,30 +16,7 @@ public final class AdminPaginationUtils {
     }
 
     public static <T> Page<T> slice(List<T> items, int requestedPage, int pageSize) {
-        int safePage = normalizePageNumber(requestedPage);
-        int safeSize = Math.max(pageSize, 1);
-        int total = items == null ? 0 : items.size();
-
-        if (total == 0) {
-            return new PageImpl<>(List.of(), PageRequest.of(0, safeSize), 0);
-        }
-
-        int zeroBasedPage = safePage - 1;
-        int fromIndex = Math.min(zeroBasedPage * safeSize, total);
-        int toIndex = Math.min(fromIndex + safeSize, total);
-
-        if (fromIndex >= total) {
-            int lastPage = Math.max((total - 1) / safeSize, 0);
-            fromIndex = lastPage * safeSize;
-            toIndex = Math.min(fromIndex + safeSize, total);
-            zeroBasedPage = lastPage;
-        }
-
-        return new PageImpl<>(
-                items.subList(fromIndex, toIndex),
-                PageRequest.of(zeroBasedPage, safeSize),
-                total
-        );
+        return PageUtils.sliceOneBased(items, requestedPage, pageSize);
     }
 
     public static List<Integer> getPageNumbers(Page<?> page) {

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * ReviewImageServiceImpl
@@ -111,7 +112,7 @@ public class ReviewImageServiceImpl implements ReviewImageService {
     }
 
     private void validateReviewOwner(String ownerMemberId, String loginMemberId, boolean isAdmin) {
-        if (!isAdmin && !ownerMemberId.equals(loginMemberId)) {
+        if (!isAdmin && !Objects.equals(ownerMemberId, loginMemberId)) {
             throw new AccessDeniedException("본인 리뷰 이미지만 변경할 수 있습니다.");
         }
     }

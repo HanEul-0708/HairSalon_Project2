@@ -111,6 +111,15 @@ document.addEventListener("DOMContentLoaded", function () {
         resultsBox.innerHTML = '<div class="salon-map-results__empty">' + message + "</div>";
     }
 
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
     function renderResults(data) {
         if (!data || !data.length) {
             renderEmpty("검색 결과가 없습니다.");
@@ -136,18 +145,27 @@ document.addEventListener("DOMContentLoaded", function () {
             var item = document.createElement("div");
             item.className = "salon-map-result";
             item.tabIndex = 0;
+            item.dataset.markerKey = place.markerKey || "";
+
+            var detailUrl = place.detailUrl || (place.salonId != null ? "/salons/" + place.salonId : null);
             item.innerHTML =
-                '<strong class="salon-map-result__name">' + (place.name || "미용실") + "</strong>" +
-                '<span class="salon-map-result__meta">' + (place.roadAddress || place.address || "주소 정보 없음") + "</span>" +
-                (place.salonId != null
-                    ? '<div class="salon-map-result__actions"><a class="btn btn-outline btn-sm" href="/salons/' + place.salonId + '">상세보기</a></div>'
+                '<strong class="salon-map-result__name">' + escapeHtml(place.name || "미용실") + "</strong>" +
+                (place.externalLabel
+                    ? '<span class="salon-map-result__meta">' + escapeHtml(place.externalLabel) + " 검색 결과</span>"
+                    : "") +
+                '<span class="salon-map-result__meta">' + escapeHtml(place.roadAddress || place.address || "주소 정보 없음") + "</span>" +
+                (place.phone
+                    ? '<span class="salon-map-result__meta">' + escapeHtml(place.phone) + "</span>"
+                    : "") +
+                (detailUrl
+                    ? '<div class="salon-map-result__actions"><a class="btn btn-outline btn-sm" href="' + escapeHtml(detailUrl) + '">상세보기</a></div>'
                     : "");
 
             item.addEventListener("click", function () {
                 map.setCenter(position);
                 infoWindow.setContent(
-                    '<div class="salon-map-infowindow"><strong>' + (place.name || "") + "</strong><br>" +
-                    (place.roadAddress || place.address || "") + "</div>"
+                    '<div class="salon-map-infowindow"><strong>' + escapeHtml(place.name || "") + "</strong><br>" +
+                    escapeHtml(place.roadAddress || place.address || "") + "</div>"
                 );
                 infoWindow.open(map, marker);
             });
@@ -257,9 +275,14 @@ document.addEventListener("DOMContentLoaded", function () {
                             var mappedResults = data.map(function (place) {
                                 return {
                                     salonId: null,
+                                    markerKey: "kakao-" + place.id,
                                     name: place.place_name,
                                     address: place.address_name,
                                     roadAddress: place.road_address_name,
+                                    phone: place.phone,
+                                    detailUrl: place.place_url,
+                                    external: true,
+                                    externalLabel: "카카오",
                                     latitude: parseFloat(place.y),
                                     longitude: parseFloat(place.x)
                                 };

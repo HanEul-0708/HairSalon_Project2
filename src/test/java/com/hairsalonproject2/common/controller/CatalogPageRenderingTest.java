@@ -6,6 +6,7 @@ import com.hairsalonproject2.designer.service.DesignerQueryService;
 import com.hairsalonproject2.member.service.CustomUserDetailsService;
 import com.hairsalonproject2.salon.controller.SalonController;
 import com.hairsalonproject2.salon.service.ExternalSalonSyncService;
+import com.hairsalonproject2.salon.service.SalonMapService;
 import com.hairsalonproject2.salon.service.SalonQueryService;
 import com.hairsalonproject2.salonservice.controller.ServiceController;
 import com.hairsalonproject2.salonservice.service.SalonServiceQueryService;
@@ -41,7 +42,7 @@ class CatalogPageRenderingTest {
     private ExternalSalonSyncService externalSalonSyncService;
 
     @MockitoBean
-    private com.hairsalonproject2.salon.repository.SalonRepository salonRepository;
+    private SalonMapService salonMapService;
 
     @MockitoBean
     private DesignerQueryService designerQueryService;

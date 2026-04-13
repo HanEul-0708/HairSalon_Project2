@@ -158,6 +158,48 @@ class ExternalSalonSyncServiceTest {
     }
 
     @Test
+    void syncFromKakaoSkipsResultWithoutCoordinates() {
+        KakaoPlaceSearchResult result = KakaoPlaceSearchResult.builder()
+                .externalId("kakao-invalid-null")
+                .placeName("Invalid Hair")
+                .addressName("Seoul Gangnam")
+                .latitude(null)
+                .longitude(new BigDecimal("127.1234567"))
+                .build();
+
+        when(kakaoLocalSearchClient.searchSalons("Invalid", "Gangnam", 1, 15)).thenReturn(List.of(result));
+
+        List<Integer> savedIds = externalSalonSyncService.syncFromKakao("Invalid", "Gangnam");
+
+        assertThat(savedIds).isEmpty();
+        verify(salonRepository, never()).findByExternalId(any());
+        verify(salonRepository, never()).save(any(Salon.class));
+        verify(salonSeedDataFactory, never()).createDesigners(any());
+        verify(salonSeedDataFactory, never()).createServices(any());
+    }
+
+    @Test
+    void syncFromKakaoSkipsZeroZeroCoordinates() {
+        KakaoPlaceSearchResult result = KakaoPlaceSearchResult.builder()
+                .externalId("kakao-invalid-zero")
+                .placeName("Zero Hair")
+                .addressName("Seoul Gangnam")
+                .latitude(BigDecimal.ZERO)
+                .longitude(BigDecimal.ZERO)
+                .build();
+
+        when(kakaoLocalSearchClient.searchSalons("Zero", "Gangnam", 1, 15)).thenReturn(List.of(result));
+
+        List<Integer> savedIds = externalSalonSyncService.syncFromKakao("Zero", "Gangnam");
+
+        assertThat(savedIds).isEmpty();
+        verify(salonRepository, never()).findByExternalId(any());
+        verify(salonRepository, never()).save(any(Salon.class));
+        verify(salonSeedDataFactory, never()).createDesigners(any());
+        verify(salonSeedDataFactory, never()).createServices(any());
+    }
+
+    @Test
     void syncFromKakaoUsesFactoryForNewSalon() {
         KakaoPlaceSearchResult result = KakaoPlaceSearchResult.builder()
                 .externalId("kakao-4")
