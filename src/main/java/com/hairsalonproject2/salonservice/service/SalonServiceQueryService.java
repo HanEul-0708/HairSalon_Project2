@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -34,16 +35,18 @@ public class SalonServiceQueryService {
 
     public Page<SalonServiceSummaryResponse> list(SalonServiceSearchRequest request, int page, int size) {
         SalonServiceSearchRequest safeRequest = request == null ? new SalonServiceSearchRequest() : request;
+        String keyword = clean(safeRequest.getKeyword());
         List<SalonServiceSummaryResponse> filtered = salonServiceRepository.searchServices(
-                        safeRequest.getKeyword(),
-                        safeRequest.getSalonKeyword(),
-                        safeRequest.getRegion(),
-                        safeRequest.getCity(),
-                        safeRequest.getDistrict(),
-                        safeRequest.getNeighborhood(),
+                        keyword,
+                        clean(safeRequest.getSalonKeyword()),
+                        clean(safeRequest.getRegion()),
+                        clean(safeRequest.getCity()),
+                        clean(safeRequest.getDistrict()),
+                        clean(safeRequest.getNeighborhood()),
                         safeRequest.getMaxPrice(),
                         safeRequest.getMaxDuration()
                 ).stream()
+                .filter(service -> matchesServiceName(service, keyword))
                 .map(this::toSummary)
                 .sorted(serviceComparator(safeRequest.getSortBy()))
                 .toList();
@@ -178,5 +181,18 @@ public class SalonServiceQueryService {
                 .thenComparing(
                         SalonServiceSummaryResponse::getName,
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+    }
+
+    private boolean matchesServiceName(SalonService service, String keyword) {
+        if (keyword == null) {
+            return true;
+        }
+
+        return service.getName() != null
+                && service.getName().toLowerCase(Locale.ROOT).contains(keyword.toLowerCase(Locale.ROOT));
+    }
+
+    private String clean(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

@@ -11,6 +11,7 @@ import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.repository.MemberRepository;
 import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
 import com.hairsalonproject2.reservation.entity.Reservation;
+import com.hairsalonproject2.reservation.entity.ReservationSlot;
 import com.hairsalonproject2.reservation.repository.ReservationRepository;
 import com.hairsalonproject2.reservation.repository.ReservationSlotRepository;
 import com.hairsalonproject2.salon.entity.Salon;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
@@ -120,6 +122,62 @@ class ReservationServiceTest {
                 .hasSize(2)
                 .extracting("designerName")
                 .containsExactly("Senior", "Junior");
+    }
+
+    @Test
+    void isReservationAvailableReturnsFalseWhenSlotAlreadyExists() {
+        LocalDate reservationDate = LocalDate.of(2026, 4, 10);
+        LocalTime reservationTime = LocalTime.of(10, 0);
+
+        when(reservationSlotRepository.existsByDesigner_DesignerIdAndReservationDateAndSlotTime(
+                1,
+                reservationDate,
+                reservationTime
+        )).thenReturn(true);
+
+        assertThat(reservationService.isReservationAvailable(1, reservationDate, reservationTime, null))
+                .isFalse();
+    }
+
+    @Test
+    void getUnavailableReservationTimesExcludesCurrentReservation() throws Exception {
+        LocalDate reservationDate = LocalDate.of(2026, 4, 10);
+        Reservation currentReservation = reservationWithStatus(ReservationStatus.RESERVED);
+        Reservation otherReservation = reservationWithStatus(ReservationStatus.RESERVED);
+        setField(currentReservation, "reservationId", 1);
+        setField(otherReservation, "reservationId", 2);
+
+        when(reservationSlotRepository.findByDesigner_DesignerIdAndReservationDate(1, reservationDate))
+                .thenReturn(List.of(
+                        ReservationSlot.builder()
+                                .reservation(currentReservation)
+                                .reservationDate(reservationDate)
+                                .slotTime(LocalTime.of(10, 0))
+                                .build(),
+                        ReservationSlot.builder()
+                                .reservation(otherReservation)
+                                .reservationDate(reservationDate)
+                                .slotTime(LocalTime.of(10, 30))
+                                .build()
+                ));
+
+        assertThat(reservationService.getUnavailableReservationTimes(1, reservationDate, 1))
+                .containsExactly(LocalTime.of(10, 30));
+    }
+
+    @Test
+    void validateReservationDesignerSalonAccessRejectsOtherSalonReservation() {
+        Salon reservationSalon = Salon.builder().salonId(1).name("Salon A").build();
+        Salon designerSalon = Salon.builder().salonId(2).name("Salon B").build();
+        Reservation reservation = reservationWithDesignerAndSalon(10, "Senior", reservationSalon);
+        Designer designer = Designer.builder().designerId(2).name("Manager").salon(designerSalon).build();
+
+        when(reservationRepository.findById(1)).thenReturn(Optional.of(reservation));
+        when(designerRepository.findByMember_MemberId("designer01")).thenReturn(Optional.of(designer));
+
+        assertThatThrownBy(() -> reservationService.validateReservationDesignerSalonAccess(1, "designer01"))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("You can only manage reservations for your salon.");
     }
 
     private Reservation reservationWithStatus(ReservationStatus status) {

@@ -23,9 +23,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.time.LocalDateTime;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -175,6 +178,95 @@ class BoardFlowMvcTest {
 
         verify(boardService).getBoardType(21);
         verify(boardService).isMyBoard(21, "user01");
+    }
+
+    @Test
+    void anonymousUserCannotOpenQnaDetail() throws Exception {
+        mockMvc.perform(get("/boards/qna/10"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/members/login"));
+    }
+
+    @Test
+    void otherUserCannotOpenQnaDetail() throws Exception {
+        when(boardService.getPublicDetail(10, BoardType.QNA)).thenReturn(qnaDetail("user01"));
+
+        mockMvc.perform(get("/boards/qna/10")
+                        .with(authenticationFor("user02", MemberRole.USER)))
+                .andExpect(status().isForbidden())
+                .andExpect(view().name("error/access-denied"));
+    }
+
+    @Test
+    void designerCanOpenQnaDetail() throws Exception {
+        when(boardService.getPublicDetail(10, BoardType.QNA)).thenReturn(qnaDetail("user01"));
+        when(boardViewGuard.shouldIncreaseView(eq(10), eq(BoardType.QNA), any(), any())).thenReturn(false);
+
+        mockMvc.perform(get("/boards/qna/10")
+                        .with(authenticationFor("designer01", MemberRole.DESIGNER)))
+                .andExpect(status().isOk())
+                .andExpect(view().name("board/qna-detail"));
+    }
+
+    @Test
+    void qnaDetailIncreasesViewAfterAccessCheck() throws Exception {
+        when(boardService.getPublicDetail(10, BoardType.QNA)).thenReturn(qnaDetail("user01"));
+        when(boardViewGuard.shouldIncreaseView(eq(10), eq(BoardType.QNA), any(), any())).thenReturn(true);
+        when(boardService.getPublicDetailAndIncreaseView(10, BoardType.QNA)).thenReturn(qnaDetail("user01"));
+
+        mockMvc.perform(get("/boards/qna/10")
+                        .with(authenticationFor("user01", MemberRole.USER)))
+                .andExpect(status().isOk())
+                .andExpect(view().name("board/qna-detail"));
+
+        verify(boardService).getPublicDetail(10, BoardType.QNA);
+        verify(boardService).getPublicDetailAndIncreaseView(10, BoardType.QNA);
+    }
+
+    @Test
+    void otherUserCannotReportQna() throws Exception {
+        when(boardService.getPublicDetail(10, BoardType.QNA)).thenReturn(qnaDetail("user01"));
+
+        mockMvc.perform(post("/boards/qna/10/report")
+                        .with(authenticationFor("user02", MemberRole.USER))
+                        .with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(view().name("error/access-denied"));
+
+        verify(boardService).getPublicDetail(10, BoardType.QNA);
+        verify(boardService, never()).reportBoard(eq(10), any());
+    }
+
+    @Test
+    void designerCanReportQna() throws Exception {
+        when(boardService.getPublicDetail(10, BoardType.QNA)).thenReturn(qnaDetail("user01"));
+        when(boardService.reportBoard(10, "designer01")).thenReturn(true);
+
+        mockMvc.perform(post("/boards/qna/10/report")
+                        .with(authenticationFor("designer01", MemberRole.DESIGNER))
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/boards/qna/10?reported=true"));
+
+        verify(boardService).getPublicDetail(10, BoardType.QNA);
+        verify(boardService).reportBoard(10, "designer01");
+    }
+
+    private BoardDetailResponse qnaDetail(String memberId) {
+        return new BoardDetailResponse(
+                10,
+                BoardType.QNA,
+                "QnA title",
+                "QnA content",
+                memberId,
+                0,
+                null,
+                LocalDateTime.of(2026, 4, 13, 10, 0),
+                LocalDateTime.of(2026, 4, 13, 10, 0),
+                false,
+                null,
+                0
+        );
     }
 
     private RequestPostProcessor authenticationFor(String memberId, MemberRole role) {

@@ -56,7 +56,7 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/api/reservations").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/reservations/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/reservations/*/status").hasAnyRole("ADMIN", "DESIGNER")
                         .requestMatchers(HttpMethod.GET, "/salons/new", "/salons/*/edit").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/salons", "/salons/sync/kakao", "/salons/*/edit").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/salons/*").hasRole("ADMIN")

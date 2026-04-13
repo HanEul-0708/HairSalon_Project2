@@ -1,7 +1,8 @@
 package com.hairsalonproject2.salon.controller;
 
-import com.hairsalonproject2.common.util.AddressRegionUtils;
+import com.hairsalonproject2.common.support.FilterPageState;
 import com.hairsalonproject2.common.support.PageUtils;
+import com.hairsalonproject2.common.util.AddressRegionUtils;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.salon.dto.request.SalonCreateRequest;
 import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
@@ -57,13 +58,26 @@ public class SalonController {
     public String list(@ModelAttribute SalonSearchRequest request,
                        @RequestParam(defaultValue = "1") int page,
                        Model model) {
-        Page<?> resultPage = request.hasSearchRequest()
-                ? salonQueryService.search(request, page - 1, SALONS_PER_PAGE)
-                : PageUtils.empty(SALONS_PER_PAGE);
+        FilterPageState pageState = FilterPageState.of(request.isSearched(), hasSalonFilter(request));
+        Page<?> resultPage;
+
+        if (pageState.filterRequired()) {
+            resultPage = PageUtils.empty(SALONS_PER_PAGE);
+        } else if (pageState.defaultListing()) {
+            resultPage = PageUtils.sliceZeroBased(
+                    salonQueryService.search(defaultSalonSearchRequest(), 0, SALONS_PER_PAGE).getContent(),
+                    0,
+                    SALONS_PER_PAGE
+            );
+        } else {
+            resultPage = salonQueryService.search(request, page - 1, SALONS_PER_PAGE);
+        }
 
         model.addAttribute("salons", resultPage.getContent());
         model.addAttribute("search", request);
-        model.addAttribute("searched", request.hasSearchRequest());
+        model.addAttribute("searched", pageState.searched());
+        model.addAttribute("defaultListing", pageState.defaultListing());
+        model.addAttribute("filterRequired", pageState.filterRequired());
         model.addAttribute("cityOptions", salonQueryService.getCityOptions());
         model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(request.getCity()));
         model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(request.getCity(), request.getDistrict()));
@@ -238,6 +252,29 @@ public class SalonController {
 
     private String memberId(CustomUserDetails userDetails) {
         return userDetails.getUsername();
+    }
+
+    private SalonSearchRequest defaultSalonSearchRequest() {
+        SalonSearchRequest request = new SalonSearchRequest();
+        request.setSort("rating");
+        request.setSearched(true);
+        return request;
+    }
+
+    private boolean hasSalonFilter(SalonSearchRequest request) {
+        return hasText(request.getKeyword())
+                || hasText(request.getRegion())
+                || hasText(request.getCity())
+                || hasText(request.getDistrict())
+                || hasText(request.getNeighborhood())
+                || request.getMinRating() != null
+                || request.getLatitude() != null
+                || request.getLongitude() != null
+                || request.getRadiusKm() != null;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
 }

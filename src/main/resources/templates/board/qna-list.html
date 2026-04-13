@@ -68,7 +68,7 @@
                           th:text="'[' + ${board.replyCount} + ']'">
                         </span>
                 </td>
-                <td th:text="${board.memberId}"></td>
+                <td th:text="${T(com.hairsalonproject2.common.util.NameMaskingUtils).maskName(board.memberId)}"></td>
                 <td th:text="${#temporals.format(board.createdAt, 'yyyy.MM.dd')}"></td>
                 <td th:text="${board.viewCount}"></td>
             </tr>

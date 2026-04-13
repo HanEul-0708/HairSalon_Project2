@@ -170,6 +170,37 @@ public class ReservationServiceImpl implements ReservationService {
         return toResponse(reservationRepository.save(reservation));
     }
 
+    @Override
+    public boolean isReservationAvailable(Integer designerId,
+                                          LocalDate reservationDate,
+                                          LocalTime reservationTime,
+                                          Integer reservationId) {
+        if (designerId == null || reservationDate == null || reservationTime == null) {
+            return false;
+        }
+
+        validateReservationTimeUnit(reservationTime);
+        return !reservationSlotExists(designerId, reservationDate, reservationTime, reservationId);
+    }
+
+    @Override
+    public List<LocalTime> getUnavailableReservationTimes(Integer designerId,
+                                                          LocalDate reservationDate,
+                                                          Integer reservationId) {
+        if (designerId == null || reservationDate == null) {
+            return List.of();
+        }
+
+        return reservationSlotRepository.findByDesigner_DesignerIdAndReservationDate(designerId, reservationDate).stream()
+                .filter(slot -> reservationId == null
+                        || slot.getReservation() == null
+                        || !reservationId.equals(slot.getReservation().getReservationId()))
+                .map(ReservationSlot::getSlotTime)
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
     private void validateStatusTransition(ReservationStatus currentStatus, ReservationStatus nextStatus) {
         if (currentStatus == nextStatus) {
             return;
@@ -201,17 +232,22 @@ public class ReservationServiceImpl implements ReservationService {
                                          LocalDate reservationDate,
                                          LocalTime reservationTime,
                                          Integer reservationId) {
-        boolean exists = reservationId == null
+        if (reservationSlotExists(designerId, reservationDate, reservationTime, reservationId)) {
+            throw new IllegalArgumentException("This time slot is already reserved.");
+        }
+    }
+
+    private boolean reservationSlotExists(Integer designerId,
+                                          LocalDate reservationDate,
+                                          LocalTime reservationTime,
+                                          Integer reservationId) {
+        return reservationId == null
                 ? reservationSlotRepository.existsByDesigner_DesignerIdAndReservationDateAndSlotTime(
                 designerId, reservationDate, reservationTime
         )
                 : reservationSlotRepository.existsByDesigner_DesignerIdAndReservationDateAndSlotTimeAndReservation_ReservationIdNot(
                 designerId, reservationDate, reservationTime, reservationId
         );
-
-        if (exists) {
-            throw new IllegalArgumentException("This time slot is already reserved.");
-        }
     }
 
     private void saveReservationSlot(Reservation reservation) {
@@ -271,6 +307,23 @@ public class ReservationServiceImpl implements ReservationService {
 
         if (!isAdmin && !Objects.equals(reservation.getMember().getMemberId(), loginMemberId)) {
             throw new AccessDeniedException("You can only access your own reservation.");
+        }
+    }
+
+    @Override
+    public void validateReservationDesignerSalonAccess(Integer reservationId, String designerMemberId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
+        Designer designer = designerRepository.findByMember_MemberId(designerMemberId)
+                .orElseThrow(() -> new AccessDeniedException("Designer account is not linked."));
+
+        Integer reservationSalonId = reservation.getDesigner() == null || reservation.getDesigner().getSalon() == null
+                ? null
+                : reservation.getDesigner().getSalon().getSalonId();
+        Integer designerSalonId = designer.getSalon() == null ? null : designer.getSalon().getSalonId();
+
+        if (reservationSalonId == null || !Objects.equals(reservationSalonId, designerSalonId)) {
+            throw new AccessDeniedException("You can only manage reservations for your salon.");
         }
     }
 

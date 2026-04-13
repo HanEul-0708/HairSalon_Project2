@@ -1,5 +1,6 @@
 package com.hairsalonproject2.designer.service;
 
+import com.hairsalonproject2.designer.constant.DesignerSpecialty;
 import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
 import com.hairsalonproject2.designer.entity.Designer;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -9,6 +10,8 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public final class DesignerSpecifications {
@@ -16,8 +19,12 @@ public final class DesignerSpecifications {
     }
 
     public static Specification<Designer> bySearch(DesignerSearchRequest request) {
+        return bySearch(request, List.of());
+    }
+
+    public static Specification<Designer> bySearch(DesignerSearchRequest request, List<Integer> keywordMatchedSalonIds) {
         return Specification.<Designer>unrestricted()
-                .and(keywordContains(request.getKeyword()))
+                .and(keywordContains(request.getKeyword(), keywordMatchedSalonIds))
                 .and(salonKeywordContains(request.getSalonKeyword()))
                 .and(cityContains(request.getCity()))
                 .and(districtContains(request.getDistrict()))
@@ -25,17 +32,27 @@ public final class DesignerSpecifications {
                 .and(careerYearsAtLeast(request.getMinCareerYears()));
     }
 
-    private static Specification<Designer> keywordContains(String keyword) {
+    private static Specification<Designer> keywordContains(String keyword, List<Integer> keywordMatchedSalonIds) {
         if (keyword == null || keyword.isBlank()) {
             return null;
         }
         return (root, query, cb) -> {
             String pattern = containsPattern(keyword);
-            return cb.or(
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.or(
                     likeIgnoreCase(cb, root.get("name"), pattern),
                     likeIgnoreCase(cb, root.get("introduction"), pattern),
                     likeIgnoreCase(cb, root.get("salon").get("name"), pattern)
-            );
+            ));
+
+            matchingSpecialties(keyword).forEach(specialty ->
+                    predicates.add(cb.equal(root.get("specialty"), specialty)));
+
+            if (keywordMatchedSalonIds != null && !keywordMatchedSalonIds.isEmpty()) {
+                predicates.add(root.get("salon").get("salonId").in(keywordMatchedSalonIds));
+            }
+
+            return cb.or(predicates.toArray(Predicate[]::new));
         };
     }
 
@@ -107,5 +124,19 @@ public final class DesignerSpecifications {
 
     private static String normalize(String value) {
         return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static List<DesignerSpecialty> matchingSpecialties(String keyword) {
+        String normalizedKeyword = normalize(keyword);
+        List<DesignerSpecialty> specialties = new ArrayList<>();
+
+        for (DesignerSpecialty specialty : DesignerSpecialty.values()) {
+            if (normalize(specialty.name()).contains(normalizedKeyword)
+                    || normalize(specialty.getLabel()).contains(normalizedKeyword)) {
+                specialties.add(specialty);
+            }
+        }
+
+        return specialties;
     }
 }

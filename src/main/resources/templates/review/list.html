@@ -97,6 +97,10 @@
             </div>
         </form>
 
+        <div class="review-empty" th:if="${!searched}">
+            <p>지역, 미용실, 디자이너 중 하나 이상 선택하면 리뷰가 표시됩니다.</p>
+        </div>
+
         <div th:if="${searched}">
             <div class="review-results-head catalog-results-head">
                 <div>
@@ -154,7 +158,7 @@
             </div>
 
             <div class="review-empty" th:if="${#lists.isEmpty(reviews)}">
-                <p>조건에 맞는 리뷰가 없습니다.</p>
+                <p th:text="${filterRequired} ? '지역, 미용실, 디자이너 중 하나 이상 선택하면 리뷰가 표시됩니다.' : '조건에 맞는 리뷰가 없습니다.'">조건에 맞는 리뷰가 없습니다.</p>
             </div>
 
             <div class="pagination" th:if="${totalPages > 1}">

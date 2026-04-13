@@ -44,20 +44,21 @@
 .reservation-filter-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 6px;
+    margin-top: 8px;
 }
 
 .reservation-filter-chip {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 0 14px;
+    gap: 6px;
+    min-height: 30px;
+    padding: 0 8px;
     border: 1px solid var(--gold-border);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-md);
     background: #fcfbf7;
     color: var(--text-main);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 }
 
 .reservation-filter-chip input {
@@ -104,6 +105,12 @@
     outline: none;
     border-color: var(--gold);
     box-shadow: 0 0 0 3px rgba(201,168,76,0.14);
+}
+
+.form-group select:disabled {
+    background: var(--bg-soft);
+    color: var(--text-sub);
+    cursor: not-allowed;
 }
 
 .form-row {

@@ -67,8 +67,15 @@ public class BoardController {
     public String qnaList(BoardSearchRequest request,
                           @RequestParam(defaultValue = "0") int page,
                           @RequestParam(defaultValue = "10") int size,
+                          @AuthenticationPrincipal CustomUserDetails userDetails,
                           Model model) {
-        Page<BoardResponse> boardPage = boardService.getQnaPage(page, size, request.getKeyword());
+        Page<BoardResponse> boardPage = boardService.getQnaPage(
+                page,
+                size,
+                request.getKeyword(),
+                userDetails == null ? null : userDetails.getUsername(),
+                canViewAllQna(userDetails)
+        );
         applyBoardPageModel(model, boardPage, request.getKeyword(), BoardType.QNA, size);
         return "board/qna-list";
     }
@@ -77,8 +84,13 @@ public class BoardController {
     public String qnaDetail(@PathVariable Integer boardId,
                             HttpServletRequest request,
                             HttpServletResponse response,
+                            @AuthenticationPrincipal CustomUserDetails userDetails,
                             Model model) {
-        BoardDetailResponse board = getBoardDetailWithViewGuard(boardId, BoardType.QNA, request, response);
+        if (userDetails == null) {
+            return "redirect:/members/login";
+        }
+
+        BoardDetailResponse board = getQnaDetailWithViewGuard(boardId, request, response, userDetails);
         model.addAttribute("board", board);
         return "board/qna-detail";
     }
@@ -87,6 +99,8 @@ public class BoardController {
     @PreAuthorize("isAuthenticated()")
     public String reportQna(@PathVariable Integer boardId,
                             @AuthenticationPrincipal CustomUserDetails userDetails) {
+        getPublicBoardDetailWithAccessCheck(boardId, BoardType.QNA, userDetails);
+
         boolean reported = boardService.reportBoard(boardId, userDetails.getUsername());
         if (reported) {
             return "redirect:/boards/qna/" + boardId + "?reported=true";
@@ -227,6 +241,20 @@ public class BoardController {
         return boardService.getPublicDetailAndIncreaseView(boardId, boardType);
     }
 
+    private BoardDetailResponse getQnaDetailWithViewGuard(Integer boardId,
+                                                          HttpServletRequest request,
+                                                          HttpServletResponse response,
+                                                          CustomUserDetails userDetails) {
+        BoardDetailResponse board = getPublicBoardDetailWithAccessCheck(boardId, BoardType.QNA, userDetails);
+        if (!boardViewGuard.shouldIncreaseView(boardId, BoardType.QNA, request, response)) {
+            return board;
+        }
+        return requireQnaAccess(
+                boardService.getPublicDetailAndIncreaseView(boardId, BoardType.QNA),
+                userDetails
+        );
+    }
+
     private String buildDetailPath(Integer boardId, BoardType boardType) {
         return boardType == BoardType.NOTICE
                 ? "/boards/notices/" + boardId
@@ -244,5 +272,25 @@ public class BoardController {
     private boolean isAdmin(CustomUserDetails userDetails) {
         return userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    private boolean canViewAllQna(CustomUserDetails userDetails) {
+        return userDetails != null && userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")
+                        || a.getAuthority().equals("ROLE_DESIGNER"));
+    }
+
+    private BoardDetailResponse getPublicBoardDetailWithAccessCheck(Integer boardId,
+                                                                    BoardType boardType,
+                                                                    CustomUserDetails userDetails) {
+        BoardDetailResponse board = boardService.getPublicDetail(boardId, boardType);
+        return requireQnaAccess(board, userDetails);
+    }
+
+    private BoardDetailResponse requireQnaAccess(BoardDetailResponse board, CustomUserDetails userDetails) {
+        if (canViewAllQna(userDetails) || board.getMemberId().equals(userDetails.getUsername())) {
+            return board;
+        }
+        throw new org.springframework.security.access.AccessDeniedException("문의글을 조회할 권한이 없습니다.");
     }
 }

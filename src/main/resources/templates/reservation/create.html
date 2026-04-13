@@ -34,6 +34,27 @@
 
         <div class="form-row">
             <div class="form-group">
+                <label for="city">시</label>
+                <select id="city" name="city">
+                    <option value="">시를 선택하세요</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="district">구</label>
+                <select id="district" name="district">
+                    <option value="">구를 선택하세요</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="neighborhood">동</label>
+                <select id="neighborhood" name="neighborhood">
+                    <option value="">동을 선택하세요</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label for="salonId">미용실</label>
                 <select id="salonId" name="salonId">
                     <option value="">미용실을 선택하세요</option>
@@ -41,12 +62,9 @@
                             th:value="${salon.salonId}"
                             th:text="${salon.name}"
                             th:selected="${selectedSalonId != null and selectedSalonId == salon.salonId}"
-                            th:attr="data-liked=${#lists.contains(likedSalonIds, salon.salonId)}">
+                            th:attr="data-liked=${#lists.contains(likedSalonIds, salon.salonId)},data-address=${salon.address}">
                     </option>
                 </select>
-            </div>
-            <div class="form-group">
-                <label>좋아요 필터</label>
                 <div class="reservation-filter-chips">
                     <label class="reservation-filter-chip">
                         <input type="checkbox" id="likedSalonOnly">

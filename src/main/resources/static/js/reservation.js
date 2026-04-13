@@ -1,11 +1,15 @@
+var reservationTimeOptionsRequest = 0;
+
 document.addEventListener("DOMContentLoaded", function () {
     setMinimumReservationDate();
+    bindReservationTimeOptionTriggers();
     buildReservationTimeOptions();
     bindReservationSelectionFilters();
     bindReservationFormSubmit();
     bindReservationCardFocusEffect();
     bindServicePriceSync();
     bindReservationCancelButtons();
+    bindReservationStatusButtons();
 });
 
 function setMinimumReservationDate() {
@@ -13,23 +17,30 @@ function setMinimumReservationDate() {
     if (!dateInput) return;
 
     dateInput.min = formatDate(new Date());
-    dateInput.addEventListener("change", buildReservationTimeOptions);
 }
 
-function buildReservationTimeOptions() {
+function bindReservationTimeOptionTriggers() {
+    var dateInput = document.getElementById("reservationDate");
+    var designerSelect = document.getElementById("designerId");
+
+    if (dateInput) {
+        dateInput.addEventListener("change", buildReservationTimeOptions);
+    }
+    if (designerSelect) {
+        designerSelect.addEventListener("change", buildReservationTimeOptions);
+    }
+}
+
+async function buildReservationTimeOptions() {
+    var currentRequest = ++reservationTimeOptionsRequest;
     var dateInput = document.getElementById("reservationDate");
     var timeSelect = document.getElementById("reservationTime");
     if (!dateInput || !timeSelect) return;
 
     var selectedTime = timeSelect.getAttribute("data-selected-time") || timeSelect.value || "";
+    timeSelect.removeAttribute("data-selected-time");
     var minimumTime = getMinimumSelectableTime(dateInput.value);
-
-    timeSelect.innerHTML = "";
-
-    var defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "예약 시간을 선택하세요";
-    timeSelect.appendChild(defaultOption);
+    var candidateTimes = [];
 
     for (var hour = 9; hour <= 20; hour++) {
         for (var minute = 0; minute < 60; minute += 30) {
@@ -42,14 +53,42 @@ function buildReservationTimeOptions() {
                 continue;
             }
 
-            var option = document.createElement("option");
-            option.value = timeValue;
-            option.textContent = timeValue;
-            timeSelect.appendChild(option);
+            candidateTimes.push(timeValue);
         }
     }
 
-    if (selectedTime && (!minimumTime || selectedTime >= minimumTime)) {
+    var designerSelect = document.getElementById("designerId");
+    var reservationIdInput = document.getElementById("reservationId");
+    var designerId = designerSelect ? designerSelect.value : "";
+    var reservationId = reservationIdInput ? reservationIdInput.value : "";
+    var unavailableTimes = await fetchUnavailableReservationTimes(
+            designerId,
+            dateInput.value,
+            reservationId,
+            candidateTimes
+    );
+
+    if (currentRequest !== reservationTimeOptionsRequest) {
+        return;
+    }
+
+    timeSelect.innerHTML = "";
+
+    var defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "예약 시간을 선택하세요";
+    timeSelect.appendChild(defaultOption);
+
+    candidateTimes.forEach(function (timeValue) {
+        var option = document.createElement("option");
+        option.value = timeValue;
+        option.textContent = unavailableTimes.has(timeValue) ? timeValue + " (예약 마감)" : timeValue;
+        option.disabled = unavailableTimes.has(timeValue);
+        timeSelect.appendChild(option);
+    });
+
+    var selectedOption = timeSelect.querySelector('option[value="' + selectedTime + '"]');
+    if (selectedOption && !selectedOption.disabled) {
         timeSelect.value = selectedTime;
     } else {
         timeSelect.value = "";
@@ -57,81 +96,241 @@ function buildReservationTimeOptions() {
 }
 
 function bindReservationSelectionFilters() {
+    var citySelect = document.getElementById("city");
+    var districtSelect = document.getElementById("district");
+    var neighborhoodSelect = document.getElementById("neighborhood");
     var salonSelect = document.getElementById("salonId");
     var designerSelect = document.getElementById("designerId");
     var serviceSelect = document.getElementById("salonServiceId");
     var likedSalonOnly = document.getElementById("likedSalonOnly");
     var likedDesignerOnly = document.getElementById("likedDesignerOnly");
 
-    if (!salonSelect || !designerSelect || !serviceSelect) {
+    if (!citySelect || !districtSelect || !neighborhoodSelect || !salonSelect || !designerSelect || !serviceSelect) {
         return;
     }
 
     var salonOptions = collectOptionData(salonSelect);
     var designerOptions = collectOptionData(designerSelect);
     var serviceOptions = collectOptionData(serviceSelect);
+    var initialSalonId = salonSelect.value;
+    var initialSalon = salonOptions.find(function (option) {
+        return option.value === initialSalonId;
+    });
 
-    function applyFilters() {
-        var selectedSalonId = salonSelect.value;
+    function baseSalons() {
         var likedSalonMode = likedSalonOnly && likedSalonOnly.checked;
-        var likedDesignerMode = likedDesignerOnly && likedDesignerOnly.checked;
-
-        rebuildOptions(
-            salonSelect,
-            salonOptions,
-            "미용실을 선택하세요",
-            function (option) {
-                return !likedSalonMode || option.liked;
-            }
-        );
-
-        if (selectedSalonId && !optionExists(salonSelect, selectedSalonId)) {
-            salonSelect.value = "";
-            selectedSalonId = "";
-        } else if (selectedSalonId) {
-            salonSelect.value = selectedSalonId;
-        }
-
-        var currentDesignerId = designerSelect.value;
-        rebuildOptions(
-            designerSelect,
-            designerOptions,
-            "디자이너를 선택하세요",
-            function (option) {
-                var matchesSalon = !selectedSalonId || option.salonId === selectedSalonId;
-                var matchesLiked = !likedDesignerMode || option.liked;
-                return matchesSalon && matchesLiked;
-            }
-        );
-        if (currentDesignerId && optionExists(designerSelect, currentDesignerId)) {
-            designerSelect.value = currentDesignerId;
-        }
-
-        var currentServiceId = serviceSelect.value;
-        rebuildOptions(
-            serviceSelect,
-            serviceOptions,
-            "시술을 선택하세요",
-            function (option) {
-                return !selectedSalonId || option.salonId === selectedSalonId;
-            }
-        );
-        if (currentServiceId && optionExists(serviceSelect, currentServiceId)) {
-            serviceSelect.value = currentServiceId;
-        }
-
-        serviceSelect.dispatchEvent(new Event("change"));
+        return salonOptions.filter(function (option) {
+            return !likedSalonMode || option.liked;
+        });
     }
 
-    salonSelect.addEventListener("change", applyFilters);
+    function populateSelect(select, options, placeholderText, selectedValue) {
+        select.innerHTML = "";
+
+        var defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = placeholderText;
+        select.appendChild(defaultOption);
+
+        options.forEach(function (optionData) {
+            var option = document.createElement("option");
+            option.value = optionData.value;
+            option.textContent = optionData.text;
+            if (optionData.price) {
+                option.setAttribute("data-price", optionData.price);
+            }
+            if (optionData.salonId) {
+                option.setAttribute("data-salon-id", optionData.salonId);
+            }
+            if (optionData.address) {
+                option.setAttribute("data-address", optionData.address);
+            }
+            option.setAttribute("data-liked", optionData.liked ? "true" : "false");
+            select.appendChild(option);
+        });
+
+        select.value = selectedValue || "";
+        if (select.value !== (selectedValue || "")) {
+            select.value = "";
+        }
+    }
+
+    function populateTextSelect(select, values, placeholderText, selectedValue) {
+        populateSelect(
+            select,
+            values.map(function (value) {
+                return { value: value, text: value };
+            }),
+            placeholderText,
+            selectedValue
+        );
+    }
+
+    function disableSelect(select, placeholderText) {
+        populateSelect(select, [], placeholderText, "");
+        select.disabled = true;
+    }
+
+    function enableSelect(select) {
+        select.disabled = false;
+    }
+
+    function uniqueSorted(values) {
+        return Array.from(new Set(values.filter(Boolean))).sort();
+    }
+
+    function salonsByRegion() {
+        var selectedCity = citySelect.value;
+        var selectedDistrict = districtSelect.value;
+        var selectedNeighborhood = neighborhoodSelect.value;
+
+        return baseSalons().filter(function (salon) {
+            return salon.city === selectedCity
+                && salon.district === selectedDistrict
+                && salon.neighborhood === selectedNeighborhood;
+        });
+    }
+
+    function syncCities(resetBelow) {
+        var selectedCity = resetBelow ? "" : (citySelect.value || (initialSalon ? initialSalon.city : ""));
+        populateTextSelect(
+            citySelect,
+            uniqueSorted(baseSalons().map(function (salon) { return salon.city; })),
+            "시를 선택하세요",
+            selectedCity
+        );
+        syncDistricts(resetBelow);
+    }
+
+    function syncDistricts(resetBelow) {
+        var selectedCity = citySelect.value;
+        if (!selectedCity) {
+            disableSelect(districtSelect, "시를 먼저 선택하세요");
+            syncNeighborhoods(true);
+            return;
+        }
+
+        var selectedDistrict = resetBelow ? "" : (districtSelect.value || (initialSalon && initialSalon.city === selectedCity ? initialSalon.district : ""));
+        var districts = uniqueSorted(baseSalons()
+            .filter(function (salon) { return salon.city === selectedCity; })
+            .map(function (salon) { return salon.district; }));
+        enableSelect(districtSelect);
+        populateTextSelect(districtSelect, districts, "구를 선택하세요", selectedDistrict);
+        syncNeighborhoods(resetBelow);
+    }
+
+    function syncNeighborhoods(resetBelow) {
+        var selectedCity = citySelect.value;
+        var selectedDistrict = districtSelect.value;
+        if (!selectedCity || !selectedDistrict) {
+            disableSelect(neighborhoodSelect, "구를 먼저 선택하세요");
+            syncSalons(true);
+            return;
+        }
+
+        var selectedNeighborhood = resetBelow ? "" : (neighborhoodSelect.value || (initialSalon
+            && initialSalon.city === selectedCity
+            && initialSalon.district === selectedDistrict ? initialSalon.neighborhood : ""));
+        var neighborhoods = uniqueSorted(baseSalons()
+            .filter(function (salon) {
+                return salon.city === selectedCity && salon.district === selectedDistrict;
+            })
+            .map(function (salon) { return salon.neighborhood; }));
+        enableSelect(neighborhoodSelect);
+        populateTextSelect(neighborhoodSelect, neighborhoods, "동을 선택하세요", selectedNeighborhood);
+        syncSalons(resetBelow);
+    }
+
+    function syncSalons(resetBelow) {
+        var selectedNeighborhood = neighborhoodSelect.value;
+        if (!selectedNeighborhood) {
+            disableSelect(salonSelect, "동을 먼저 선택하세요");
+            syncDesigners(true);
+            return;
+        }
+
+        var selectedSalonId = resetBelow ? "" : salonSelect.value;
+        if (!selectedSalonId && initialSalon && initialSalon.neighborhood === selectedNeighborhood) {
+            selectedSalonId = initialSalon.value;
+        }
+        enableSelect(salonSelect);
+        populateSelect(salonSelect, salonsByRegion(), "미용실을 선택하세요", selectedSalonId);
+        syncDesigners(resetBelow);
+    }
+
+    function syncDesigners(resetBelow) {
+        var selectedSalonId = salonSelect.value;
+        var likedDesignerMode = likedDesignerOnly && likedDesignerOnly.checked;
+        if (!selectedSalonId) {
+            disableSelect(designerSelect, "미용실을 먼저 선택하세요");
+            syncServices(true);
+            return;
+        }
+
+        enableSelect(designerSelect);
+        populateSelect(
+            designerSelect,
+            designerOptions.filter(function (option) {
+                return option.salonId === selectedSalonId
+                    && (!likedDesignerMode || option.liked);
+            }),
+            "디자이너를 선택하세요",
+            resetBelow ? "" : designerSelect.value
+        );
+        syncServices(resetBelow);
+    }
+
+    function syncServices(resetBelow) {
+        var selectedSalonId = salonSelect.value;
+        if (!selectedSalonId) {
+            disableSelect(serviceSelect, "미용실을 먼저 선택하세요");
+            serviceSelect.dispatchEvent(new Event("change"));
+            buildReservationTimeOptions();
+            return;
+        }
+
+        enableSelect(serviceSelect);
+        populateSelect(
+            serviceSelect,
+            serviceOptions.filter(function (option) {
+                return option.salonId === selectedSalonId;
+            }),
+            "시술을 선택하세요",
+            resetBelow ? "" : serviceSelect.value
+        );
+        serviceSelect.dispatchEvent(new Event("change"));
+        buildReservationTimeOptions();
+    }
+
+    citySelect.addEventListener("change", function () {
+        initialSalon = null;
+        syncDistricts(true);
+    });
+    districtSelect.addEventListener("change", function () {
+        initialSalon = null;
+        syncNeighborhoods(true);
+    });
+    neighborhoodSelect.addEventListener("change", function () {
+        initialSalon = null;
+        syncSalons(true);
+    });
+    salonSelect.addEventListener("change", function () {
+        initialSalon = null;
+        syncDesigners(true);
+    });
     if (likedSalonOnly) {
-        likedSalonOnly.addEventListener("change", applyFilters);
+        likedSalonOnly.addEventListener("change", function () {
+            initialSalon = null;
+            syncCities(false);
+        });
     }
     if (likedDesignerOnly) {
-        likedDesignerOnly.addEventListener("change", applyFilters);
+        likedDesignerOnly.addEventListener("change", function () {
+            syncDesigners(false);
+        });
     }
 
-    applyFilters();
+    syncCities(false);
 }
 
 function collectOptionData(select) {
@@ -140,42 +339,41 @@ function collectOptionData(select) {
             return option.value !== "";
         })
         .map(function (option) {
+            var address = option.getAttribute("data-address") || "";
+            var regionParts = parseAddressRegion(address);
             return {
                 value: option.value,
                 text: option.textContent,
                 price: option.getAttribute("data-price"),
                 salonId: option.getAttribute("data-salon-id"),
+                address: address,
+                city: regionParts.city,
+                district: regionParts.district,
+                neighborhood: regionParts.neighborhood,
                 liked: option.getAttribute("data-liked") === "true"
             };
         });
 }
 
-function rebuildOptions(select, options, placeholderText, filterFn) {
-    var previousValue = select.value;
-    select.innerHTML = "";
+function parseAddressRegion(address) {
+    var tokens = (address || "").trim().split(/\s+/).filter(Boolean);
+    return {
+        city: tokens[0] || "",
+        district: tokens[1] || "",
+        neighborhood: normalizeNeighborhood(tokens[2] || "")
+    };
+}
 
-    var defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = placeholderText;
-    select.appendChild(defaultOption);
-
-    options.filter(filterFn).forEach(function (optionData) {
-        var option = document.createElement("option");
-        option.value = optionData.value;
-        option.textContent = optionData.text;
-        if (optionData.price) {
-            option.setAttribute("data-price", optionData.price);
-        }
-        if (optionData.salonId) {
-            option.setAttribute("data-salon-id", optionData.salonId);
-        }
-        option.setAttribute("data-liked", optionData.liked ? "true" : "false");
-        select.appendChild(option);
-    });
-
-    if (previousValue && optionExists(select, previousValue)) {
-        select.value = previousValue;
+function normalizeNeighborhood(value) {
+    if (!value) {
+        return "";
     }
+
+    if (/[동가읍면리]$/.test(value)) {
+        return value;
+    }
+
+    return "";
 }
 
 function optionExists(select, value) {
@@ -204,7 +402,7 @@ function getMinimumSelectableTime(selectedDate) {
         rounded.setHours(rounded.getHours() + 1);
         rounded.setMinutes(0);
     } else {
-        rounded.setMinutes(nextHalfHour);
+        rounded.setMinutes(nextQuarter);
     }
 
     if (rounded.getHours() < 9) {
@@ -216,6 +414,33 @@ function getMinimumSelectableTime(selectedDate) {
     }
 
     return String(rounded.getHours()).padStart(2, "0") + ":" + String(rounded.getMinutes()).padStart(2, "0");
+}
+
+async function fetchUnavailableReservationTimes(designerId, reservationDate, reservationId, candidateTimes) {
+    if (!designerId || !reservationDate || !candidateTimes.length) {
+        return new Set();
+    }
+
+    var params = new URLSearchParams({
+        designerId: designerId,
+        reservationDate: reservationDate
+    });
+    if (reservationId) {
+        params.append("reservationId", reservationId);
+    }
+
+    try {
+        var response = await fetch("/api/reservations/unavailable-times?" + params.toString());
+        if (!response.ok) {
+            return new Set();
+        }
+
+        var data = await response.json();
+        return new Set(data.unavailableTimes || []);
+    } catch (error) {
+        console.error(error);
+        return new Set();
+    }
 }
 
 function formatDate(date) {
@@ -348,6 +573,50 @@ function bindReservationCancelButtons() {
             } catch (error) {
                 console.error(error);
                 alert("예약 취소 중 오류가 발생했습니다.");
+            }
+        });
+    });
+}
+
+function bindReservationStatusButtons() {
+    var buttons = document.querySelectorAll("[data-reservation-status]");
+    if (!buttons.length) return;
+
+    buttons.forEach(function (button) {
+        button.addEventListener("click", async function () {
+            var reservationId = button.getAttribute("data-reservation-id");
+            var status = button.getAttribute("data-reservation-status-value");
+            if (!reservationId || !status) {
+                return;
+            }
+
+            if (!window.confirm(status === "COMPLETED" ? "방문 완료로 처리하시겠습니까?" : "예약 상태를 변경하시겠습니까?")) {
+                return;
+            }
+
+            var headers = {
+                "Content-Type": "application/json"
+            };
+            applyCsrfHeaders(headers);
+
+            try {
+                var response = await fetch("/api/reservations/" + reservationId + "/status", {
+                    method: "PATCH",
+                    headers: headers,
+                    body: JSON.stringify({ status: status })
+                });
+
+                if (!response.ok) {
+                    var errorText = await response.text();
+                    alert("예약 상태 변경에 실패했습니다.\n" + errorText);
+                    return;
+                }
+
+                alert(status === "COMPLETED" ? "방문 완료로 처리되었습니다." : "예약 상태가 변경되었습니다.");
+                window.location.reload();
+            } catch (error) {
+                console.error(error);
+                alert("예약 상태 변경 중 오류가 발생했습니다.");
             }
         });
     });

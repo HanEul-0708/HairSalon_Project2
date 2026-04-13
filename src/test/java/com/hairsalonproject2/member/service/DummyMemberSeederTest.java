@@ -2,8 +2,11 @@ package com.hairsalonproject2.member.service;
 
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
+import com.hairsalonproject2.designer.entity.Designer;
+import com.hairsalonproject2.designer.repository.DesignerRepository;
 import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.repository.MemberRepository;
+import com.hairsalonproject2.salon.entity.Salon;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +32,9 @@ class DummyMemberSeederTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private DesignerRepository designerRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
@@ -43,10 +49,19 @@ class DummyMemberSeederTest {
 
         when(passwordEncoder.encode("12341234")).thenReturn("encoded");
         when(memberRepository.findAllByMemberIdStartingWith("designer"))
-                .thenReturn(List.of(existingMember("designer5")));
+                .thenReturn(List.of(existingMember("designer5")))
+                .thenReturn(List.of(existingMember("designer5"), existingMember("designer6")))
+                .thenReturn(List.of(existingMember("designer5"), existingMember("designer6"), existingMember("designer7")));
         when(memberRepository.findAllByMemberIdStartingWith("user"))
                 .thenReturn(List.of(existingMember("user7")));
         when(memberRepository.existsByMemberId(any())).thenReturn(false);
+        when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(designerRepository.findAllByMemberIsNull()).thenReturn(List.of(
+                unlinkedDesigner(1, 1),
+                unlinkedDesigner(2, 2),
+                unlinkedDesigner(3, 3)
+        ));
+        when(designerRepository.existsBySalonSalonIdAndMemberIsNotNull(any())).thenReturn(false);
 
         dummyMemberSeeder.run(null);
 
@@ -72,6 +87,15 @@ class DummyMemberSeederTest {
                 .memberId(memberId)
                 .role(memberId.startsWith("designer") ? MemberRole.DESIGNER : MemberRole.USER)
                 .status(MemberStatus.ACTIVE)
+                .build();
+    }
+
+    private Designer unlinkedDesigner(Integer designerId, Integer salonId) {
+        return Designer.builder()
+                .designerId(designerId)
+                .name("Designer" + designerId)
+                .salon(Salon.builder().salonId(salonId).name("Salon" + salonId).build())
+                .careerYears(designerId)
                 .build();
     }
 }

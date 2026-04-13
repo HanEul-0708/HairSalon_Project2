@@ -2,6 +2,7 @@ package com.hairsalonproject2.board.dto.response;
 
 import com.hairsalonproject2.board.entity.Board;
 import com.hairsalonproject2.common.constant.BoardType;
+import com.hairsalonproject2.common.util.HtmlSanitizer;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -71,7 +72,7 @@ public class BoardReplyResponse {
         this.parentBoardId = parentBoardId;
         this.type = type != null ? type.name() : null;
         this.title = title;
-        this.content = content;
+        this.content = HtmlSanitizer.sanitize(content);
         this.memberId = memberId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -89,7 +90,7 @@ public class BoardReplyResponse {
                 : null;
         response.type = board.getType().name();
         response.title = board.getTitle();
-        response.content = board.getContent();
+        response.content = HtmlSanitizer.sanitize(board.getContent());
         response.memberId = board.getMember().getMemberId();
         response.createdAt = board.getCreatedAt();
         response.updatedAt = board.getUpdatedAt();

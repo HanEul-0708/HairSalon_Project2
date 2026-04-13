@@ -40,6 +40,21 @@ public class BoardQueryService {
         return getBoardPage(BoardType.QNA, keyword, page, size);
     }
 
+    public Page<BoardResponse> getQnaPage(int page,
+                                          int size,
+                                          String keyword,
+                                          String viewerMemberId,
+                                          boolean canViewAll) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), normalizePageSize(size));
+        return boardRepository.searchAccessiblePageByTypeAndKeyword(
+                BoardType.QNA,
+                normalizeKeyword(keyword),
+                normalizeKeyword(viewerMemberId),
+                canViewAll,
+                pageable
+        );
+    }
+
     public Page<BoardResponse> getBoardPage(BoardType type, String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), normalizePageSize(size));
         return boardRepository.searchPageByTypeAndKeyword(type, normalizeKeyword(keyword), pageable);
@@ -111,11 +126,6 @@ public class BoardQueryService {
         validatePublicBoard(board, type);
         board.increaseViewCount();
         return buildDetailResponse(board);
-    }
-
-    @Transactional
-    public void increaseViewCount(Integer boardId) {
-        boardRepository.increaseViewCount(boardId);
     }
 
     public BoardType getBoardType(Integer boardId) {

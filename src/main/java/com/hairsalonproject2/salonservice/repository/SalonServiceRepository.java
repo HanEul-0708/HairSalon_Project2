@@ -16,7 +16,6 @@ public interface SalonServiceRepository extends JpaRepository<SalonService, Inte
             select distinct ss.salon.salonId
             from SalonService ss
             where lower(ss.name) like lower(concat('%', :keyword, '%'))
-               or lower(coalesce(ss.description, '')) like lower(concat('%', :keyword, '%'))
             order by ss.salon.salonId asc
             """)
     List<Integer> findDistinctSalonIdsByKeyword(@Param("keyword") String keyword);
@@ -32,10 +31,7 @@ public interface SalonServiceRepository extends JpaRepository<SalonService, Inte
             select ss
             from SalonService ss
             join ss.salon s
-            where (:keyword is null
-                    or lower(ss.name) like lower(concat('%', :keyword, '%'))
-                    or lower(coalesce(ss.description, '')) like lower(concat('%', :keyword, '%'))
-                    or lower(s.name) like lower(concat('%', :keyword, '%')))
+            where (:keyword is null or lower(ss.name) like lower(concat('%', :keyword, '%')))
               and (:salonKeyword is null or lower(s.name) like lower(concat('%', :salonKeyword, '%')))
               and (:region is null
                     or lower(s.address) like lower(concat('%', :region, '%'))

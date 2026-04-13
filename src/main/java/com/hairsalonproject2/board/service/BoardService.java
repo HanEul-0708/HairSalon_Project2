@@ -46,6 +46,15 @@ public class BoardService {
     }
 
     @Transactional(readOnly = true)
+    public Page<BoardResponse> getQnaPage(int page,
+                                          int size,
+                                          String keyword,
+                                          String viewerMemberId,
+                                          boolean canViewAll) {
+        return boardQueryService.getQnaPage(page, size, keyword, viewerMemberId, canViewAll);
+    }
+
+    @Transactional(readOnly = true)
     public Page<BoardResponse> getBoardPage(BoardType type, String keyword, int page, int size) {
         return boardQueryService.getBoardPage(type, keyword, page, size);
     }
@@ -106,10 +115,6 @@ public class BoardService {
 
     public BoardDetailResponse getPublicDetailAndIncreaseView(Integer boardId, BoardType type) {
         return boardQueryService.getPublicDetailAndIncreaseView(boardId, type);
-    }
-
-    public void increaseViewCount(Integer boardId) {
-        boardQueryService.increaseViewCount(boardId);
     }
 
     @Transactional(readOnly = true)

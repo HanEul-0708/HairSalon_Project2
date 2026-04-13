@@ -1,5 +1,6 @@
 package com.hairsalonproject2.salonservice.controller;
 
+import com.hairsalonproject2.common.support.FilterPageState;
 import com.hairsalonproject2.common.support.PageUtils;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceCreateRequest;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceSearchRequest;
@@ -36,13 +37,26 @@ public class ServiceController {
                        Model model) {
         request.setSortBy(normalizeSortBy(request.getSortBy()));
 
-        Page<?> resultPage = request.hasSearchRequest()
-                ? salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE)
-                : PageUtils.empty(SERVICES_PER_PAGE);
+        FilterPageState pageState = FilterPageState.of(request.isSearched(), hasServiceFilter(request));
+        Page<?> resultPage;
+
+        if (pageState.filterRequired()) {
+            resultPage = PageUtils.empty(SERVICES_PER_PAGE);
+        } else if (pageState.defaultListing()) {
+            resultPage = PageUtils.sliceZeroBased(
+                    salonServiceQueryService.list(defaultServiceSearchRequest(), 0, SERVICES_PER_PAGE).getContent(),
+                    0,
+                    SERVICES_PER_PAGE
+            );
+        } else {
+            resultPage = salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE);
+        }
 
         model.addAttribute("services", resultPage.getContent());
         model.addAttribute("search", request);
-        model.addAttribute("searched", request.hasSearchRequest());
+        model.addAttribute("searched", pageState.searched());
+        model.addAttribute("defaultListing", pageState.defaultListing());
+        model.addAttribute("filterRequired", pageState.filterRequired());
         model.addAttribute("cityOptions", salonQueryService.getCityOptions());
         model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(request.getCity()));
         model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(request.getCity(), request.getDistrict()));
@@ -66,16 +80,25 @@ public class ServiceController {
                           @RequestParam(required = false) String district,
                           @RequestParam(required = false) String neighborhood,
                           Model model) {
-        model.addAttribute("comparisons", salonServiceQueryService.compare(serviceName, city, district, neighborhood));
+        String selectedServiceName = clean(serviceName);
+        String selectedCity = clean(city);
+        String selectedDistrict = clean(district);
+        String selectedNeighborhood = clean(neighborhood);
+        boolean filterRequired = !hasCompareFilter(selectedServiceName, selectedCity, selectedDistrict, selectedNeighborhood);
+
+        model.addAttribute("comparisons", filterRequired
+                ? java.util.List.of()
+                : salonServiceQueryService.compare(selectedServiceName, selectedCity, selectedDistrict, selectedNeighborhood));
         model.addAttribute("cityOptions", salonQueryService.getCityOptions());
-        model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(city));
-        model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(city, district));
+        model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(selectedCity));
+        model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(selectedCity, selectedDistrict));
         model.addAttribute("regionAddresses", salonQueryService.getAddressOptions());
         model.addAttribute("serviceNameOptions", salonServiceQueryService.getServiceNameOptions());
-        model.addAttribute("serviceName", serviceName);
-        model.addAttribute("city", city);
-        model.addAttribute("district", district);
-        model.addAttribute("neighborhood", neighborhood);
+        model.addAttribute("serviceName", selectedServiceName);
+        model.addAttribute("city", selectedCity);
+        model.addAttribute("district", selectedDistrict);
+        model.addAttribute("neighborhood", selectedNeighborhood);
+        model.addAttribute("filterRequired", filterRequired);
         return "service/compare";
     }
 
@@ -90,6 +113,39 @@ public class ServiceController {
         }
 
         return "rating";
+    }
+
+    private SalonServiceSearchRequest defaultServiceSearchRequest() {
+        SalonServiceSearchRequest request = new SalonServiceSearchRequest();
+        request.setSortBy("rating");
+        request.setSearched(true);
+        return request;
+    }
+
+    private boolean hasServiceFilter(SalonServiceSearchRequest request) {
+        return hasText(request.getKeyword())
+                || hasText(request.getSalonKeyword())
+                || hasText(request.getRegion())
+                || hasText(request.getCity())
+                || hasText(request.getDistrict())
+                || hasText(request.getNeighborhood())
+                || request.getMaxPrice() != null
+                || request.getMaxDuration() != null;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private boolean hasCompareFilter(String serviceName, String city, String district, String neighborhood) {
+        return hasText(serviceName)
+                || hasText(city)
+                || hasText(district)
+                || hasText(neighborhood);
+    }
+
+    private String clean(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     @PostMapping

@@ -15,7 +15,7 @@
             <div class="board-detail-info">
                 <span th:if="${board.answered}" class="board-status-chip board-status-answered">답변 완료</span>
                 <span th:if="${board.reportCount > 0}" class="board-status-chip board-status-report">신고 <strong th:text="${board.reportCount}">0</strong></span>
-                <span>작성자 <strong th:text="${board.memberId}">writer</strong></span>
+                <span>작성자 <strong th:text="${T(com.hairsalonproject2.common.util.NameMaskingUtils).maskName(board.memberId)}">writer</strong></span>
                 <span>작성일 <strong th:text="${#temporals.format(board.createdAt, 'yyyy.MM.dd HH:mm')}">2026.04.01 12:00</strong></span>
                 <span>조회수 <strong th:text="${board.viewCount}">0</strong></span>
             </div>
@@ -101,7 +101,7 @@
 
             <div class="board-reply" th:each="reply : ${board.replies}">
                 <div class="board-reply-info">
-                    <span class="board-reply-writer" th:text="${reply.memberId}">admin</span>
+                    <span class="board-reply-writer" th:text="${T(com.hairsalonproject2.common.util.NameMaskingUtils).maskName(reply.memberId)}">admin</span>
                     <span class="board-reply-date"
                           th:text="${#temporals.format(reply.createdAt, 'yyyy.MM.dd HH:mm')}">2026.04.01 12:00</span>
 

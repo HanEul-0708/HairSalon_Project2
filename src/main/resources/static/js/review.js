@@ -52,6 +52,15 @@ function bindReviewFilterCascade() {
         }
     }
 
+    function disableSelect(select, defaultLabel) {
+        populateSelect(select, [], defaultLabel, null, null, "");
+        select.disabled = true;
+    }
+
+    function enableSelect(select) {
+        select.disabled = false;
+    }
+
     function salonsByRegion() {
         var selectedCity = normalizeValue(citySelect.value);
         var selectedDistrict = normalizeValue(districtSelect.value);
@@ -66,15 +75,22 @@ function bindReviewFilterCascade() {
 
     function syncDistricts(resetBelow) {
         var selectedCity = normalizeValue(citySelect.value);
+        if (!selectedCity) {
+            disableSelect(districtSelect, "시를 먼저 선택하세요");
+            syncNeighborhoods(true);
+            return;
+        }
+
         var districts = uniqueSorted(
             salons
                 .filter(function (salon) {
-                    return !selectedCity || normalizeValue(salon.city) === selectedCity;
+                    return normalizeValue(salon.city) === selectedCity;
                 })
                 .map(function (salon) { return normalizeValue(salon.district); })
                 .filter(Boolean)
         );
         var selectedDistrict = resetBelow ? "" : (districtSelect.dataset.selectedValue || districtSelect.value || "");
+        enableSelect(districtSelect);
         populateSelect(districtSelect, districts, "전체 구", null, null, selectedDistrict);
         districtSelect.dataset.selectedValue = districtSelect.value || "";
         syncNeighborhoods(resetBelow);
@@ -83,43 +99,62 @@ function bindReviewFilterCascade() {
     function syncNeighborhoods(resetBelow) {
         var selectedCity = normalizeValue(citySelect.value);
         var selectedDistrict = normalizeValue(districtSelect.value);
+        if (!selectedCity || !selectedDistrict) {
+            disableSelect(neighborhoodSelect, "구를 먼저 선택하세요");
+            syncSalonOptions(true);
+            return;
+        }
+
         var neighborhoods = uniqueSorted(
             salons
                 .filter(function (salon) {
-                    return (!selectedCity || normalizeValue(salon.city) === selectedCity)
-                        && (!selectedDistrict || normalizeValue(salon.district) === selectedDistrict);
+                    return normalizeValue(salon.city) === selectedCity
+                        && normalizeValue(salon.district) === selectedDistrict;
                 })
                 .map(function (salon) { return normalizeValue(salon.neighborhood); })
                 .filter(Boolean)
         );
         var selectedNeighborhood = resetBelow ? "" : (neighborhoodSelect.dataset.selectedValue || neighborhoodSelect.value || "");
+        enableSelect(neighborhoodSelect);
         populateSelect(neighborhoodSelect, neighborhoods, "전체 동", null, null, selectedNeighborhood);
         neighborhoodSelect.dataset.selectedValue = neighborhoodSelect.value || "";
         syncSalonOptions(resetBelow);
     }
 
     function syncSalonOptions(resetSelection) {
+        var selectedNeighborhood = normalizeValue(neighborhoodSelect.value);
+        if (!selectedNeighborhood) {
+            disableSelect(salonSelect, "동을 먼저 선택하세요");
+            syncDesignerOptions(true, []);
+            return;
+        }
+
         var filteredSalons = salonsByRegion();
         var selectedSalonId = resetSelection ? "" : salonSelect.value;
+        enableSelect(salonSelect);
         populateSelect(salonSelect, filteredSalons, "전체 미용실", "salonId", "salonName", selectedSalonId);
         syncDesignerOptions(resetSelection, filteredSalons);
     }
 
     function syncDesignerOptions(resetSelection, filteredSalons) {
         var selectedSalonId = normalizeValue(salonSelect.value);
+        if (!selectedSalonId) {
+            disableSelect(designerSelect, "미용실을 먼저 선택하세요");
+            return;
+        }
+
         var allowedSalonIds = filteredSalons.map(function (salon) {
             return normalizeValue(salon.salonId);
         });
 
         var filteredDesigners = designers.filter(function (designer) {
             var designerSalonId = normalizeValue(designer.salonId);
-            if (selectedSalonId) {
-                return designerSalonId === selectedSalonId;
-            }
-            return allowedSalonIds.indexOf(designerSalonId) >= 0;
+            return allowedSalonIds.indexOf(designerSalonId) >= 0
+                && designerSalonId === selectedSalonId;
         });
 
         var selectedDesignerId = resetSelection ? "" : designerSelect.value;
+        enableSelect(designerSelect);
         populateSelect(designerSelect, filteredDesigners, "전체 디자이너", "designerId", "designerName", selectedDesignerId);
     }
 

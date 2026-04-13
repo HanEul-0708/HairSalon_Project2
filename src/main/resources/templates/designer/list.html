@@ -100,8 +100,9 @@
         <div th:if="${searched}">
             <div class="designer-results-head catalog-results-head">
                 <div>
-                    <p class="designer-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
-                    <h2>디자이너 <span th:text="${totalDesignerCount}">0</span>명</h2>
+                    <p class="designer-results-head__eyebrow catalog-results-head__eyebrow" th:text="${defaultListing} ? 'Recommended' : 'Results'">Results</p>
+                    <h2 th:if="${defaultListing}">추천 디자이너 <span th:text="${totalDesignerCount}">0</span>명</h2>
+                    <h2 th:unless="${defaultListing}">디자이너 <span th:text="${totalDesignerCount}">0</span>명</h2>
                 </div>
             </div>
 
@@ -133,8 +134,8 @@
             </div>
 
             <div class="designer-empty-state" th:if="${#lists.isEmpty(designers)}">
-                <h2>조건에 맞는 디자이너가 없습니다.</h2>
-                <p>필터를 넓히거나 통합 검색 결과에서 다른 카테고리를 확인해보세요.</p>
+                <h2 th:text="${filterRequired} ? '필터를 하나 이상 선택해주세요.' : '조건에 맞는 디자이너가 없습니다.'">조건에 맞는 디자이너가 없습니다.</h2>
+                <p th:text="${filterRequired} ? '지역, 키워드, 경력, 평점 중 하나 이상 선택하면 결과가 표시됩니다.' : '필터를 넓히거나 통합 검색 결과에서 다른 카테고리를 확인해보세요.'">필터를 넓히거나 통합 검색 결과에서 다른 카테고리를 확인해보세요.</p>
                 <a th:href="@{/search(keyword=${search.keyword})}" th:if="${search.keyword != null and !search.keyword.isBlank()}" class="btn btn-primary">통합 결과 보기</a>
                 <a th:href="@{/designers}" th:if="${search.keyword == null or search.keyword.isBlank()}" class="btn btn-primary">다시 보기</a>
             </div>

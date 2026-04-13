@@ -104,7 +104,9 @@ public class ReviewPageController {
                 ? null
                 : reviewService.getAverageRatingByDesigner(designerId);
 
-        List<ReviewResponse> allReviews = searched
+        boolean hasFilter = hasReviewFilter(selectedCity, selectedDistrict, selectedNeighborhood, salonId, designerId);
+        boolean filterRequired = searched && !hasFilter;
+        List<ReviewResponse> allReviews = searched && hasFilter
                 ? filterReviews(
                 reviewService.getAllReviews(loginMemberId, null, sortBy),
                 selectedCity,
@@ -140,6 +142,7 @@ public class ReviewPageController {
         model.addAttribute("selectedDesignerAverage", selectedDesignerAverage);
         model.addAttribute("isLoggedIn", userDetails != null);
         model.addAttribute("searched", searched);
+        model.addAttribute("filterRequired", filterRequired);
         return "review/list";
     }
 
@@ -227,6 +230,18 @@ public class ReviewPageController {
 
     private String normalizeText(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private boolean hasReviewFilter(String city,
+                                    String district,
+                                    String neighborhood,
+                                    Integer salonId,
+                                    Integer designerId) {
+        return !city.isBlank()
+                || !district.isBlank()
+                || !neighborhood.isBlank()
+                || salonId != null
+                || designerId != null;
     }
 
     public static final class SalonFilterOption {

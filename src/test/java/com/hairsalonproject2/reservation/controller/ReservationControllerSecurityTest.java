@@ -96,6 +96,22 @@ class ReservationControllerSecurityTest {
         verify(reservationService).updateReservationStatus(eq(1), any(ReservationStatusUpdateRequest.class));
     }
 
+    @Test
+    void designerCanPatchReservationStatusAfterSalonAccessCheck() throws Exception {
+        when(reservationService.updateReservationStatus(eq(1), any(ReservationStatusUpdateRequest.class)))
+                .thenReturn(sampleReservation());
+
+        mockMvc.perform(patch("/api/reservations/1/status")
+                        .with(authenticationFor("designer01", MemberRole.DESIGNER))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}"))
+                .andExpect(status().isOk());
+
+        verify(reservationService).validateReservationDesignerSalonAccess(1, "designer01");
+        verify(reservationService).updateReservationStatus(eq(1), any(ReservationStatusUpdateRequest.class));
+    }
+
     private ReservationResponse sampleReservation() {
         return ReservationResponse.builder()
                 .reservationId(1)

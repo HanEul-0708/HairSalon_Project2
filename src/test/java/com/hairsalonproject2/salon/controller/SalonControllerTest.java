@@ -61,8 +61,29 @@ class SalonControllerTest {
     }
 
     @Test
-    void listDoesNotSyncWhenUserHasNotSearchedYet() {
+    void listShowsDefaultRecommendationsWhenUserHasNotSearchedYet() {
         SalonSearchRequest request = new SalonSearchRequest();
+        ConcurrentModel model = new ConcurrentModel();
+
+        when(salonQueryService.search(any(SalonSearchRequest.class), eq(0), eq(9))).thenReturn(new PageImpl<>(List.of()));
+        when(salonQueryService.getCityOptions()).thenReturn(List.of());
+        when(salonQueryService.getDistrictOptions(any())).thenReturn(List.of());
+        when(salonQueryService.getNeighborhoodOptions(any(), any())).thenReturn(List.of());
+        when(salonQueryService.getAddressOptions()).thenReturn(List.of());
+
+        String viewName = salonController.list(request, 1, model);
+
+        assertThat(viewName).isEqualTo("salon/list");
+        assertThat(model.getAttribute("defaultListing")).isEqualTo(true);
+        assertThat(model.getAttribute("filterRequired")).isEqualTo(false);
+        verify(externalSalonSyncService, never()).syncFromSearch(any(), any());
+        verify(salonQueryService).search(any(SalonSearchRequest.class), eq(0), eq(9));
+    }
+
+    @Test
+    void listRequiresAtLeastOneFilterWhenSearchIsSubmitted() {
+        SalonSearchRequest request = new SalonSearchRequest();
+        request.setSearched(true);
         ConcurrentModel model = new ConcurrentModel();
 
         when(salonQueryService.getCityOptions()).thenReturn(List.of());
@@ -73,7 +94,28 @@ class SalonControllerTest {
         String viewName = salonController.list(request, 1, model);
 
         assertThat(viewName).isEqualTo("salon/list");
-        verify(externalSalonSyncService, never()).syncFromSearch(any(), any());
+        assertThat(model.getAttribute("defaultListing")).isEqualTo(false);
+        assertThat(model.getAttribute("filterRequired")).isEqualTo(true);
+        verify(salonQueryService, never()).search(any(SalonSearchRequest.class), eq(0), eq(9));
+    }
+
+    @Test
+    void listDoesNotSearchWhenOnlyReservableFilterIsSubmitted() {
+        SalonSearchRequest request = new SalonSearchRequest();
+        request.setSearched(true);
+        request.setReservable(true);
+        ConcurrentModel model = new ConcurrentModel();
+
+        when(salonQueryService.getCityOptions()).thenReturn(List.of());
+        when(salonQueryService.getDistrictOptions(any())).thenReturn(List.of());
+        when(salonQueryService.getNeighborhoodOptions(any(), any())).thenReturn(List.of());
+        when(salonQueryService.getAddressOptions()).thenReturn(List.of());
+
+        String viewName = salonController.list(request, 1, model);
+
+        assertThat(viewName).isEqualTo("salon/list");
+        assertThat(model.getAttribute("defaultListing")).isEqualTo(false);
+        assertThat(model.getAttribute("filterRequired")).isEqualTo(true);
         verify(salonQueryService, never()).search(any(SalonSearchRequest.class), eq(0), eq(9));
     }
 

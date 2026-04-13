@@ -23,6 +23,8 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -93,5 +95,40 @@ class CatalogPageRenderingTest {
         mockMvc.perform(get("/salon-services").param("searched", "true").param("keyword", "커트"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("service/list"));
+    }
+
+    @Test
+    void serviceCompareDoesNotQueryWithoutFilter() throws Exception {
+        when(salonQueryService.getCityOptions()).thenReturn(List.of("서울특별시", "경기도"));
+        when(salonQueryService.getDistrictOptions(any())).thenReturn(List.of());
+        when(salonQueryService.getNeighborhoodOptions(any(), any())).thenReturn(List.of());
+        when(salonQueryService.getAddressOptions()).thenReturn(List.of("서울특별시 강남구 역삼동"));
+        when(salonServiceQueryService.getServiceNameOptions()).thenReturn(List.of("펌", "커트"));
+
+        mockMvc.perform(get("/salon-services/compare"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("service/compare"));
+
+        verify(salonServiceQueryService, never()).compare(any(), any(), any(), any());
+    }
+
+    @Test
+    void serviceCompareQueriesWithFilter() throws Exception {
+        when(salonServiceQueryService.compare(eq("펌"), eq("부산"), eq("수영구"), any()))
+                .thenReturn(List.of());
+        when(salonQueryService.getCityOptions()).thenReturn(List.of("부산"));
+        when(salonQueryService.getDistrictOptions(any())).thenReturn(List.of("수영구"));
+        when(salonQueryService.getNeighborhoodOptions(any(), any())).thenReturn(List.of());
+        when(salonQueryService.getAddressOptions()).thenReturn(List.of("부산 수영구 광안동"));
+        when(salonServiceQueryService.getServiceNameOptions()).thenReturn(List.of("펌", "커트"));
+
+        mockMvc.perform(get("/salon-services/compare")
+                        .param("serviceName", "펌")
+                        .param("city", "부산")
+                        .param("district", "수영구"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("service/compare"));
+
+        verify(salonServiceQueryService).compare(eq("펌"), eq("부산"), eq("수영구"), any());
     }
 }

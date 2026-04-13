@@ -72,14 +72,19 @@
             </div>
         </form>
 
-        <div class="service-results-head catalog-results-head">
+        <div class="service-empty-state" th:if="${filterRequired}">
+            <h2>필터를 하나 이상 선택해주세요.</h2>
+            <p>시술이나 지역 조건을 선택하면 가격 비교 결과가 표시됩니다.</p>
+        </div>
+
+        <div class="service-results-head catalog-results-head" th:unless="${filterRequired}">
             <div>
                 <p class="service-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
                 <h2>비교 결과 <span th:text="${#lists.size(comparisons)}">0</span>건</h2>
             </div>
         </div>
 
-        <div class="service-compare-table-wrap">
+        <div class="service-compare-table-wrap" th:unless="${filterRequired}">
             <table class="service-compare-table">
                 <thead>
                 <tr>

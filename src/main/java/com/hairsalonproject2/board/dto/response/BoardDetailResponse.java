@@ -4,6 +4,7 @@ import com.hairsalonproject2.board.entity.Board;
 import com.hairsalonproject2.board.entity.BoardFile;
 import com.hairsalonproject2.board.entity.BoardImage;
 import com.hairsalonproject2.common.constant.BoardType;
+import com.hairsalonproject2.common.util.HtmlSanitizer;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -53,7 +54,7 @@ public class BoardDetailResponse {
         this.boardId = boardId;
         this.type = type != null ? type.name() : null;
         this.title = title;
-        this.content = content;
+        this.content = HtmlSanitizer.sanitize(content);
         this.memberId = memberId;
         this.viewCount = viewCount;
         this.parentBoardId = parentBoardId;

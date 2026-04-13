@@ -49,11 +49,13 @@ public class DesignerQueryService {
 
     public Page<DesignerSummaryResponse> search(DesignerSearchRequest request, int page, int size) {
         DesignerSearchRequest safeRequest = request == null ? new DesignerSearchRequest() : request;
+        List<Integer> keywordMatchedSalonIds = resolveKeywordMatchedSalonIds(safeRequest);
         Map<Integer, DesignerRatingRow> ratings = designerRepository.findDesignerRatingRows()
                 .stream()
                 .collect(Collectors.toMap(DesignerRatingRow::getDesignerId, Function.identity()));
 
-        List<DesignerSummaryResponse> filtered = designerRepository.findAll(DesignerSpecifications.bySearch(safeRequest))
+        List<DesignerSummaryResponse> filtered = designerRepository.findAll(
+                        DesignerSpecifications.bySearch(safeRequest, keywordMatchedSalonIds))
                 .stream()
                 .map(d -> toSummary(d, ratings.get(d.getDesignerId())))
                 .filter(d -> safeRequest.getMinRating() == null
@@ -287,5 +289,14 @@ public class DesignerQueryService {
                 .filter(r -> designerId.equals(r.getDesignerId()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private List<Integer> resolveKeywordMatchedSalonIds(DesignerSearchRequest request) {
+        String keyword = request.getKeyword();
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+
+        return salonServiceRepository.findDistinctSalonIdsByKeyword(keyword.trim());
     }
 }
