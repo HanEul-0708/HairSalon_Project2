@@ -194,7 +194,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     public List<ReviewResponse> getRecentReviews() {
         return reviewRepository.findAll().stream()
-                .map(review -> toResponse(review, null))
+                .map(review -> toResponse(review, null, null))
                 .sorted(Comparator.comparing(ReviewResponse::getCreatedAt).reversed())
                 .limit(3)
                 .toList();

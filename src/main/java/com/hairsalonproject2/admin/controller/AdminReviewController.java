@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 
 @Controller
@@ -24,15 +24,8 @@ public class AdminReviewController {
     private final ReviewRepository reviewRepository;
 
     @GetMapping
-    public String reviewList(@RequestParam(required = false) String keyword,
-                             @RequestParam(required = false) String filterBy,
-                             @RequestParam(defaultValue = "false") boolean todayOnly,
-                             @RequestParam(defaultValue = "latest") String sortBy,
-                             Model model) {
-        List<ReviewResponse> reviews = reviewService.getAllReviews(null, null, sortBy).stream()
-                .filter(review -> !todayOnly || isToday(review.getCreatedAt()))
-                .filter(review -> matchesReviewFilter(review, keyword, filterBy))
-                .toList();
+    public String reviewList(@RequestParam(required = false) String keyword, @RequestParam(required = false) String filterBy, @RequestParam(defaultValue = "false") boolean todayOnly, @RequestParam(defaultValue = "latest") String sortBy, Model model) {
+        List<ReviewResponse> reviews = reviewService.getAllReviews(null, null, null, sortBy).stream().filter(review -> !todayOnly || isToday(review.getCreatedAt())).filter(review -> matchesReviewFilter(review, keyword, filterBy)).toList();
 
         model.addAttribute("reviews", reviews);
         model.addAttribute("keyword", keyword);
@@ -56,11 +49,8 @@ public class AdminReviewController {
             case "designer" -> contains(review.getDesignerName(), normalizedKeyword);
             case "salon" -> contains(review.getSalonName(), normalizedKeyword);
             case "service" -> contains(review.getServiceName(), normalizedKeyword);
-            default -> contains(review.getMemberName(), normalizedKeyword)
-                    || contains(review.getDesignerName(), normalizedKeyword)
-                    || contains(review.getSalonName(), normalizedKeyword)
-                    || contains(review.getServiceName(), normalizedKeyword)
-                    || contains(review.getContent(), normalizedKeyword);
+            default ->
+                    contains(review.getMemberName(), normalizedKeyword) || contains(review.getDesignerName(), normalizedKeyword) || contains(review.getSalonName(), normalizedKeyword) || contains(review.getServiceName(), normalizedKeyword) || contains(review.getContent(), normalizedKeyword);
         };
     }
 
