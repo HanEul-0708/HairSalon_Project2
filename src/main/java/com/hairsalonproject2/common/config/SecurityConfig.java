@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/reviews").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/reviews/*").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/reviews/*/likes").permitAll()
                         .requestMatchers(
                                 "/",
                                 "/css/**",

@@ -113,10 +113,9 @@ public class ReservationPageController {
             return false;
         }
 
-        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
-            return true;
-        }
-
-        return !reservation.getReservationDate().isAfter(now.toLocalDate());
+        return !java.time.LocalDateTime.of(
+                reservation.getReservationDate(),
+                reservation.getReservationTime()
+        ).isAfter(now);
     }
 }

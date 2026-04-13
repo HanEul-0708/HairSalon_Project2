@@ -9,6 +9,8 @@ import com.hairsalonproject2.review.dto.ReviewDetailResponse;
 import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.repository.ReviewRepository;
 import com.hairsalonproject2.review.service.ReviewService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 public class ReviewPageController {
 
     private static final int REVIEWS_PER_PAGE = 6;
+    private static final String REVIEW_VISITOR_COOKIE = "review_visitor_token";
 
     private final ReviewService reviewService;
     private final ReservationService reservationService;
@@ -37,12 +40,14 @@ public class ReviewPageController {
 
     @GetMapping("/reviews")
     public String reviewListPage(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                 HttpServletRequest request,
                                  @RequestParam(defaultValue = "1") int page,
                                  @RequestParam(required = false) Integer designerId,
                                  @RequestParam(defaultValue = "latest") String sortBy,
                                  Model model) {
         String loginMemberId = userDetails == null ? null : userDetails.getMember().getMemberId();
-        List<ReviewResponse> allReviews = reviewService.getAllReviews(loginMemberId, designerId, sortBy);
+        String visitorToken = getVisitorToken(request);
+        List<ReviewResponse> allReviews = reviewService.getAllReviews(loginMemberId, visitorToken, designerId, sortBy);
         int totalReviews = allReviews.size();
         int totalPages = Math.max(1, (int) Math.ceil((double) totalReviews / REVIEWS_PER_PAGE));
         int currentPage = Math.min(Math.max(page, 1), totalPages);
@@ -53,7 +58,7 @@ public class ReviewPageController {
                 ? Collections.emptyList()
                 : allReviews.subList(fromIndex, toIndex);
 
-        Map<Integer, String> designerOptions = reviewService.getAllReviews(loginMemberId, null, "latest").stream()
+        Map<Integer, String> designerOptions = reviewService.getAllReviews(loginMemberId, visitorToken, null, "latest").stream()
                 .collect(Collectors.toMap(
                         ReviewResponse::getDesignerId,
                         ReviewResponse::getDesignerName,
@@ -80,8 +85,9 @@ public class ReviewPageController {
     @GetMapping("/reviews/{reviewId}")
     public String reviewDetailPage(@PathVariable Integer reviewId,
                                    @AuthenticationPrincipal CustomUserDetails userDetails,
+                                   HttpServletRequest request,
                                    Model model) {
-        ReviewDetailResponse review = reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails));
+        ReviewDetailResponse review = reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails), getVisitorToken(request));
         model.addAttribute("review", review);
         model.addAttribute("canManageReview", canManageReview(userDetails, review));
         model.addAttribute("isLoggedIn", userDetails != null);
@@ -91,8 +97,9 @@ public class ReviewPageController {
     @GetMapping("/reviews/{reviewId}/edit")
     public String reviewEditPage(@PathVariable Integer reviewId,
                                  @AuthenticationPrincipal CustomUserDetails userDetails,
+                                 HttpServletRequest request,
                                  Model model) {
-        ReviewDetailResponse review = reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails));
+        ReviewDetailResponse review = reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails), getVisitorToken(request));
         if (!canManageReview(userDetails, review)) {
             throw new AccessDeniedException("You can only edit your own review.");
         }
@@ -117,7 +124,7 @@ public class ReviewPageController {
 
         ReservationResponse reservation = reservationService.getReservation(reservationId);
         if (!isReviewableReservation(reservation)) {
-            throw new IllegalArgumentException("Only completed or same-day reservations can be reviewed.");
+            throw new IllegalArgumentException("예약 시간 이후에만 리뷰를 작성할 수 있습니다.");
         }
 
         if (reviewRepository.findByReservation_ReservationId(reservationId).isPresent()) {
@@ -147,10 +154,21 @@ public class ReviewPageController {
             return false;
         }
 
-        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
-            return true;
+        return !LocalDateTime.of(reservation.getReservationDate(), reservation.getReservationTime())
+                .isAfter(LocalDateTime.now());
+    }
+
+    private String getVisitorToken(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
         }
 
-        return !reservation.getReservationDate().isAfter(LocalDateTime.now().toLocalDate());
+        for (Cookie cookie : request.getCookies()) {
+            if (REVIEW_VISITOR_COOKIE.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
     }
 }

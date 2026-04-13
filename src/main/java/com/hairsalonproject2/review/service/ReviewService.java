@@ -16,13 +16,13 @@ public interface ReviewService {
 
     ReviewResponse createReview(String loginMemberId, ReviewCreateRequest request);
 
-    ReviewResponse getReview(Integer reviewId, String loginMemberId);
+    ReviewResponse getReview(Integer reviewId, String loginMemberId, String visitorToken);
 
-    ReviewDetailResponse getReviewDetail(Integer reviewId, String loginMemberId);
+    ReviewDetailResponse getReviewDetail(Integer reviewId, String loginMemberId, String visitorToken);
 
-    List<ReviewResponse> getAllReviews(String loginMemberId, Integer designerId, String sortBy);
+    List<ReviewResponse> getAllReviews(String loginMemberId, String visitorToken, Integer designerId, String sortBy);
 
-    List<ReviewResponse> getReviewsByMember(String memberId, String loginMemberId);
+    List<ReviewResponse> getReviewsByMember(String memberId, String loginMemberId, String visitorToken);
 
     ReviewResponse updateReview(String loginMemberId, boolean isAdmin, Integer reviewId, ReviewUpdateRequest request);
 
@@ -38,5 +38,5 @@ public interface ReviewService {
 
     List<SalonRankingResponse> getTopSalons();
 
-    ReviewLikeToggleResponse toggleLike(Integer reviewId, String loginMemberId);
+    ReviewLikeToggleResponse toggleLike(Integer reviewId, String loginMemberId, String visitorToken);
 }

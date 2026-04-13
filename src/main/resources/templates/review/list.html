@@ -82,8 +82,7 @@
                     <button type="button"
                             class="review-like-button"
                             th:classappend="${review.likedByCurrentUser ? ' is-liked' : ''}"
-                            th:attr="data-review-like=${review.reviewId}"
-                            th:disabled="${!isLoggedIn}">
+                            th:attr="data-review-like=${review.reviewId}">
                         <span class="review-like-button__icon">♥</span>
                         <span class="review-like-button__count" th:text="${review.likeCount}">0</span>
                     </button>
