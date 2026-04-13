@@ -47,6 +47,7 @@ public class ReservationServiceImpl implements ReservationService {
         SalonService salonService = salonServiceRepository.findById(request.getSalonServiceId())
                 .orElseThrow(() -> new IllegalArgumentException("Salon service not found."));
         validateDesignerAndServiceMatch(designer, salonService);
+        validateReservationTimeUnit(request.getReservationTime());
 
         validateReservationSlot(
                 designer.getDesignerId(),
@@ -179,6 +180,20 @@ public class ReservationServiceImpl implements ReservationService {
 
         if (!allowed) {
             throw new IllegalArgumentException("Only reserved reservations can be changed to cancelled or completed.");
+        }
+    }
+
+    private void validateReservationTimeUnit(LocalTime reservationTime) {
+        if (reservationTime == null) {
+            throw new IllegalArgumentException("Reservation time is required.");
+        }
+
+        if (reservationTime.getMinute() != 0 && reservationTime.getMinute() != 30) {
+            throw new IllegalArgumentException("Reservation time must be in 30-minute intervals.");
+        }
+
+        if (reservationTime.getSecond() != 0 || reservationTime.getNano() != 0) {
+            throw new IllegalArgumentException("Reservation time format is invalid.");
         }
     }
 

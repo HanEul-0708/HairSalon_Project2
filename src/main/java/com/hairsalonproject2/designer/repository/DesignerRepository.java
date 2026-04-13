@@ -12,6 +12,7 @@ import java.util.Optional;
 
 public interface DesignerRepository extends JpaRepository<Designer, Integer>, JpaSpecificationExecutor<Designer> {
     List<Designer> findBySalonSalonId(Integer salonId);
+    List<Designer> findAllByMemberIsNull();
     Optional<Designer> findByMember_MemberId(String memberId);
     boolean existsBySalonSalonId(Integer salonId);
     boolean existsBySalonSalonIdAndMemberIsNotNull(Integer salonId);

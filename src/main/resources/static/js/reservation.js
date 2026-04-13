@@ -32,7 +32,7 @@ function buildReservationTimeOptions() {
     timeSelect.appendChild(defaultOption);
 
     for (var hour = 9; hour <= 20; hour++) {
-        for (var minute = 0; minute < 60; minute += 15) {
+        for (var minute = 0; minute < 60; minute += 30) {
             if (hour === 20 && minute > 0) {
                 break;
             }
@@ -198,13 +198,13 @@ function getMinimumSelectableTime(selectedDate) {
     rounded.setSeconds(0, 0);
 
     var minutes = rounded.getMinutes();
-    var nextQuarter = Math.ceil(minutes / 15) * 15;
+    var nextQuarter = Math.ceil(minutes / 30) * 30;
 
     if (nextQuarter === 60) {
         rounded.setHours(rounded.getHours() + 1);
         rounded.setMinutes(0);
     } else {
-        rounded.setMinutes(nextQuarter);
+        rounded.setMinutes(nextHalfHour);
     }
 
     if (rounded.getHours() < 9) {

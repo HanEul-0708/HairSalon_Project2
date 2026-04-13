@@ -1,10 +1,12 @@
 package com.hairsalonproject2.salon.service;
 
+import java.util.stream.Stream;
 import com.hairsalonproject2.common.support.GeoUtils;
 import com.hairsalonproject2.common.support.PageUtils;
 import com.hairsalonproject2.common.integration.kakao.KakaoAddressSearchResult;
 import com.hairsalonproject2.common.integration.kakao.KakaoLocalSearchClient;
 import com.hairsalonproject2.common.util.AddressRegionUtils;
+import com.hairsalonproject2.common.util.RegionPresetUtils;
 import com.hairsalonproject2.designer.dto.response.DesignerSummaryResponse;
 import com.hairsalonproject2.designer.projection.DesignerRatingRow;
 import com.hairsalonproject2.designer.repository.DesignerRepository;
@@ -498,7 +500,7 @@ public class SalonQueryService {
     }
 
     private List<String> getAllAddresses() {
-        return salonRepository.findAll().stream()
+        List<String> dbAddresses = salonRepository.findAll().stream()
                 .map(salon -> {
                     if (salon.getAddress() != null && !salon.getAddress().isBlank()) {
                         return salon.getAddress();
@@ -506,6 +508,13 @@ public class SalonQueryService {
                     return salon.getRoadAddress();
                 })
                 .filter(address -> address != null && !address.isBlank())
+                .toList();
+
+        return Stream.concat(
+                        dbAddresses.stream(),
+                        RegionPresetUtils.getBusanDistrictAddresses().stream()
+                )
+                .distinct()
                 .toList();
     }
 

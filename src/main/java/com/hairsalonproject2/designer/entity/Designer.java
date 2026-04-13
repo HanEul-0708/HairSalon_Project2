@@ -50,4 +50,5 @@ public class Designer extends BaseCreatedEntity {
     @Column(name = "like_count", nullable = false)
     @Builder.Default
     private Integer likeCount = 0;
+
 }

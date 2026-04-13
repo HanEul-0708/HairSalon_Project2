@@ -11,14 +11,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 
+@Cacheable("homeRegionalHighlights")
 @Controller
 @RequiredArgsConstructor
 public class HomeController {
 
-    private static final int REGION_ROTATION_LIMIT = 10;
+    private static final int REGION_ROTATION_LIMIT = 3;
 
     private final ReviewService reviewService;
     private final SalonQueryService salonQueryService;

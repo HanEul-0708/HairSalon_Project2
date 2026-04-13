@@ -80,6 +80,12 @@ public class MemberService {
         Member savedMember = memberRepository.save(member);
 
         if (signupRole == MemberRole.DESIGNER) {
+            Salon salon = getDesignerSignupSalon(request.getSalonId());
+
+            if (hasLinkedDesignerAccount(salon)) {
+                throw new BusinessException(ErrorCode.DESIGNER_SIGNUP_SALON_ALREADY_LINKED);
+            }
+
             Designer designer = findRepresentativeDesigner(request.getSalonId());
             designer.setMember(savedMember);
         }

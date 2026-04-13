@@ -3,7 +3,10 @@ package com.hairsalonproject2.member.service;
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.member.entity.Member;
+import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.member.repository.MemberRepository;
+import com.hairsalonproject2.designer.repository.DesignerRepository;
+import com.hairsalonproject2.salon.entity.Salon;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +16,10 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -21,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DummyMemberSeeder implements ApplicationRunner {
 
     private final MemberRepository memberRepository;
+    private final DesignerRepository designerRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${app.seed.members.enabled:false}")
@@ -48,7 +56,7 @@ public class DummyMemberSeeder implements ApplicationRunner {
     public int seedMembers() {
         String encodedPassword = passwordEncoder.encode(defaultPassword);
         int created = 0;
-        created += seedRole(MemberRole.DESIGNER, "designer", "디자이너", batchDesignerCount, encodedPassword, 2000);
+        created += seedDesignerMembers(encodedPassword, batchDesignerCount);
         created += seedRole(MemberRole.USER, "user", "회원", batchUserCount, encodedPassword, 3000);
 
         if (created > 0) {
@@ -90,6 +98,88 @@ public class DummyMemberSeeder implements ApplicationRunner {
             sequence++;
         }
         return created;
+    }
+
+    private int seedDesignerMembers(String encodedPassword, int batchDesignerCount) {
+        List<Designer> unlinkedDesigners = designerRepository.findAllByMemberIsNull();
+
+        // 미용실별로 "경력이 가장 높은 디자이너" 1명만 뽑기
+        Map<Integer, Designer> representativeBySalon = new LinkedHashMap<>();
+
+        for (Designer designer : unlinkedDesigners) {
+            Salon salon = designer.getSalon();
+            if (salon == null || salon.getSalonId() == null) {
+                continue;
+            }
+
+            Integer salonId = salon.getSalonId();
+
+            // 이미 그 미용실에 계정 연결된 디자이너가 있으면 제외
+            boolean alreadyLinked = designerRepository.existsBySalonSalonIdAndMemberIsNotNull(salonId);
+            if (alreadyLinked) {
+                continue;
+            }
+
+            Designer current = representativeBySalon.get(salonId);
+
+            if (current == null || isHigherCareer(designer, current)) {
+                representativeBySalon.put(salonId, designer);
+            }
+        }
+
+        List<Designer> targets = representativeBySalon.values().stream()
+                .limit(batchDesignerCount)
+                .toList();
+
+        int created = 0;
+
+        for (Designer designer : targets) {
+            Integer sequence = nextSequence("designer");
+            String memberId = "designer" + sequence;
+
+            Member member = Member.builder()
+                    .memberId(memberId)
+                    .password(encodedPassword)
+                    .name("디자이너" + sequence)
+                    .phone(buildPhone(2000 + sequence))
+                    .email(memberId + "@example.com")
+                    .role(MemberRole.DESIGNER)
+                    .status(MemberStatus.ACTIVE)
+                    .build();
+
+            Member savedMember = memberRepository.save(member);
+
+            designer.setMember(savedMember);
+            created++;
+        }
+
+        return created;
+    }
+
+    private boolean isHigherCareer(Designer candidate, Designer current) {
+        int candidateYears = safeCareerYears(candidate);
+        int currentYears = safeCareerYears(current);
+
+        if (candidateYears != currentYears) {
+            return candidateYears > currentYears;
+        }
+
+        // 경력이 같으면 id가 작은 쪽을 우선
+        if (candidate.getDesignerId() == null) {
+            return false;
+        }
+        if (current.getDesignerId() == null) {
+            return true;
+        }
+
+        return candidate.getDesignerId() < current.getDesignerId();
+    }
+
+    private int safeCareerYears(Designer designer) {
+        if (designer == null || designer.getCareerYears() == null) {
+            return 0;
+        }
+        return designer.getCareerYears();
     }
 
     private int nextSequence(String idPrefix) {
