@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     setMinimumReservationDate();
     buildReservationTimeOptions();
+    bindReservationAvailabilityAlert();
     bindReservationFormSubmit();
     bindReservationCardFocusEffect();
     bindServicePriceSync();
@@ -114,6 +115,56 @@ function bindServicePriceSync() {
     syncPrice();
 }
 
+function bindReservationAvailabilityAlert() {
+    var designerId = document.getElementById("designerId");
+    var reservationDate = document.getElementById("reservationDate");
+    var reservationTime = document.getElementById("reservationTime");
+    var reservationId = document.getElementById("reservationId");
+
+    if (!designerId || !reservationDate || !reservationTime) return;
+
+    function resetAvailabilityAlert() {
+        reservationTime.dataset.conflictChecked = "";
+    }
+
+    designerId.addEventListener("change", resetAvailabilityAlert);
+    reservationDate.addEventListener("change", resetAvailabilityAlert);
+
+    reservationTime.addEventListener("change", async function () {
+        if (!designerId.value || !reservationDate.value || !reservationTime.value) {
+            return;
+        }
+
+        var conflictKey = [
+            designerId.value,
+            reservationDate.value,
+            reservationTime.value,
+            reservationId ? reservationId.value : ""
+        ].join("|");
+
+        if (reservationTime.dataset.conflictChecked === conflictKey) {
+            return;
+        }
+
+        var isAvailable = await checkReservationAvailability(
+            designerId.value,
+            reservationDate.value,
+            reservationTime.value,
+            reservationId ? reservationId.value : null
+        );
+
+        if (!isAvailable) {
+            reservationTime.dataset.conflictChecked = conflictKey;
+            alert("선택하신 시간은 이미 예약되어 있습니다.\n다른 시간대로 다시 선택해 주세요.");
+            reservationTime.value = "";
+            reservationTime.focus();
+            return;
+        }
+
+        reservationTime.dataset.conflictChecked = conflictKey;
+    });
+}
+
 function bindReservationFormSubmit() {
     var form = document.getElementById("reservationForm");
     if (!form) return;
@@ -170,7 +221,7 @@ function bindReservationFormSubmit() {
         );
 
         if (!isAvailable) {
-            alert("선택하신 날짜와 시간에는 이미 해당 디자이너 예약이 있습니다. 다른 시간을 선택해 주세요.");
+            alert("선택하신 시간은 이미 예약되어 있습니다.\n다른 시간대로 다시 선택해 주세요.");
             reservationTime.focus();
             return;
         }
