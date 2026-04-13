@@ -2,28 +2,22 @@ package com.hairsalonproject2.review.entity;
 
 import com.hairsalonproject2.common.entity.BaseCreatedEntity;
 import com.hairsalonproject2.member.entity.Member;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(
         name = "review_like",
-        uniqueConstraints = @UniqueConstraint(name = "uk_review_like_review_member", columnNames = {"review_id", "member_id"})
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_review_like_review_member", columnNames = {"review_id", "member_id"}),
+                @UniqueConstraint(name = "uk_review_like_review_visitor", columnNames = {"review_id", "visitor_token"})
+        }
 )
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReviewLike extends BaseCreatedEntity {
 
     @Id
@@ -36,12 +30,16 @@ public class ReviewLike extends BaseCreatedEntity {
     private Review review;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "member_id")
     private Member member;
 
+    @Column(name = "visitor_token", length = 64)
+    private String visitorToken;
+
     @Builder
-    public ReviewLike(Review review, Member member) {
+    public ReviewLike(Review review, Member member, String visitorToken) {
         this.review = review;
         this.member = member;
+        this.visitorToken = visitorToken;
     }
 }

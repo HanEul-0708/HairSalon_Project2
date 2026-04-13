@@ -243,6 +243,56 @@ function bindServicePriceSync() {
     syncPrice();
 }
 
+function bindReservationAvailabilityAlert() {
+    var designerId = document.getElementById("designerId");
+    var reservationDate = document.getElementById("reservationDate");
+    var reservationTime = document.getElementById("reservationTime");
+    var reservationId = document.getElementById("reservationId");
+
+    if (!designerId || !reservationDate || !reservationTime) return;
+
+    function resetAvailabilityAlert() {
+        reservationTime.dataset.conflictChecked = "";
+    }
+
+    designerId.addEventListener("change", resetAvailabilityAlert);
+    reservationDate.addEventListener("change", resetAvailabilityAlert);
+
+    reservationTime.addEventListener("change", async function () {
+        if (!designerId.value || !reservationDate.value || !reservationTime.value) {
+            return;
+        }
+
+        var conflictKey = [
+            designerId.value,
+            reservationDate.value,
+            reservationTime.value,
+            reservationId ? reservationId.value : ""
+        ].join("|");
+
+        if (reservationTime.dataset.conflictChecked === conflictKey) {
+            return;
+        }
+
+        var isAvailable = await checkReservationAvailability(
+            designerId.value,
+            reservationDate.value,
+            reservationTime.value,
+            reservationId ? reservationId.value : null
+        );
+
+        if (!isAvailable) {
+            reservationTime.dataset.conflictChecked = conflictKey;
+            alert("선택하신 시간은 이미 예약되어 있습니다.\n다른 시간대로 다시 선택해 주세요.");
+            reservationTime.value = "";
+            reservationTime.focus();
+            return;
+        }
+
+        reservationTime.dataset.conflictChecked = conflictKey;
+    });
+}
+
 function bindReservationFormSubmit() {
     var form = document.getElementById("reservationForm");
     if (!form) return;
@@ -266,7 +316,7 @@ function bindReservationFormSubmit() {
         }
 
         if (!designerId.value || !salonServiceId.value || !reservationDate.value || !reservationTime.value || !paymentMethod.value) {
-            alert("디자이너, 시술, 날짜, 시간, 결제 수단을 모두 선택해주세요.");
+            alert("디자이너, 시술, 날짜, 시간, 결제 수단을 모두 선택해 주세요.");
             return;
         }
 
@@ -279,7 +329,7 @@ function bindReservationFormSubmit() {
             paymentMethod: paymentMethod.value
         };
 
-        if (mode === "create") {
+        if (mode === "create" && memberId) {
             requestBody.memberId = memberId.value;
         }
 
@@ -290,6 +340,19 @@ function bindReservationFormSubmit() {
 
         var url = mode === "edit" ? "/api/reservations/" + reservationId.value : "/api/reservations";
         var method = mode === "edit" ? "PUT" : "POST";
+        var actionLabel = mode === "edit" ? "예약 변경" : "예약 생성";
+        var isAvailable = await checkReservationAvailability(
+            designerId.value,
+            reservationDate.value,
+            reservationTime.value,
+            mode === "edit" ? reservationId.value : null
+        );
+
+        if (!isAvailable) {
+            alert("선택하신 시간은 이미 예약되어 있습니다.\n다른 시간대로 다시 선택해 주세요.");
+            reservationTime.focus();
+            return;
+        }
 
         try {
             var response = await fetch(url, {
@@ -299,8 +362,8 @@ function bindReservationFormSubmit() {
             });
 
             if (!response.ok) {
-                var errorText = await response.text();
-                alert((mode === "edit" ? "예약 변경" : "예약 생성") + "에 실패했습니다.\n" + errorText);
+                var errorText = await extractErrorMessage(response);
+                alert(actionLabel + "에 실패했습니다.\n" + errorText);
                 return;
             }
 
@@ -338,7 +401,7 @@ function bindReservationCancelButtons() {
                 });
 
                 if (!response.ok) {
-                    var errorText = await response.text();
+                    var errorText = await extractErrorMessage(response);
                     alert("예약 취소에 실패했습니다.\n" + errorText);
                     return;
                 }
@@ -389,4 +452,45 @@ function applyCsrfHeaders(headers) {
     }
 
     headers[csrfHeaderMeta.getAttribute("content")] = csrfTokenMeta.getAttribute("content");
+}
+
+async function extractErrorMessage(response) {
+    try {
+        var data = await response.json();
+        if (data && data.message) {
+            return data.message;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+
+    return await response.text();
+}
+
+async function checkReservationAvailability(designerId, reservationDate, reservationTime, reservationId) {
+    var params = new URLSearchParams({
+        designerId: designerId,
+        reservationDate: reservationDate,
+        reservationTime: reservationTime
+    });
+
+    if (reservationId) {
+        params.append("reservationId", reservationId);
+    }
+
+    try {
+        var response = await fetch("/api/reservations/availability?" + params.toString(), {
+            method: "GET"
+        });
+
+        if (!response.ok) {
+            return true;
+        }
+
+        var data = await response.json();
+        return Boolean(data.available);
+    } catch (error) {
+        console.error(error);
+        return true;
+    }
 }

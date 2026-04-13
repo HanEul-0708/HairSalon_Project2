@@ -1,10 +1,14 @@
 package com.hairsalonproject2.reservation.repository;
 
+import com.hairsalonproject2.common.constant.ReservationStatus;
 import com.hairsalonproject2.reservation.entity.Reservation;
 import com.hairsalonproject2.common.constant.ReservationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -35,4 +39,32 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
     List<Reservation> findByStatus(ReservationStatus status);
 
     long countByStatus(ReservationStatus status);
+
+    @Query("""
+            select (count(r) > 0)
+            from Reservation r
+            where r.designer.designerId = :designerId
+              and r.reservationDate = :reservationDate
+              and r.reservationTime = :reservationTime
+              and r.status <> :cancelledStatus
+            """)
+    boolean existsActiveConflict(@Param("designerId") Integer designerId,
+                                 @Param("reservationDate") LocalDate reservationDate,
+                                 @Param("reservationTime") LocalTime reservationTime,
+                                 @Param("cancelledStatus") ReservationStatus cancelledStatus);
+
+    @Query("""
+            select (count(r) > 0)
+            from Reservation r
+            where r.designer.designerId = :designerId
+              and r.reservationDate = :reservationDate
+              and r.reservationTime = :reservationTime
+              and r.status <> :cancelledStatus
+              and r.reservationId <> :reservationId
+            """)
+    boolean existsActiveConflictExcludingReservation(@Param("designerId") Integer designerId,
+                                                     @Param("reservationDate") LocalDate reservationDate,
+                                                     @Param("reservationTime") LocalTime reservationTime,
+                                                     @Param("cancelledStatus") ReservationStatus cancelledStatus,
+                                                     @Param("reservationId") Integer reservationId);
 }

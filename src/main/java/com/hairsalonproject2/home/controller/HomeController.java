@@ -7,6 +7,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.sql.SQLOutput;
+
 /**
  * 메인 화면 요청 처리 컨트롤러
  */

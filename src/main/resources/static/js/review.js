@@ -64,12 +64,12 @@ function bindReviewFormSubmit() {
         }
 
         if (!content.value.trim()) {
-            alert("리뷰 내용을 입력해주세요.");
+            alert("리뷰 내용을 입력해 주세요.");
             return;
         }
 
         if (mode === "edit") {
-            await submitReviewUpdate(form, rating, content);
+            await submitReviewUpdate(rating, content);
             return;
         }
 
@@ -82,7 +82,7 @@ async function submitReviewCreate(rating, content) {
     var image = document.getElementById("image");
 
     if (!reservationId || !reservationId.value) {
-        alert("예약 정보가 없습니다. 예약 목록에서 다시 진입해주세요.");
+        alert("예약 정보가 없습니다. 예약 목록에서 다시 진입해 주세요.");
         return;
     }
 
@@ -105,7 +105,7 @@ async function submitReviewCreate(rating, content) {
         });
 
         if (!reviewResponse.ok) {
-            alert("리뷰 등록에 실패했습니다.\n" + await reviewResponse.text());
+            alert("리뷰 등록에 실패했습니다.\n" + await extractErrorMessage(reviewResponse));
             return;
         }
 
@@ -125,7 +125,7 @@ async function submitReviewCreate(rating, content) {
             });
 
             if (!imageResponse.ok) {
-                alert("리뷰는 등록됐지만 이미지 업로드에 실패했습니다.\n" + await imageResponse.text());
+                alert("리뷰는 등록됐지만 이미지 업로드에 실패했습니다.\n" + await extractErrorMessage(imageResponse));
                 window.location.href = "/reviews";
                 return;
             }
@@ -139,7 +139,7 @@ async function submitReviewCreate(rating, content) {
     }
 }
 
-async function submitReviewUpdate(form, rating, content) {
+async function submitReviewUpdate(rating, content) {
     var reviewId = document.getElementById("reviewId");
     if (!reviewId || !reviewId.value) {
         alert("리뷰 정보가 올바르지 않습니다.");
@@ -164,7 +164,7 @@ async function submitReviewUpdate(form, rating, content) {
         });
 
         if (!response.ok) {
-            alert("리뷰 수정에 실패했습니다.\n" + await response.text());
+            alert("리뷰 수정에 실패했습니다.\n" + await extractErrorMessage(response));
             return;
         }
 
@@ -198,7 +198,7 @@ function bindReviewDeleteButton() {
             });
 
             if (!response.ok) {
-                alert("리뷰 삭제에 실패했습니다.\n" + await response.text());
+                alert("리뷰 삭제에 실패했습니다.\n" + await extractErrorMessage(response));
                 return;
             }
 
@@ -220,11 +220,6 @@ function bindReviewLikeButtons() {
             event.preventDefault();
             event.stopPropagation();
 
-            if (button.disabled) {
-                alert("좋아요는 로그인 후 이용할 수 있습니다.");
-                return;
-            }
-
             var reviewId = button.getAttribute("data-review-like");
             if (!reviewId) return;
 
@@ -238,7 +233,7 @@ function bindReviewLikeButtons() {
                 });
 
                 if (!response.ok) {
-                    alert("좋아요 처리에 실패했습니다.\n" + await response.text());
+                    alert("좋아요 처리에 실패했습니다.\n" + await extractErrorMessage(response));
                     return;
                 }
 
@@ -266,4 +261,17 @@ function applyCsrfHeaders(headers) {
     }
 
     headers[csrfHeaderMeta.getAttribute("content")] = csrfTokenMeta.getAttribute("content");
+}
+
+async function extractErrorMessage(response) {
+    try {
+        var data = await response.json();
+        if (data && data.message) {
+            return data.message;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+
+    return await response.text();
 }

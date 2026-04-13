@@ -34,6 +34,14 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ReviewServiceImpl implements ReviewService {
 
+    private static final String REVIEW_NOT_FOUND = "Review not found.";
+    private static final String RESERVATION_NOT_FOUND = "Reservation not found.";
+    private static final String MEMBER_NOT_FOUND = "Member not found.";
+    private static final String ONLY_OWNER_CAN_WRITE = "Only the reservation owner can write a review.";
+    private static final String REVIEW_AFTER_VISIT_ONLY = "You can write a review only after the reserved time has passed.";
+    private static final String REVIEW_ALREADY_EXISTS = "Only one review can be written per reservation.";
+    private static final String VISITOR_TOKEN_REQUIRED = "Visitor token is required.";
+
     private final ReviewRepository reviewRepository;
     private final ReservationRepository reservationRepository;
     private final ReviewImageRepository reviewImageRepository;
@@ -44,18 +52,18 @@ public class ReviewServiceImpl implements ReviewService {
     @Transactional
     public ReviewResponse createReview(String loginMemberId, ReviewCreateRequest request) {
         Reservation reservation = reservationRepository.findById(request.getReservationId())
-                .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
+                .orElseThrow(() -> new IllegalArgumentException(RESERVATION_NOT_FOUND));
 
         if (!reservation.getMember().getMemberId().equals(loginMemberId)) {
-            throw new IllegalArgumentException("Only the reservation owner can write a review.");
+            throw new IllegalArgumentException(ONLY_OWNER_CAN_WRITE);
         }
 
         if (!isReviewableReservation(reservation)) {
-            throw new IllegalArgumentException("Only completed or same-day reservations can be reviewed.");
+            throw new IllegalArgumentException(REVIEW_AFTER_VISIT_ONLY);
         }
 
         if (reviewRepository.findByReservation_ReservationId(request.getReservationId()).isPresent()) {
-            throw new IllegalArgumentException("Only one review can be written per reservation.");
+            throw new IllegalArgumentException(REVIEW_ALREADY_EXISTS);
         }
 
         Review review = Review.builder()
@@ -66,20 +74,20 @@ public class ReviewServiceImpl implements ReviewService {
                 .content(request.getContent())
                 .build();
 
-        return toResponse(reviewRepository.save(review), loginMemberId);
+        return toResponse(reviewRepository.save(review), loginMemberId, null);
     }
 
     @Override
-    public ReviewResponse getReview(Integer reviewId, String loginMemberId) {
+    public ReviewResponse getReview(Integer reviewId, String loginMemberId, String visitorToken) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found."));
-        return toResponse(review, loginMemberId);
+                .orElseThrow(() -> new IllegalArgumentException(REVIEW_NOT_FOUND));
+        return toResponse(review, loginMemberId, visitorToken);
     }
 
     @Override
-    public ReviewDetailResponse getReviewDetail(Integer reviewId, String loginMemberId) {
+    public ReviewDetailResponse getReviewDetail(Integer reviewId, String loginMemberId, String visitorToken) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found."));
+                .orElseThrow(() -> new IllegalArgumentException(REVIEW_NOT_FOUND));
 
         List<ReviewImageResponse> images = reviewImageRepository.findByReview_ReviewId(reviewId).stream()
                 .map(image -> new ReviewImageResponse(
@@ -105,27 +113,27 @@ public class ReviewServiceImpl implements ReviewService {
                 review.getReplyCreatedAt(),
                 review.getCreatedAt(),
                 safeLikeCount(review),
-                isLikedByCurrentUser(review.getReviewId(), loginMemberId),
+                isLikedByCurrentUser(review.getReviewId(), loginMemberId, visitorToken),
                 images
         );
     }
 
     @Override
-    public List<ReviewResponse> getAllReviews(String loginMemberId, Integer designerId, String sortBy) {
+    public List<ReviewResponse> getAllReviews(String loginMemberId, String visitorToken, Integer designerId, String sortBy) {
         List<Review> reviews = designerId == null
                 ? reviewRepository.findAll()
                 : reviewRepository.findByDesigner_DesignerId(designerId);
 
         return reviews.stream()
-                .map(review -> toResponse(review, loginMemberId))
+                .map(review -> toResponse(review, loginMemberId, visitorToken))
                 .sorted(resolveComparator(sortBy))
                 .toList();
     }
 
     @Override
-    public List<ReviewResponse> getReviewsByMember(String memberId, String loginMemberId) {
+    public List<ReviewResponse> getReviewsByMember(String memberId, String loginMemberId, String visitorToken) {
         return reviewRepository.findByMember_MemberId(memberId).stream()
-                .map(review -> toResponse(review, loginMemberId))
+                .map(review -> toResponse(review, loginMemberId, visitorToken))
                 .sorted(Comparator.comparing(ReviewResponse::getCreatedAt).reversed())
                 .toList();
     }
@@ -134,19 +142,19 @@ public class ReviewServiceImpl implements ReviewService {
     @Transactional
     public ReviewResponse updateReview(String loginMemberId, boolean isAdmin, Integer reviewId, ReviewUpdateRequest request) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found."));
+                .orElseThrow(() -> new IllegalArgumentException(REVIEW_NOT_FOUND));
 
         validateReviewAccess(review, loginMemberId, isAdmin);
         review.updateReview(request.getRating(), request.getContent());
 
-        return toResponse(reviewRepository.save(review), loginMemberId);
+        return toResponse(reviewRepository.save(review), loginMemberId, null);
     }
 
     @Override
     @Transactional
     public void deleteReview(String loginMemberId, boolean isAdmin, Integer reviewId) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found."));
+                .orElseThrow(() -> new IllegalArgumentException(REVIEW_NOT_FOUND));
 
         validateReviewAccess(review, loginMemberId, isAdmin);
         reviewRepository.delete(review);
@@ -194,36 +202,27 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional
-    public ReviewLikeToggleResponse toggleLike(Integer reviewId, String loginMemberId) {
+    public ReviewLikeToggleResponse toggleLike(Integer reviewId, String loginMemberId, String visitorToken) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found."));
-        Member member = memberRepository.findById(loginMemberId)
-                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
+                .orElseThrow(() -> new IllegalArgumentException(REVIEW_NOT_FOUND));
 
-        ReviewLike existingLike = reviewLikeRepository.findByReview_ReviewIdAndMember_MemberId(reviewId, loginMemberId)
-                .orElse(null);
-
-        boolean liked;
+        ReviewLike existingLike = findExistingLike(reviewId, loginMemberId, visitorToken);
         if (existingLike != null) {
             reviewLikeRepository.delete(existingLike);
             review.decreaseLikeCount();
-            liked = false;
-        } else {
-            reviewLikeRepository.save(ReviewLike.builder()
-                    .review(review)
-                    .member(member)
-                    .build());
-            review.increaseLikeCount();
-            liked = true;
+            Review savedReview = reviewRepository.save(review);
+            return new ReviewLikeToggleResponse(savedReview.getReviewId(), safeLikeCount(savedReview), false);
         }
 
+        reviewLikeRepository.save(createReviewLike(review, loginMemberId, visitorToken));
+        review.increaseLikeCount();
         Review savedReview = reviewRepository.save(review);
-        return new ReviewLikeToggleResponse(savedReview.getReviewId(), safeLikeCount(savedReview), liked);
+        return new ReviewLikeToggleResponse(savedReview.getReviewId(), safeLikeCount(savedReview), true);
     }
 
     public void validateReviewAccess(Integer reviewId, String loginMemberId, boolean isAdmin) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found."));
+                .orElseThrow(() -> new IllegalArgumentException(REVIEW_NOT_FOUND));
         validateReviewAccess(review, loginMemberId, isAdmin);
     }
 
@@ -238,14 +237,48 @@ public class ReviewServiceImpl implements ReviewService {
             return false;
         }
 
-        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
-            return true;
-        }
-
-        return !reservation.getReservationDate().isAfter(LocalDateTime.now().toLocalDate());
+        return !LocalDateTime.of(
+                reservation.getReservationDate(),
+                reservation.getReservationTime()
+        ).isAfter(LocalDateTime.now());
     }
 
-    private ReviewResponse toResponse(Review review, String loginMemberId) {
+    private ReviewLike findExistingLike(Integer reviewId, String loginMemberId, String visitorToken) {
+        if (loginMemberId != null && !loginMemberId.isBlank()) {
+            return reviewLikeRepository.findByReview_ReviewIdAndMember_MemberId(reviewId, loginMemberId)
+                    .orElse(null);
+        }
+
+        if (visitorToken != null && !visitorToken.isBlank()) {
+            return reviewLikeRepository.findByReview_ReviewIdAndVisitorToken(reviewId, visitorToken)
+                    .orElse(null);
+        }
+
+        return null;
+    }
+
+    private ReviewLike createReviewLike(Review review, String loginMemberId, String visitorToken) {
+        if (loginMemberId != null && !loginMemberId.isBlank()) {
+            Member member = memberRepository.findById(loginMemberId)
+                    .orElseThrow(() -> new IllegalArgumentException(MEMBER_NOT_FOUND));
+
+            return ReviewLike.builder()
+                    .review(review)
+                    .member(member)
+                    .build();
+        }
+
+        if (visitorToken == null || visitorToken.isBlank()) {
+            throw new IllegalArgumentException(VISITOR_TOKEN_REQUIRED);
+        }
+
+        return ReviewLike.builder()
+                .review(review)
+                .visitorToken(visitorToken)
+                .build();
+    }
+
+    private ReviewResponse toResponse(Review review, String loginMemberId, String visitorToken) {
         String thumbnailImageUrl = review.getReviewImages().stream()
                 .sorted(Comparator.comparing(
                         image -> image.getSortOrder() == null ? Integer.MAX_VALUE : image.getSortOrder()
@@ -272,7 +305,7 @@ public class ReviewServiceImpl implements ReviewService {
                 review.getCreatedAt(),
                 thumbnailImageUrl,
                 safeLikeCount(review),
-                isLikedByCurrentUser(review.getReviewId(), loginMemberId)
+                isLikedByCurrentUser(review.getReviewId(), loginMemberId, visitorToken)
         );
     }
 
@@ -290,11 +323,16 @@ public class ReviewServiceImpl implements ReviewService {
         return Comparator.comparing(ReviewResponse::getCreatedAt).reversed();
     }
 
-    private boolean isLikedByCurrentUser(Integer reviewId, String loginMemberId) {
-        if (loginMemberId == null || loginMemberId.isBlank()) {
-            return false;
+    private boolean isLikedByCurrentUser(Integer reviewId, String loginMemberId, String visitorToken) {
+        if (loginMemberId != null && !loginMemberId.isBlank()) {
+            return reviewLikeRepository.existsByReview_ReviewIdAndMember_MemberId(reviewId, loginMemberId);
         }
-        return reviewLikeRepository.existsByReview_ReviewIdAndMember_MemberId(reviewId, loginMemberId);
+
+        if (visitorToken != null && !visitorToken.isBlank()) {
+            return reviewLikeRepository.existsByReview_ReviewIdAndVisitorToken(reviewId, visitorToken);
+        }
+
+        return false;
     }
 
     private Integer safeLikeCount(Review review) {

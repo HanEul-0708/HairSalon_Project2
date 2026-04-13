@@ -4,10 +4,13 @@ import com.hairsalonproject2.common.constant.ReservationStatus;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.service.ReservationService;
+import com.hairsalonproject2.reservation.service.ReservationServiceImpl;
 import com.hairsalonproject2.review.dto.ReviewDetailResponse;
 import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.repository.ReviewRepository;
 import com.hairsalonproject2.review.service.ReviewService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,7 +19,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -29,20 +31,34 @@ import java.util.stream.Collectors;
 public class ReviewPageController {
 
     private static final int REVIEWS_PER_PAGE = 6;
+    private static final String REVIEW_VISITOR_COOKIE = "review_visitor_token";
 
     private final ReviewService reviewService;
     private final ReservationService reservationService;
+    private final ReservationServiceImpl reservationServiceImpl;
     private final ReviewRepository reviewRepository;
 
     @GetMapping("/reviews")
     public String reviewListPage(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                 HttpServletRequest request,
                                  @RequestParam(defaultValue = "1") int page,
-                                 @RequestParam(defaultValue = "false") boolean searched,
                                  @RequestParam(required = false) Integer designerId,
                                  @RequestParam(defaultValue = "latest") String sortBy,
                                  Model model) {
         String loginMemberId = userDetails == null ? null : userDetails.getMember().getMemberId();
-        Map<Integer, String> designerOptions = reviewService.getAllReviews(loginMemberId, null, "latest").stream()
+        String visitorToken = getVisitorToken(request);
+        List<ReviewResponse> allReviews = reviewService.getAllReviews(loginMemberId, visitorToken, designerId, sortBy);
+        int totalReviews = allReviews.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalReviews / REVIEWS_PER_PAGE));
+        int currentPage = Math.min(Math.max(page, 1), totalPages);
+        int fromIndex = (currentPage - 1) * REVIEWS_PER_PAGE;
+        int toIndex = Math.min(fromIndex + REVIEWS_PER_PAGE, totalReviews);
+
+        List<ReviewResponse> pagedReviews = totalReviews == 0
+                ? Collections.emptyList()
+                : allReviews.subList(fromIndex, toIndex);
+
+        Map<Integer, String> designerOptions = reviewService.getAllReviews(loginMemberId, visitorToken, null, "latest").stream()
                 .collect(Collectors.toMap(
                         ReviewResponse::getDesignerId,
                         ReviewResponse::getDesignerName,
@@ -53,42 +69,25 @@ public class ReviewPageController {
                 ? null
                 : reviewService.getAverageRatingByDesigner(designerId);
 
-        List<ReviewResponse> allReviews = searched
-                ? reviewService.getAllReviews(loginMemberId, designerId, sortBy)
-                : Collections.emptyList();
-        int totalReviews = allReviews.size();
-        int totalPages = searched && totalReviews > 0
-                ? (int) Math.ceil((double) totalReviews / REVIEWS_PER_PAGE)
-                : 0;
-        int currentPage = totalPages == 0 ? 1 : Math.min(Math.max(page, 1), totalPages);
-        int fromIndex = totalReviews == 0 ? 0 : (currentPage - 1) * REVIEWS_PER_PAGE;
-        int toIndex = totalReviews == 0 ? 0 : Math.min(fromIndex + REVIEWS_PER_PAGE, totalReviews);
-
-        List<ReviewResponse> pagedReviews = totalReviews == 0
-                ? Collections.emptyList()
-                : allReviews.subList(fromIndex, toIndex);
-
         model.addAttribute("reviews", pagedReviews);
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
-        model.addAttribute("pageNumbers", totalPages == 0
-                ? Collections.emptyList()
-                : java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());
+        model.addAttribute("pageNumbers", java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());
         model.addAttribute("currentSort", sortBy);
         model.addAttribute("selectedDesignerId", designerId);
         model.addAttribute("designerOptions", designerOptions);
         model.addAttribute("totalReviewCount", totalReviews);
         model.addAttribute("selectedDesignerAverage", selectedDesignerAverage);
         model.addAttribute("isLoggedIn", userDetails != null);
-        model.addAttribute("searched", searched);
         return "review/list";
     }
 
     @GetMapping("/reviews/{reviewId}")
     public String reviewDetailPage(@PathVariable Integer reviewId,
                                    @AuthenticationPrincipal CustomUserDetails userDetails,
+                                   HttpServletRequest request,
                                    Model model) {
-        ReviewDetailResponse review = reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails));
+        ReviewDetailResponse review = reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails), getVisitorToken(request));
         model.addAttribute("review", review);
         model.addAttribute("canManageReview", canManageReview(userDetails, review));
         model.addAttribute("isLoggedIn", userDetails != null);
@@ -98,8 +97,9 @@ public class ReviewPageController {
     @GetMapping("/reviews/{reviewId}/edit")
     public String reviewEditPage(@PathVariable Integer reviewId,
                                  @AuthenticationPrincipal CustomUserDetails userDetails,
+                                 HttpServletRequest request,
                                  Model model) {
-        ReviewDetailResponse review = reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails));
+        ReviewDetailResponse review = reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails), getVisitorToken(request));
         if (!canManageReview(userDetails, review)) {
             throw new AccessDeniedException("You can only edit your own review.");
         }
@@ -116,13 +116,15 @@ public class ReviewPageController {
             return "redirect:/members/login";
         }
 
+        reservationServiceImpl.validateReservationAccess(
+                reservationId,
+                userDetails.getMember().getMemberId(),
+                userDetails.getMember().getRole().name().equals("ADMIN")
+        );
+
         ReservationResponse reservation = reservationService.getReservation(reservationId);
-        if (!reservation.getMemberId().equals(userDetails.getMember().getMemberId())) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
-                    "You can only write a review for your own reservation.");
-        }
         if (!isReviewableReservation(reservation)) {
-            throw new IllegalArgumentException("Only completed or same-day reservations can be reviewed.");
+            throw new IllegalArgumentException("예약 시간 이후에만 리뷰를 작성할 수 있습니다.");
         }
 
         if (reviewRepository.findByReservation_ReservationId(reservationId).isPresent()) {
@@ -152,10 +154,21 @@ public class ReviewPageController {
             return false;
         }
 
-        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
-            return true;
+        return !LocalDateTime.of(reservation.getReservationDate(), reservation.getReservationTime())
+                .isAfter(LocalDateTime.now());
+    }
+
+    private String getVisitorToken(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
         }
 
-        return !reservation.getReservationDate().isAfter(LocalDateTime.now().toLocalDate());
+        for (Cookie cookie : request.getCookies()) {
+            if (REVIEW_VISITOR_COOKIE.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
     }
 }

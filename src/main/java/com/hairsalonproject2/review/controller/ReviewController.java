@@ -10,6 +10,9 @@ import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.dto.ReviewUpdateRequest;
 import com.hairsalonproject2.review.dto.SalonRankingResponse;
 import com.hairsalonproject2.review.service.ReviewService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,11 +20,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/reviews")
 @RequiredArgsConstructor
 public class ReviewController {
+
+    private static final String REVIEW_VISITOR_COOKIE = "review_visitor_token";
 
     private final ReviewService reviewService;
 
@@ -33,21 +39,24 @@ public class ReviewController {
 
     @GetMapping("/{reviewId}")
     public ReviewResponse getReview(@PathVariable Integer reviewId,
-                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
-        return reviewService.getReview(reviewId, getLoginMemberId(userDetails));
+                                    @AuthenticationPrincipal CustomUserDetails userDetails,
+                                    HttpServletRequest request) {
+        return reviewService.getReview(reviewId, getLoginMemberId(userDetails), getVisitorToken(request));
     }
 
     @GetMapping
     public List<ReviewResponse> getAllReviews(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                              HttpServletRequest request,
                                               @RequestParam(required = false) Integer designerId,
                                               @RequestParam(defaultValue = "latest") String sortBy) {
-        return reviewService.getAllReviews(getLoginMemberId(userDetails), designerId, sortBy);
+        return reviewService.getAllReviews(getLoginMemberId(userDetails), getVisitorToken(request), designerId, sortBy);
     }
 
     @GetMapping("/member/{memberId}")
     public List<ReviewResponse> getReviewsByMember(@PathVariable String memberId,
-                                                   @AuthenticationPrincipal CustomUserDetails userDetails) {
-        return reviewService.getReviewsByMember(memberId, getLoginMemberId(userDetails));
+                                                   @AuthenticationPrincipal CustomUserDetails userDetails,
+                                                   HttpServletRequest request) {
+        return reviewService.getReviewsByMember(memberId, getLoginMemberId(userDetails), getVisitorToken(request));
     }
 
     @PutMapping("/{reviewId}")
@@ -74,8 +83,12 @@ public class ReviewController {
 
     @PostMapping("/{reviewId}/likes")
     public ReviewLikeToggleResponse toggleLike(@PathVariable Integer reviewId,
-                                               @AuthenticationPrincipal CustomUserDetails userDetails) {
-        return reviewService.toggleLike(reviewId, userDetails.getMember().getMemberId());
+                                               @AuthenticationPrincipal CustomUserDetails userDetails,
+                                               HttpServletRequest request,
+                                               HttpServletResponse response) {
+        String loginMemberId = getLoginMemberId(userDetails);
+        String visitorToken = loginMemberId == null ? ensureVisitorToken(request, response) : null;
+        return reviewService.toggleLike(reviewId, loginMemberId, visitorToken);
     }
 
     @GetMapping("/designer/{designerId}/average-rating")
@@ -106,8 +119,9 @@ public class ReviewController {
 
     @GetMapping("/{reviewId}/detail")
     public ReviewDetailResponse getReviewDetail(@PathVariable Integer reviewId,
-                                                @AuthenticationPrincipal CustomUserDetails userDetails) {
-        return reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails));
+                                                @AuthenticationPrincipal CustomUserDetails userDetails,
+                                                HttpServletRequest request) {
+        return reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails), getVisitorToken(request));
     }
 
     private boolean isAdmin(CustomUserDetails userDetails) {
@@ -116,5 +130,34 @@ public class ReviewController {
 
     private String getLoginMemberId(CustomUserDetails userDetails) {
         return userDetails == null ? null : userDetails.getMember().getMemberId();
+    }
+
+    private String getVisitorToken(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+
+        for (Cookie cookie : request.getCookies()) {
+            if (REVIEW_VISITOR_COOKIE.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    private String ensureVisitorToken(HttpServletRequest request, HttpServletResponse response) {
+        String token = getVisitorToken(request);
+        if (token != null && !token.isBlank()) {
+            return token;
+        }
+
+        String generatedToken = UUID.randomUUID().toString();
+        Cookie cookie = new Cookie(REVIEW_VISITOR_COOKIE, generatedToken);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(60 * 60 * 24 * 365);
+        response.addCookie(cookie);
+        return generatedToken;
     }
 }

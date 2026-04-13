@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리뷰 상세</title>
+    <link rel="stylesheet" th:href="@{/css/review.css}">
+    <script th:src="@{/js/review.js}" defer></script>
+</head>
+<body>
+<main>
+    <div class="container review-page review-detail-page">
+        <div class="page-header">
+            <h1 class="page-title">리뷰 상세</h1>
+            <p class="page-desc">예약 정보와 시술 내용을 함께 확인할 수 있습니다.</p>
+        </div>
+
+        <section class="review-detail">
+            <div class="review-card__header review-detail__header">
+                <div class="review-card__avatar" th:text="${#strings.substring(review.memberName, 0, 1)}">김</div>
+                <div class="review-card__meta">
+                    <p class="review-card__name" th:text="${review.memberName}">회원명</p>
+                    <p class="review-card__info">
+                        디자이너:
+                        <span th:text="${review.designerName}">디자이너명</span>
+                    </p>
+                    <p class="review-card__info">
+                        시술:
+                        <span th:text="${review.serviceName}">시술명</span>
+                    </p>
+                    <p class="review-card__date"
+                       th:text="${review.reservationDate + ' ' + review.reservationTime}">2026-04-07 15:00</p>
+                </div>
+                <div class="review-card__rating" th:text="${'★ ' + review.rating}">★ 5</div>
+            </div>
+
+            <div class="review-detail__stats">
+                <span th:text="${'예약번호 ' + review.reservationId}">예약번호 1</span>
+                <button type="button"
+                        class="review-like-button"
+                        th:classappend="${review.likedByCurrentUser ? ' is-liked' : ''}"
+                        th:attr="data-review-like=${review.reviewId}">
+                    <span class="review-like-button__icon">♥</span>
+                    <span class="review-like-button__count" th:text="${review.likeCount}">0</span>
+                </button>
+            </div>
+
+            <div class="review-detail__content" th:text="${review.content}">리뷰 내용</div>
+
+            <div class="review-detail__images" th:if="${review.images != null and !#lists.isEmpty(review.images)}">
+                <img th:each="image : ${review.images}"
+                     th:src="${image.imageUrl}"
+                     onerror="this.style.display='none'"
+                     alt="리뷰 이미지">
+            </div>
+
+            <div class="review-card__footer" th:if="${review.replyContent != null and !#strings.isEmpty(review.replyContent)}">
+                <strong>디자이너 답글</strong>
+                <span th:text="${review.replyContent}">답글 내용</span>
+            </div>
+
+            <div class="review-detail__bottom">
+                <div class="review-detail__manage" th:if="${canManageReview}">
+                    <a th:href="@{/reviews/{reviewId}/edit(reviewId=${review.reviewId})}" class="btn btn-outline">수정</a>
+                    <button type="button"
+                            class="btn btn-danger"
+                            data-review-delete
+                            th:attr="data-review-id=${review.reviewId}">삭제</button>
+                </div>
+                <div class="review-actions">
+                    <a href="/reviews" class="btn btn-outline">목록으로</a>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+</body>
+</html>

@@ -5,6 +5,8 @@ import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
 import com.hairsalonproject2.reservation.dto.ReservationUpdateRequest;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 public interface ReservationService {
@@ -24,4 +26,6 @@ public interface ReservationService {
     void cancelReservation(Integer reservationId);
 
     ReservationResponse updateReservationStatus(Integer reservationId, ReservationStatusUpdateRequest request);
+
+    boolean isReservationAvailable(Integer designerId, LocalDate reservationDate, LocalTime reservationTime, Integer reservationId);
 }
