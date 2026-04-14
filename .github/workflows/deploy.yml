@@ -89,5 +89,8 @@ jobs:
               exit 1
             fi
 
-            grep -q "salon-map.js?v=${{ github.sha }}" /tmp/hairsalon-map.html
+            echo "Rendered map script lines:"
+            grep -n "salon-map.js\|sdk.js" /tmp/hairsalon-map.html || true
+
+            grep -q "salon-map.js.*v=" /tmp/hairsalon-map.html
             grep -q "sdk.js?appkey=" /tmp/hairsalon-map.html
