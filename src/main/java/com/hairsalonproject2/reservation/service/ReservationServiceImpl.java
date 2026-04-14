@@ -42,6 +42,9 @@ public class ReservationServiceImpl implements ReservationService {
     private static final String RESERVATION_ACCESS_DENIED = "회원 본인 예약만 조회하거나 변경할 수 있습니다.";
     private static final String MEMBER_ACCESS_DENIED = "회원 본인 예약만 조회할 수 있습니다.";
 
+    private static final String DESIGNER_SERVICE_SALON_MISMATCH = "Designer and service must belong to the same salon.";
+    private static final String ONLY_RESERVED_CAN_CHANGE_STATUS = "Only reserved reservations can be changed to cancelled or completed.";
+
     private final ReservationRepository reservationRepository;
     private final ReservationSlotRepository reservationSlotRepository;
     private final MemberRepository memberRepository;
@@ -58,6 +61,7 @@ public class ReservationServiceImpl implements ReservationService {
         SalonService salonService = salonServiceRepository.findById(request.getSalonServiceId())
                 .orElseThrow(() -> new IllegalArgumentException(SERVICE_NOT_FOUND));
 
+        validateDesignerAndServiceSalon(designer, salonService);
         validateReservationSlot(designer.getDesignerId(), request.getReservationDate(), request.getReservationTime(), null);
 
         Reservation reservation = Reservation.builder()
@@ -119,6 +123,7 @@ public class ReservationServiceImpl implements ReservationService {
         SalonService salonService = salonServiceRepository.findById(request.getSalonServiceId())
                 .orElseThrow(() -> new IllegalArgumentException(SERVICE_NOT_FOUND));
 
+        validateDesignerAndServiceSalon(designer, salonService);
         validateReservationSlot(
                 designer.getDesignerId(),
                 request.getReservationDate(),
@@ -166,6 +171,11 @@ public class ReservationServiceImpl implements ReservationService {
                 .orElseThrow(() -> new IllegalArgumentException(RESERVATION_NOT_FOUND));
 
         ReservationStatus targetStatus = request.getStatus();
+        if (reservation.getStatus() != ReservationStatus.RESERVED
+                && (targetStatus == ReservationStatus.CANCELLED || targetStatus == ReservationStatus.COMPLETED)) {
+            throw new IllegalArgumentException(ONLY_RESERVED_CAN_CHANGE_STATUS);
+        }
+
         if (targetStatus == ReservationStatus.CANCELLED) {
             reservationSlotRepository.deleteByReservation_ReservationId(reservationId);
         } else {
@@ -222,6 +232,14 @@ public class ReservationServiceImpl implements ReservationService {
         return existsInReservation || existsInSlot;
     }
 
+    private void validateDesignerAndServiceSalon(Designer designer, SalonService salonService) {
+        Integer designerSalonId = designer.getSalon() == null ? null : designer.getSalon().getSalonId();
+        Integer serviceSalonId = salonService.getSalon() == null ? null : salonService.getSalon().getSalonId();
+        if (designerSalonId == null || !designerSalonId.equals(serviceSalonId)) {
+            throw new IllegalArgumentException(DESIGNER_SERVICE_SALON_MISMATCH);
+        }
+    }
+
     private void saveReservationSlot(Reservation reservation) {
         try {
             ReservationSlot slot = ReservationSlot.builder()
@@ -274,6 +292,7 @@ public class ReservationServiceImpl implements ReservationService {
         };
     }
 
+    @Override
     public void validateReservationAccess(Integer reservationId, String loginMemberId, boolean isAdmin) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException(RESERVATION_NOT_FOUND));
@@ -283,6 +302,7 @@ public class ReservationServiceImpl implements ReservationService {
         }
     }
 
+    @Override
     public void validateMemberAccess(String targetMemberId, String loginMemberId, boolean isAdmin) {
         if (!isAdmin && !targetMemberId.equals(loginMemberId)) {
             throw new AccessDeniedException(MEMBER_ACCESS_DENIED);

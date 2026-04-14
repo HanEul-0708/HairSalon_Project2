@@ -5,8 +5,10 @@ import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.member.dto.response.MemberSummaryResponse;
 import com.hairsalonproject2.member.entity.Member;
+import com.hairsalonproject2.member.repository.MemberRepository;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.member.service.CustomUserDetailsService;
+import com.hairsalonproject2.member.service.DummyMemberSeeder;
 import com.hairsalonproject2.member.service.MemberService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,12 @@ class AdminMemberSecurityTest {
 
     @MockitoBean
     private MemberService memberService;
+
+    @MockitoBean
+    private DummyMemberSeeder dummyMemberSeeder;
+
+    @MockitoBean
+    private MemberRepository memberRepository;
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;

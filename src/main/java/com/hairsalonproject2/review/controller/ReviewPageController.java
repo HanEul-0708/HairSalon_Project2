@@ -4,7 +4,6 @@ import com.hairsalonproject2.common.constant.ReservationStatus;
 import com.hairsalonproject2.member.service.CustomUserDetails;
 import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.reservation.service.ReservationService;
-import com.hairsalonproject2.reservation.service.ReservationServiceImpl;
 import com.hairsalonproject2.review.dto.ReviewDetailResponse;
 import com.hairsalonproject2.review.dto.ReviewResponse;
 import com.hairsalonproject2.review.repository.ReviewRepository;
@@ -35,7 +34,6 @@ public class ReviewPageController {
 
     private final ReviewService reviewService;
     private final ReservationService reservationService;
-    private final ReservationServiceImpl reservationServiceImpl;
     private final ReviewRepository reviewRepository;
 
     @GetMapping("/reviews")
@@ -116,10 +114,14 @@ public class ReviewPageController {
             return "redirect:/members/login";
         }
 
-        reservationServiceImpl.validateReservationAccess(
+        if (userDetails.getMember().getRole().name().equals("ADMIN")) {
+            throw new AccessDeniedException("Admins cannot write reviews for member reservations.");
+        }
+
+        reservationService.validateReservationAccess(
                 reservationId,
                 userDetails.getMember().getMemberId(),
-                userDetails.getMember().getRole().name().equals("ADMIN")
+                false
         );
 
         ReservationResponse reservation = reservationService.getReservation(reservationId);

@@ -7,7 +7,84 @@
 .salon-branch-page,
 .salon-detail-page,
 .salon-form-page {
-    padding: 40px 0 70px;
+    padding: 20px 0;
+}
+
+.salon-page .catalog-hero {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    max-width: min(1120px, 100%);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.salon-page .catalog-hero__eyebrow {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--gold-border);
+    border-radius: var(--radius-full);
+    background: #fffaf0;
+}
+
+.salon-page .catalog-hero__title,
+.salon-page .catalog-hero > h1 {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 42%;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.salon-page .catalog-hero__subtitle,
+.salon-page .catalog-hero > p:last-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    padding-left: 14px;
+    border-left: 1px solid var(--gold-border);
+    overflow: hidden;
+    color: #7b6e56;
+    line-height: 1.55;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.salon-page .page-header {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: left;
+}
+
+.salon-page .page-header h1,
+.salon-page .page-header h2 {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 42%;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.salon-page .page-header p {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding-left: 14px;
+    border-left: 1px solid var(--gold-border);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .salon-list-page {
@@ -27,7 +104,7 @@
 }
 
 #salon-list-hero .catalog-hero > h1 {
-    margin: 0 0 8px;
+    margin: 0;
     color: var(--gold);
     font-size: clamp(1.9rem, 2.8vw, 2.3rem);
     line-height: 1.24;
@@ -35,11 +112,11 @@
 }
 
 #salon-list-hero .catalog-hero > p:last-child {
-    margin: 0 auto;
-    max-width: 700px;
+    margin: 0;
+    max-width: none;
     color: #7b6e56;
     font-size: 1rem;
-    line-height: 1.72;
+    line-height: 1.55;
 }
 
 .salon-tab-nav {

@@ -12,6 +12,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * View controller exception handler.
@@ -73,6 +75,31 @@ public class GlobalPageExceptionHandler {
             return "error/access-denied";
         }
 
+        return "error/common-error";
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public String handleNoResourceFoundException(NoResourceFoundException e,
+                                                 HttpServletRequest request,
+                                                 HttpServletResponse response,
+                                                 Model model) {
+        return renderNotFound(request, response, model);
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public String handleNoHandlerFoundException(NoHandlerFoundException e,
+                                                HttpServletRequest request,
+                                                HttpServletResponse response,
+                                                Model model) {
+        return renderNotFound(request, response, model);
+    }
+
+    private String renderNotFound(HttpServletRequest request,
+                                  HttpServletResponse response,
+                                  Model model) {
+        response.setStatus(HttpStatus.NOT_FOUND.value());
+        model.addAttribute("errorMessage", "요청한 페이지를 찾을 수 없습니다.");
+        model.addAttribute("requestUri", request.getRequestURI());
         return "error/common-error";
     }
 

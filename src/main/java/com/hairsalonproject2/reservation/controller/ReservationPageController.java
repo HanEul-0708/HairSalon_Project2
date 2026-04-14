@@ -10,7 +10,6 @@ import com.hairsalonproject2.reservation.dto.ReservationResponse;
 import com.hairsalonproject2.salon.dto.request.SalonSearchRequest;
 import com.hairsalonproject2.salon.dto.response.SalonSummaryResponse;
 import com.hairsalonproject2.reservation.service.ReservationService;
-import com.hairsalonproject2.reservation.service.ReservationServiceImpl;
 import com.hairsalonproject2.review.repository.ReviewRepository;
 import com.hairsalonproject2.salon.dto.response.SalonDetailResponse;
 import com.hairsalonproject2.salon.service.SalonQueryService;
@@ -42,7 +41,6 @@ public class ReservationPageController {
     private final SalonServiceQueryService salonServiceQueryService;
     private final SalonQueryService salonQueryService;
     private final ReservationService reservationService;
-    private final ReservationServiceImpl reservationServiceImpl;
     private final ReviewRepository reviewRepository;
 
     @GetMapping("/reservations")
@@ -120,7 +118,7 @@ public class ReservationPageController {
     public String reservationEdit(@AuthenticationPrincipal CustomUserDetails userDetails,
                                   @PathVariable Integer reservationId,
                                   Model model) {
-        reservationServiceImpl.validateReservationAccess(
+        reservationService.validateReservationAccess(
                 reservationId,
                 userDetails.getMember().getMemberId(),
                 userDetails.getMember().getRole().name().equals("ADMIN")

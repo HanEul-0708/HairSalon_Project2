@@ -86,7 +86,7 @@ class ReviewPageControllerAccessTest {
 
     @Test
     void otherUserCannotOpenReviewEditPage() throws Exception {
-        when(reviewService.getReviewDetail(1, "user02")).thenReturn(new ReviewDetailResponse(
+        when(reviewService.getReviewDetail(1, "user02", null)).thenReturn(new ReviewDetailResponse(
                 1,
                 1,
                 LocalDate.of(2026, 4, 8),

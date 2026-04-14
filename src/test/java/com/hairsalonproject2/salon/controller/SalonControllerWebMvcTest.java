@@ -2,6 +2,7 @@ package com.hairsalonproject2.salon.controller;
 
 import com.hairsalonproject2.admin.controller.AdminDesignerController;
 import com.hairsalonproject2.common.integration.kakao.KakaoLocalSearchClient;
+import com.hairsalonproject2.common.advice.GlobalPageExceptionHandler;
 import com.hairsalonproject2.designer.controller.DesignerController;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
 import com.hairsalonproject2.salon.dto.response.SalonSummaryResponse;
@@ -92,7 +93,8 @@ class SalonControllerWebMvcTest {
         viewResolver.setSuffix(".html");
 
         mockMvc = MockMvcBuilders.standaloneSetup(salonController, serviceController, designerController, adminDesignerController)
-                .setControllerAdvice(new BDomainPageExceptionHandler())
+                .setControllerAdvice(new BDomainPageExceptionHandler(), new GlobalPageExceptionHandler())
+                .addDispatcherServletCustomizer(dispatcherServlet -> dispatcherServlet.setThrowExceptionIfNoHandlerFound(true))
                 .setViewResolvers(viewResolver)
                 .build();
     }
@@ -133,21 +135,36 @@ class SalonControllerWebMvcTest {
         mockMvc.perform(get("/designers"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("designer/list"))
-                .andExpect(model().attribute("searched", true));
+                .andExpect(model().attribute("searched", true))
+                .andExpect(model().attributeExists("designersByRating"))
+                .andExpect(model().attributeExists("designersByLikes"))
+                .andExpect(model().attributeExists("designersByNewest"));
     }
 
     @Test
-    void designerRankingRouteRedirectsToSortedList() throws Exception {
+    void designerListCanonicalizesLikesSortQuery() throws Exception {
+        mockMvc.perform(get("/designers").param("sortBy", "likes"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/designers"));
+    }
+
+    @Test
+    void designerListCanonicalizesNewestSortQuery() throws Exception {
+        mockMvc.perform(get("/designers").param("sortBy", "newest"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/designers"));
+    }
+
+    @Test
+    void designerRankingRouteIsRemoved() throws Exception {
         mockMvc.perform(get("/designers/ranking"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/designers?sortBy=likes"));
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    void newDesignerRouteRedirectsToNewestList() throws Exception {
+    void newDesignerRouteIsRemoved() throws Exception {
         mockMvc.perform(get("/designers/new"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/designers?sortBy=newest"));
+                .andExpect(status().isNotFound());
     }
 
     @Test

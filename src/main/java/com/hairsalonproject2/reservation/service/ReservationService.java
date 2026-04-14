@@ -28,4 +28,8 @@ public interface ReservationService {
     ReservationResponse updateReservationStatus(Integer reservationId, ReservationStatusUpdateRequest request);
 
     boolean isReservationAvailable(Integer designerId, LocalDate reservationDate, LocalTime reservationTime, Integer reservationId);
+
+    void validateReservationAccess(Integer reservationId, String loginMemberId, boolean isAdmin);
+
+    void validateMemberAccess(String targetMemberId, String loginMemberId, boolean isAdmin);
 }

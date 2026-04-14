@@ -12,38 +12,30 @@
 <body>
 <main>
     <div class="container designer-page designer-detail-page">
-        <div class="catalog-hero">
+        <section class="catalog-hero">
             <p class="catalog-hero__eyebrow">Designer Detail</p>
             <h1 class="catalog-hero__title" th:text="${designer.name}">디자이너</h1>
-            <p class="catalog-hero__subtitle">디자이너 소개와 경력, 평점, 연결된 시술 정보를 한눈에 확인할 수 있습니다.</p>
-        </div>
+            <p class="catalog-hero__subtitle">소개, 경력, 평점, 연결된 시술 정보를 한눈에 확인하세요.</p>
+        </section>
 
         <div class="designer-detail">
             <section class="designer-detail__main">
                 <div class="designer-profile">
                     <div class="designer-profile__avatar"
-                         th:text="${designer.name != null and !#strings.isEmpty(designer.name) ? #strings.substring(designer.name, 0, 1) : 'D'}">
-                        D
-                    </div>
+                         th:text="${designer.name != null and !#strings.isEmpty(designer.name) ? #strings.substring(designer.name, 0, 1) : 'D'}">D</div>
                     <div>
+                        <p class="designer-card__salon" th:text="${designer.salonName}">Salon Name</p>
                         <h2 th:text="${designer.name}">디자이너명</h2>
                         <p class="designer-card__meta">
-                            <a th:href="@{/salons/{id}(id=${designer.salonId})}" th:text="${designer.salonName}">살롱명</a>
+                            <a th:href="@{/salons/{id}(id=${designer.salonId})}" th:text="${designer.salonName}">미용실명</a>
                         </p>
-                        <p class="designer-card__meta" th:text="|경력 ${designer.careerYears}년|">경력 정보</p>
                     </div>
                 </div>
 
-        <div class="designer-detail">
-            <section class="designer-detail__main">
-                <div class="designer-profile">
-                    <div class="designer-profile__avatar" th:text="${#strings.substring(designer.name, 0, 1)}">D</div>
-                    <div>
-                        <p class="designer-card__salon" th:text="${designer.salonName}">Salon Name</p>
-                        <h2 th:text="${designer.name}">디자이너</h2>
-                        <p th:text="${designer.introduction}">소개</p>
-                    </div>
-                </div>
+                <p class="designer-detail__intro"
+                   th:text="${designer.introduction != null and !#strings.isEmpty(designer.introduction) ? designer.introduction : '등록된 소개가 없습니다.'}">
+                    소개
+                </p>
 
                 <div class="designer-info-list">
                     <div class="designer-info-item">
@@ -79,12 +71,16 @@
                     </form>
                     <a th:if="${#authorization.expression('isAnonymous()')}"
                        th:href="@{/members/login}"
-                       class="btn btn-primary">좋아요</a>
+                       class="btn btn-primary">로그인하고 좋아요</a>
                     <a th:href="@{/salons/{id}(id=${designer.salonId})}" class="btn btn-primary">미용실 보기</a>
-                    <a th:href="@{/designers/{id}/edit(id=${designer.designerId})}" class="btn btn-outline" sec:authorize="hasRole('ADMIN')">수정</a>
+                    <a th:href="@{/admin/designers/{id}/edit(id=${designer.designerId})}"
+                       class="btn btn-outline"
+                       sec:authorize="hasRole('ADMIN')">수정</a>
                     <form method="post"
                           th:action="@{/admin/designers/{id}/delete(id=${designer.designerId})}"
-                          sec:authorize="hasRole('ADMIN')">
+                          sec:authorize="hasRole('ADMIN')"
+                          data-designer-delete-form>
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <button type="submit" class="btn btn-outline">삭제</button>
                     </form>
                 </div>
@@ -92,11 +88,11 @@
 
             <aside class="designer-detail__side">
                 <p class="designer-search-form__eyebrow">Services</p>
-                <h3>가능 시술</h3>
+                <h3>가능한 시술</h3>
                 <div class="designer-service-list">
                     <div class="designer-service-item" th:each="service : ${designer.salonServices}">
                         <a th:href="@{/salon-services/{id}(id=${service.serviceId})}" th:text="${service.name}">시술</a>
-                        <p th:text="|${service.price}원|">가격</p>
+                        <p th:text="|${service.price}원 · ${service.duration}분|">가격</p>
                     </div>
                     <p th:if="${#lists.isEmpty(designer.salonServices)}">등록된 시술이 없습니다.</p>
                 </div>
