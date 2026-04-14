@@ -148,6 +148,7 @@ public class BoardAdminService {
             board.changeParent(null);
         }
 
+        boardReportRepository.deleteByBoardBoardId(board.getBoardId());
         boardRepository.delete(board);
     }
 }

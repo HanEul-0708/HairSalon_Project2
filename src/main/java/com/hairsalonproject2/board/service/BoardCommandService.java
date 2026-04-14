@@ -5,6 +5,7 @@ import com.hairsalonproject2.board.dto.request.BoardReplyRequest;
 import com.hairsalonproject2.board.dto.request.BoardUpdateRequest;
 import com.hairsalonproject2.board.entity.Board;
 import com.hairsalonproject2.board.exception.BoardException;
+import com.hairsalonproject2.board.repository.BoardReportRepository;
 import com.hairsalonproject2.board.repository.BoardRepository;
 import com.hairsalonproject2.common.constant.BoardType;
 import com.hairsalonproject2.common.util.HtmlSanitizer;
@@ -25,6 +26,7 @@ import java.util.Objects;
 public class BoardCommandService {
 
     private final BoardRepository boardRepository;
+    private final BoardReportRepository boardReportRepository;
     private final MemberRepository memberRepository;
     private final BoardAttachmentService boardAttachmentService;
 
@@ -159,6 +161,7 @@ public class BoardCommandService {
             board.changeParent(null);
         }
 
+        boardReportRepository.deleteByBoardBoardId(board.getBoardId());
         boardRepository.delete(board);
     }
 }
