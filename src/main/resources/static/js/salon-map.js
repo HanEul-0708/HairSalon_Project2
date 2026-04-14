@@ -28,12 +28,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (!hasKey) {
-        showNotice("카카오 JavaScript 키가 비어 있습니다. application-secret.properties 설정을 확인해주세요.");
+        showNotice("카카오 JavaScript 키가 설정되지 않았습니다. 서버 환경 설정을 확인해주세요.");
         return;
     }
 
     if (!hasRestKey) {
-        showNotice("카카오 REST API 키가 비어 있습니다. application-secret.properties 설정을 확인해주세요.");
+        showNotice("카카오 REST API 키가 설정되지 않았습니다. 서버 환경 설정을 확인해주세요.");
         return;
     }
 

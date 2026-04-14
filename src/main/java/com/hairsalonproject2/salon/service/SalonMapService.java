@@ -41,7 +41,7 @@ public class SalonMapService {
         if (kakaoRestApiKey == null || kakaoRestApiKey.isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "카카오 REST API 키가 비어 있습니다. application-secret.properties의 kakao.rest-api-key 설정을 확인하세요."
+                    "카카오 REST API 키가 비어 있습니다. kakao.rest-api-key 또는 KAKAO_REST_API_KEY 설정을 확인하세요."
             );
         }
 
