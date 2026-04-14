@@ -144,10 +144,6 @@ public class BoardAdminService {
 
         boardAttachmentService.deletePhysicalFiles(board);
 
-        if (board.getParent() != null) {
-            board.changeParent(null);
-        }
-
         Integer boardId = board.getBoardId();
         boardReportRepository.deleteByBoardBoardId(boardId);
         boardRepository.deleteImagesByBoardId(boardId);

@@ -66,12 +66,28 @@ jobs:
             [Service]
             Environment="KAKAO_JAVASCRIPT_KEY=$KAKAO_JAVASCRIPT_KEY"
             Environment="KAKAO_REST_API_KEY=$KAKAO_REST_API_KEY"
+            Environment="APP_ASSET_VERSION=${{ github.sha }}"
             EOF
               sudo mv /tmp/hairsalon-kakao.conf /etc/systemd/system/hairsalon.service.d/kakao.conf
               sudo systemctl daemon-reload
             else
-              echo "Kakao GitHub Secrets are not configured. Keeping existing server environment."
+              echo "Kakao GitHub Secrets are not configured."
+              exit 1
             fi
 
-            sudo systemctl start hairsalon
+            sudo systemctl restart hairsalon
+            sleep 10
             sudo systemctl status hairsalon --no-pager
+            sudo systemctl is-active --quiet hairsalon
+
+            if curl -fsS http://127.0.0.1:8081/salons/map -o /tmp/hairsalon-map.html; then
+              echo "Smoke check target: http://127.0.0.1:8081/salons/map"
+            elif curl -fsS http://127.0.0.1/salons/map -o /tmp/hairsalon-map.html; then
+              echo "Smoke check target: http://127.0.0.1/salons/map"
+            else
+              sudo journalctl -u hairsalon -n 120 --no-pager
+              exit 1
+            fi
+
+            grep -q "salon-map.js?v=${{ github.sha }}" /tmp/hairsalon-map.html
+            grep -q "sdk.js?appkey=" /tmp/hairsalon-map.html
