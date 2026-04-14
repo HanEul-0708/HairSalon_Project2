@@ -48,6 +48,9 @@ public class SalonController {
     @Value("${kakao.rest-api-key:}")
     private String kakaoRestApiKey;
 
+    @Value("${app.asset-version}")
+    private String assetVersion;
+
     @GetMapping("/new")
     public String createForm(Model model) {
         model.addAttribute("form", new SalonCreateRequest());
@@ -127,6 +130,7 @@ public class SalonController {
         model.addAttribute("regionAddresses", salonQueryService.getAddressOptions());
         model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey == null ? "" : kakaoJavascriptKey.trim());
         model.addAttribute("kakaoRestApiKey", kakaoRestApiKey == null ? "" : kakaoRestApiKey.trim());
+        model.addAttribute("assetVersion", assetVersion);
         return "salon/map-search";
     }
 
@@ -149,6 +153,7 @@ public class SalonController {
         model.addAttribute("salon", salonQueryService.getDetail(salonId));
         model.addAttribute("recommendationCondition", salonQueryService.getRecommendationCondition(salonId));
         model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey == null ? "" : kakaoJavascriptKey.trim());
+        model.addAttribute("assetVersion", assetVersion);
         model.addAttribute(
                 "likedByCurrentUser",
                 isAuthenticated(userDetails) && salonQueryService.isLikedByMember(salonId, memberId(userDetails))
