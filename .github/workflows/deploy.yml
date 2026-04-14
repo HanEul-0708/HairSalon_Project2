@@ -1,0 +1,60 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: JDK 21 설치
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x ./gradlew
+
+      - name: 프로젝트 빌드
+        run: ./gradlew clean bootJar -x test
+
+      - name: 서버에 기존 JAR 백업 및 정리
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo systemctl stop hairsalon
+            if [ -f /home/ubuntu/app/HairSalonProject2.jar ]; then
+              mv /home/ubuntu/app/HairSalonProject2.jar /home/ubuntu/app/HairSalonProject2-backup.jar
+            fi
+            rm -rf /home/ubuntu/app/build
+
+      - name: 새 JAR 업로드
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "build/libs/*.jar"
+          target: "/home/ubuntu/app"
+
+      - name: JAR 이름 고정 및 서비스 재시작
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            NEW_JAR=$(find /home/ubuntu/app/build/libs -name "*.jar" | head -n 1)
+            cp "$NEW_JAR" /home/ubuntu/app/HairSalonProject2.jar
+            sudo systemctl start hairsalon
+            sudo systemctl status hairsalon --no-pager
