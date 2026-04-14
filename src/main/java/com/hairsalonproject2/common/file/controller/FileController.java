@@ -57,7 +57,7 @@ public class FileController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            Resource resource = loadSafeResource(storedFilename);
+            Resource resource = loadSafeResource(resolveImageSubDirectory(storedFilename), storedFilename);
             if (resource == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -82,7 +82,7 @@ public class FileController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            Resource resource = loadSafeResource(storedFilename);
+            Resource resource = loadSafeResource("files", storedFilename);
             if (resource == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -106,9 +106,15 @@ public class FileController {
                 .orElse(false);
     }
 
-    private Resource loadSafeResource(String storedFilename) throws MalformedURLException {
+    private String resolveImageSubDirectory(String storedFilename) {
+        return boardFileRepository.findBySavedNameWithBoard(storedFilename)
+                .map(boardFile -> "files")
+                .orElse("images");
+    }
+
+    private Resource loadSafeResource(String subDirectory, String storedFilename) throws MalformedURLException {
         Path basePath = Paths.get(uploadPath).toAbsolutePath().normalize();
-        Path filePath = basePath.resolve(storedFilename).normalize();
+        Path filePath = basePath.resolve(subDirectory).resolve(storedFilename).normalize();
 
         if (!filePath.startsWith(basePath)) {
             return null;
