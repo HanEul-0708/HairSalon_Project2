@@ -67,7 +67,7 @@ public class Board extends BaseTimeEntity {
      * 내용
      */
     @Lob
-    @Column(name = "content")
+    @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
 
     /**

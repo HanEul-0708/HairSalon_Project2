@@ -5,6 +5,7 @@ import com.hairsalonproject2.common.exception.BusinessException;
 import com.hairsalonproject2.common.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -74,6 +75,22 @@ public class GlobalPageExceptionHandler {
         }
 
         return "error/common-error";
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public String handleDataIntegrityViolation(DataIntegrityViolationException e,
+                                               HttpServletRequest request,
+                                               HttpServletResponse response,
+                                               Model model) {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        String message = request.getRequestURI().startsWith("/boards")
+                ? "입력한 내용이 저장 가능한 길이를 초과했습니다. 내용을 줄여 다시 시도해주세요."
+                : "입력한 값이 저장 가능한 범위를 초과했습니다.";
+        model.addAttribute("errorMessage", message);
+        model.addAttribute("requestUri", request.getRequestURI());
+        return request.getRequestURI().startsWith("/boards")
+                ? "error/board-error"
+                : "error/common-error";
     }
 
     @ExceptionHandler(Exception.class)

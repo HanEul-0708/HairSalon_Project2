@@ -27,6 +27,7 @@ public class BoardUpdateRequest {
      * 내용
      */
     @NotBlank(message = "내용을 입력해 주세요.")
+    @Size(max = 20000, message = "내용은 20,000자 이하로 입력해주세요.")
     private String content;
 
     /**

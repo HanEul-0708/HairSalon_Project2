@@ -7,6 +7,9 @@ document.addEventListener("DOMContentLoaded", function () {
     bindReviewLikeButtons();
 });
 
+var REVIEW_CONTENT_MAX_LENGTH = 1000;
+var REVIEW_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+
 function bindReviewFilterCascade() {
     var citySelect = document.getElementById("city");
     var districtSelect = document.getElementById("district");
@@ -215,7 +218,8 @@ function bindReviewContentCounter() {
     textarea.insertAdjacentElement("afterend", counter);
 
     function updateCounter() {
-        counter.textContent = "현재 " + textarea.value.length + "자 입력";
+        counter.textContent = "현재 " + textarea.value.length + " / " + REVIEW_CONTENT_MAX_LENGTH + "자";
+        counter.classList.toggle("is-error", textarea.value.length > REVIEW_CONTENT_MAX_LENGTH);
     }
 
     textarea.addEventListener("input", updateCounter);
@@ -240,6 +244,13 @@ function bindReviewFormSubmit() {
 
         if (!content.value.trim()) {
             alert("리뷰 내용을 입력해주세요.");
+            content.focus();
+            return;
+        }
+
+        if (content.value.trim().length > REVIEW_CONTENT_MAX_LENGTH) {
+            alert("리뷰 내용은 " + REVIEW_CONTENT_MAX_LENGTH.toLocaleString() + "자 이하로 입력해주세요.");
+            content.focus();
             return;
         }
 
@@ -258,6 +269,11 @@ async function submitReviewCreate(rating, content) {
 
     if (!reservationId || !reservationId.value) {
         alert("예약 정보가 없습니다. 예약 목록에서 다시 진입해주세요.");
+        return;
+    }
+
+    if (image && image.files && image.files.length > 0 && image.files[0].size > REVIEW_IMAGE_MAX_SIZE) {
+        alert("리뷰 이미지는 5MB 이하만 업로드할 수 있습니다.");
         return;
     }
 

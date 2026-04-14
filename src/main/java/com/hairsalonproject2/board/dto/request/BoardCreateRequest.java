@@ -26,5 +26,6 @@ public class BoardCreateRequest {
      * 내용
      */
     @NotBlank(message = "내용은 필수입니다.")
+    @Size(max = 20000, message = "내용은 20,000자 이하로 입력해주세요.")
     private String content;
 }

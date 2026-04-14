@@ -83,6 +83,19 @@ class ReservationServiceTest {
     }
 
     @Test
+    void updateReservationStatusRejectsFutureReservationCompletion() throws Exception {
+        Reservation reservation = reservationWithStatus(ReservationStatus.RESERVED);
+        setField(reservation, "reservationDate", LocalDate.now().plusDays(1));
+        ReservationStatusUpdateRequest request = statusUpdateRequest(ReservationStatus.COMPLETED);
+
+        when(reservationRepository.findById(1)).thenReturn(Optional.of(reservation));
+
+        assertThatThrownBy(() -> reservationService.updateReservationStatus(1, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Reservation can be completed after the visit time.");
+    }
+
+    @Test
     void createReservationRejectsDesignerAndServiceFromDifferentSalon() throws Exception {
         Member member = Member.builder()
                 .memberId("user01")

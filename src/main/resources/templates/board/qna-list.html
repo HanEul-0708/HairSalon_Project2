@@ -55,16 +55,20 @@
 
             <!-- 게시글 목록 반복 출력 -->
             <tr th:each="board : ${boardList}"
-                th:onclick="|location.href='@{/boards/qna/{id}(id=${board.boardId})}'|"
+                th:onclick="${board.accessible} ? |location.href='@{/boards/qna/{id}(id=${board.boardId})}'| : null"
+                th:classappend="${board.accessible} ? '' : ' board-row-secret'"
                 class="board-row">
                 <td th:text="${board.boardId}"></td>
                 <td class="board-row-title">
+                    <span th:if="${!board.accessible}"
+                          class="board-secret-label"
+                          title="작성자 본인, 디자이너, 관리자만 볼 수 있습니다.">비밀글</span>
                     <span th:text="${board.title}"></span>
                     <!-- 답글 개수 표시 -->
-                    <span th:if="${board.answered}" class="board-status-chip board-status-answered">답변 완료</span>
-                            <span th:if="${board.reportCount > 0}" class="board-status-chip board-status-report" th:text="'신고 ' + ${board.reportCount}">신고 0</span>
+                    <span th:if="${board.accessible and board.answered}" class="board-status-chip board-status-answered">답변 완료</span>
+                            <span th:if="${board.accessible and board.reportCount > 0}" class="board-status-chip board-status-report" th:text="'신고 ' + ${board.reportCount}">신고 0</span>
                             <span class="board-reply-count"
-                          th:if="${board.replyCount > 0}"
+                          th:if="${board.accessible and board.replyCount > 0}"
                           th:text="'[' + ${board.replyCount} + ']'">
                         </span>
                 </td>

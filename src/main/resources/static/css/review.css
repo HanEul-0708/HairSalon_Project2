@@ -422,6 +422,17 @@
     resize: vertical;
 }
 
+.review-form .form-help-text {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+}
+
+.review-form .form-help-text.is-error {
+    color: #cb5146;
+    font-weight: 700;
+}
+
 .review-form input:focus,
 .review-form select:focus,
 .review-form textarea:focus {

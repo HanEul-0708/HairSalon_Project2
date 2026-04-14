@@ -8,6 +8,7 @@ import com.hairsalonproject2.board.dto.response.BoardDetailResponse;
 import com.hairsalonproject2.board.dto.response.BoardResponse;
 import com.hairsalonproject2.board.service.BoardService;
 import com.hairsalonproject2.board.service.BoardViewGuard;
+import com.hairsalonproject2.board.support.BoardContentPolicy;
 import com.hairsalonproject2.common.constant.BoardType;
 import com.hairsalonproject2.common.support.PageUtils;
 import com.hairsalonproject2.member.service.CustomUserDetails;
@@ -23,6 +24,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -55,11 +57,13 @@ public class BoardController {
 
     @GetMapping("/notices/{boardId}")
     public String noticeDetail(@PathVariable Integer boardId,
+                               @RequestParam(required = false) String error,
                                HttpServletRequest request,
                                HttpServletResponse response,
                                Model model) {
         BoardDetailResponse board = getBoardDetailWithViewGuard(boardId, BoardType.NOTICE, request, response);
         model.addAttribute("board", board);
+        applyDetailMessage(model, error, false, false);
         return "board/notice-detail";
     }
 
@@ -69,11 +73,11 @@ public class BoardController {
                           @RequestParam(defaultValue = "10") int size,
                           @AuthenticationPrincipal CustomUserDetails userDetails,
                           Model model) {
-        Page<BoardResponse> boardPage = boardService.getQnaPage(
+        Page<BoardResponse> boardPage = boardService.getQnaPageForViewer(
                 page,
                 size,
                 request.getKeyword(),
-                userDetails == null ? null : userDetails.getUsername(),
+                memberIdOrNull(userDetails),
                 canViewAllQna(userDetails)
         );
         applyBoardPageModel(model, boardPage, request.getKeyword(), BoardType.QNA, size);
@@ -82,6 +86,9 @@ public class BoardController {
 
     @GetMapping("/qna/{boardId}")
     public String qnaDetail(@PathVariable Integer boardId,
+                            @RequestParam(required = false) String error,
+                            @RequestParam(defaultValue = "false") boolean reported,
+                            @RequestParam(defaultValue = "false") boolean alreadyReported,
                             HttpServletRequest request,
                             HttpServletResponse response,
                             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -92,6 +99,8 @@ public class BoardController {
 
         BoardDetailResponse board = getQnaDetailWithViewGuard(boardId, request, response, userDetails);
         model.addAttribute("board", board);
+        model.addAttribute("boardReplyRequest", new BoardReplyRequest());
+        applyDetailMessage(model, error, reported, alreadyReported);
         return "board/qna-detail";
     }
 
@@ -99,9 +108,11 @@ public class BoardController {
     @PreAuthorize("isAuthenticated()")
     public String reportQna(@PathVariable Integer boardId,
                             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        getPublicBoardDetailWithAccessCheck(boardId, BoardType.QNA, userDetails);
-
-        boolean reported = boardService.reportBoard(boardId, userDetails.getUsername());
+        boolean reported = boardService.reportAccessibleQna(
+                boardId,
+                userDetails.getUsername(),
+                canViewAllQna(userDetails)
+        );
         if (reported) {
             return "redirect:/boards/qna/" + boardId + "?reported=true";
         }
@@ -118,11 +129,16 @@ public class BoardController {
 
     @PostMapping("/qna")
     @PreAuthorize("isAuthenticated()")
-    public String qnaCreate(@Valid BoardCreateRequest request,
+    public String qnaCreate(@ModelAttribute("boardCreateRequest") @Valid BoardCreateRequest request,
                             BindingResult bindingResult,
                             @RequestParam(value = "files", required = false) List<MultipartFile> files,
                             @AuthenticationPrincipal CustomUserDetails userDetails,
                             Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("boardType", BoardType.QNA.name());
+            return "board/write";
+        }
+        rejectTextLimitIfNeeded(bindingResult, "content", request.getContent(), "내용");
         if (bindingResult.hasErrors()) {
             model.addAttribute("boardType", BoardType.QNA.name());
             return "board/write";
@@ -134,14 +150,22 @@ public class BoardController {
     @PostMapping("/qna/{boardId}/reply")
     @PreAuthorize("hasRole('ADMIN')")
     public String replyQna(@PathVariable Integer boardId,
-                           @Valid BoardReplyRequest request,
+                           @ModelAttribute("boardReplyRequest") @Valid BoardReplyRequest request,
                            BindingResult bindingResult,
-                           @AuthenticationPrincipal CustomUserDetails userDetails) {
+                           @AuthenticationPrincipal CustomUserDetails userDetails,
+                           Model model) {
         if (request.getParentId() == null || boardId.intValue() != request.getParentId().intValue()) {
             return "redirect:/boards/qna/" + boardId;
         }
+        rejectTextLimitIfNeeded(bindingResult, "content", request.getContent(), "답변 내용");
         if (bindingResult.hasErrors()) {
-            return "redirect:/boards/qna/" + boardId + "?error=validation";
+            BoardDetailResponse board = boardService.getAccessibleQnaDetail(
+                    boardId,
+                    userDetails.getUsername(),
+                    canViewAllQna(userDetails)
+            );
+            model.addAttribute("board", board);
+            return "board/qna-detail";
         }
         boardService.createReply(request, userDetails.getUsername());
         return "redirect:/boards/qna/" + boardId;
@@ -157,11 +181,16 @@ public class BoardController {
 
     @PostMapping("/notices")
     @PreAuthorize("hasRole('ADMIN')")
-    public String noticeCreate(@Valid BoardCreateRequest request,
+    public String noticeCreate(@ModelAttribute("boardCreateRequest") @Valid BoardCreateRequest request,
                                BindingResult bindingResult,
                                @RequestParam(value = "files", required = false) List<MultipartFile> files,
                                @AuthenticationPrincipal CustomUserDetails userDetails,
                                Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("boardType", BoardType.NOTICE.name());
+            return "board/write";
+        }
+        rejectTextLimitIfNeeded(bindingResult, "content", request.getContent(), "내용");
         if (bindingResult.hasErrors()) {
             model.addAttribute("boardType", BoardType.NOTICE.name());
             return "board/write";
@@ -176,7 +205,7 @@ public class BoardController {
                            @AuthenticationPrincipal CustomUserDetails userDetails,
                            Model model) {
         BoardType boardType = boardService.getBoardType(boardId);
-        if (!canEditBoard(boardId, boardType, userDetails)) {
+        if (!boardService.canEditBoard(boardId, userDetails.getUsername(), isAdmin(userDetails))) {
             return "redirect:" + buildDetailPath(boardId, boardType) + "?error=forbidden";
         }
         BoardDetailResponse board = boardService.getDetailOnly(boardId);
@@ -191,12 +220,19 @@ public class BoardController {
     @PostMapping("/{boardId}/edit")
     @PreAuthorize("isAuthenticated()")
     public String edit(@PathVariable Integer boardId,
-                       @Valid BoardUpdateRequest request,
+                       @ModelAttribute("boardUpdateRequest") @Valid BoardUpdateRequest request,
                        BindingResult bindingResult,
                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
                        @AuthenticationPrincipal CustomUserDetails userDetails,
                        Model model) {
         BoardType boardType = boardService.getBoardType(boardId);
+        if (bindingResult.hasErrors()) {
+            BoardDetailResponse board = boardService.getDetailOnly(boardId);
+            model.addAttribute("board", board);
+            model.addAttribute("boardUpdateRequest", request);
+            return "board/edit";
+        }
+        rejectTextLimitIfNeeded(bindingResult, "content", request.getContent(), "내용");
         if (bindingResult.hasErrors()) {
             BoardDetailResponse board = boardService.getDetailOnly(boardId);
             model.addAttribute("board", board);
@@ -245,13 +281,18 @@ public class BoardController {
                                                           HttpServletRequest request,
                                                           HttpServletResponse response,
                                                           CustomUserDetails userDetails) {
-        BoardDetailResponse board = getPublicBoardDetailWithAccessCheck(boardId, BoardType.QNA, userDetails);
+        BoardDetailResponse board = boardService.getAccessibleQnaDetail(
+                boardId,
+                userDetails.getUsername(),
+                canViewAllQna(userDetails)
+        );
         if (!boardViewGuard.shouldIncreaseView(boardId, BoardType.QNA, request, response)) {
             return board;
         }
-        return requireQnaAccess(
-                boardService.getPublicDetailAndIncreaseView(boardId, BoardType.QNA),
-                userDetails
+        return boardService.getAccessibleQnaDetailAndIncreaseView(
+                boardId,
+                userDetails.getUsername(),
+                canViewAllQna(userDetails)
         );
     }
 
@@ -261,17 +302,26 @@ public class BoardController {
                 : "/boards/qna/" + boardId;
     }
 
-    private boolean canEditBoard(Integer boardId, BoardType boardType, CustomUserDetails userDetails) {
-        if (boardType == BoardType.NOTICE && isAdmin(userDetails)) {
-            return true;
-        }
-
-        return boardService.isMyBoard(boardId, userDetails.getUsername());
-    }
-
     private boolean isAdmin(CustomUserDetails userDetails) {
         return userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    private void applyDetailMessage(Model model, String error, boolean reported, boolean alreadyReported) {
+        if ("forbidden".equals(error)) {
+            model.addAttribute("boardMessageType", "error");
+            model.addAttribute("boardMessage", "수정 권한이 없습니다.");
+            return;
+        }
+        if (reported) {
+            model.addAttribute("boardMessageType", "success");
+            model.addAttribute("boardMessage", "신고가 접수되었습니다.");
+            return;
+        }
+        if (alreadyReported) {
+            model.addAttribute("boardMessageType", "info");
+            model.addAttribute("boardMessage", "이미 신고한 게시글입니다.");
+        }
     }
 
     private boolean canViewAllQna(CustomUserDetails userDetails) {
@@ -280,17 +330,18 @@ public class BoardController {
                         || a.getAuthority().equals("ROLE_DESIGNER"));
     }
 
-    private BoardDetailResponse getPublicBoardDetailWithAccessCheck(Integer boardId,
-                                                                    BoardType boardType,
-                                                                    CustomUserDetails userDetails) {
-        BoardDetailResponse board = boardService.getPublicDetail(boardId, boardType);
-        return requireQnaAccess(board, userDetails);
+    private void rejectTextLimitIfNeeded(BindingResult bindingResult, String field, String content, String label) {
+        if (!BoardContentPolicy.exceedsTextLimit(content)) {
+            return;
+        }
+        bindingResult.rejectValue(
+                field,
+                "Size",
+                label + "은 " + BoardContentPolicy.MAX_TEXT_LENGTH + "자 이하로 입력해주세요."
+        );
     }
 
-    private BoardDetailResponse requireQnaAccess(BoardDetailResponse board, CustomUserDetails userDetails) {
-        if (canViewAllQna(userDetails) || board.getMemberId().equals(userDetails.getUsername())) {
-            return board;
-        }
-        throw new org.springframework.security.access.AccessDeniedException("문의글을 조회할 권한이 없습니다.");
+    private String memberIdOrNull(CustomUserDetails userDetails) {
+        return userDetails == null ? null : userDetails.getUsername();
     }
 }

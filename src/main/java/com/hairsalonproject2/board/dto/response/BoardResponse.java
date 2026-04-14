@@ -47,6 +47,9 @@ public class BoardResponse {
     /** 답변 완료 여부 */
     private boolean answered;
 
+    /** 목록에서 현재 사용자가 원문 제목을 볼 수 있는지 여부 */
+    private boolean accessible = true;
+
     public BoardResponse() {
     }
 
@@ -92,5 +95,10 @@ public class BoardResponse {
 
     public void setReplyCount(long replyCount) {
         this.replyCount = replyCount;
+    }
+
+    public void maskAsSecret() {
+        this.title = "비밀글입니다.";
+        this.accessible = false;
     }
 }

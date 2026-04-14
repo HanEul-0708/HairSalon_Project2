@@ -21,6 +21,11 @@
             </div>
         </div>
 
+        <div th:if="${boardMessage != null}"
+             class="board-feedback"
+             th:classappend="${boardMessageType == 'error'} ? ' board-feedback-error' : (${boardMessageType == 'success'} ? ' board-feedback-success' : ' board-feedback-info')"
+             th:text="${boardMessage}">게시판 메시지</div>
+
         <div class="board-detail-content" th:utext="${board.content}">
             게시글 본문
         </div>
@@ -66,6 +71,7 @@
 
             <form th:action="@{/boards/qna/{boardId}/reply(boardId=${board.boardId})}"
                   method="post"
+                  th:object="${boardReplyRequest}"
                   class="board-reply-form">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <input type="hidden" name="parentId" th:value="${board.boardId}">
@@ -74,20 +80,26 @@
                     <label for="replyTitle" class="form-label">답변 제목</label>
                     <input type="text"
                            id="replyTitle"
-                           name="title"
+                           th:field="*{title}"
                            class="form-control"
                            placeholder="비워 두면 자동으로 제목이 생성됩니다."
                            maxlength="200">
+                    <div class="board-field-error"
+                         th:if="${#fields.hasErrors('title')}"
+                         th:errors="*{title}"></div>
                 </div>
 
                 <div class="form-group">
                     <label for="replyContent" class="form-label">답변 내용</label>
                     <textarea id="replyContent"
-                              name="content"
+                              th:field="*{content}"
                               class="form-control"
                               rows="6"
                               placeholder="답변 내용을 입력하세요."
                               required></textarea>
+                    <div class="board-field-error"
+                         th:if="${#fields.hasErrors('content')}"
+                         th:errors="*{content}"></div>
                 </div>
 
                 <div class="board-btn-wrap">
@@ -131,8 +143,14 @@
     </div>
 
     <script th:src="@{/js/board.js}"></script>
+    <script th:src="@{/js/board-form.js}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            if (window.initializeBoardReplyForm) {
+                window.initializeBoardReplyForm();
+                return;
+            }
+
             const replyForm = document.querySelector('.board-reply-form');
 
             if (replyForm) {

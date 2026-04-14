@@ -2,6 +2,7 @@ package com.hairsalonproject2.review.controller;
 
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.ReservationStatus;
+import com.hairsalonproject2.common.support.FilterPageState;
 import com.hairsalonproject2.common.support.PageUtils;
 import com.hairsalonproject2.common.util.AddressRegionUtils;
 import com.hairsalonproject2.member.service.CustomUserDetails;
@@ -104,9 +105,11 @@ public class ReviewPageController {
                 ? null
                 : reviewService.getAverageRatingByDesigner(designerId);
 
-        boolean hasFilter = hasReviewFilter(selectedCity, selectedDistrict, selectedNeighborhood, salonId, designerId);
-        boolean filterRequired = searched && !hasFilter;
-        List<ReviewResponse> allReviews = searched && hasFilter
+        FilterPageState pageState = FilterPageState.requireFilter(
+                searched,
+                hasReviewFilter(selectedCity, selectedDistrict, selectedNeighborhood, salonId, designerId)
+        );
+        List<ReviewResponse> allReviews = pageState.resultsAllowed()
                 ? filterReviews(
                 reviewService.getAllReviews(loginMemberId, null, sortBy),
                 selectedCity,
@@ -141,8 +144,8 @@ public class ReviewPageController {
         model.addAttribute("totalReviewCount", totalReviews);
         model.addAttribute("selectedDesignerAverage", selectedDesignerAverage);
         model.addAttribute("isLoggedIn", userDetails != null);
-        model.addAttribute("searched", searched);
-        model.addAttribute("filterRequired", filterRequired);
+        model.addAttribute("searched", pageState.searched());
+        model.addAttribute("filterRequired", pageState.filterRequired());
         return "review/list";
     }
 

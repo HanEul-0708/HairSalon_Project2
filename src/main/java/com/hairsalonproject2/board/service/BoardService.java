@@ -34,6 +34,7 @@ public class BoardService {
     private final BoardQueryService boardQueryService;
     private final BoardCommandService boardCommandService;
     private final BoardAdminService boardAdminService;
+    private final BoardAccessService boardAccessService;
 
     @Transactional(readOnly = true)
     public Page<BoardResponse> getNoticePage(int page, int size, String keyword) {
@@ -43,6 +44,15 @@ public class BoardService {
     @Transactional(readOnly = true)
     public Page<BoardResponse> getQnaPage(int page, int size, String keyword) {
         return boardQueryService.getQnaPage(page, size, keyword);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BoardResponse> getQnaPageForViewer(int page,
+                                                   int size,
+                                                   String keyword,
+                                                   String viewerMemberId,
+                                                   boolean canViewAll) {
+        return boardAccessService.getQnaPageForViewer(page, size, keyword, viewerMemberId, canViewAll);
     }
 
     @Transactional(readOnly = true)
@@ -109,12 +119,30 @@ public class BoardService {
         return boardQueryService.getPublicDetail(boardId, type);
     }
 
+    @Transactional(readOnly = true)
+    public BoardDetailResponse getAccessibleQnaDetail(Integer boardId,
+                                                      String viewerMemberId,
+                                                      boolean canViewAll) {
+        return boardAccessService.getAccessibleQnaDetail(boardId, viewerMemberId, canViewAll);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canEditBoard(Integer boardId, String viewerMemberId, boolean isAdmin) {
+        return boardAccessService.canEditBoard(boardId, viewerMemberId, isAdmin);
+    }
+
     public BoardDetailResponse getDetailAndIncreaseView(Integer boardId) {
         return boardQueryService.getDetailAndIncreaseView(boardId);
     }
 
     public BoardDetailResponse getPublicDetailAndIncreaseView(Integer boardId, BoardType type) {
         return boardQueryService.getPublicDetailAndIncreaseView(boardId, type);
+    }
+
+    public BoardDetailResponse getAccessibleQnaDetailAndIncreaseView(Integer boardId,
+                                                                     String viewerMemberId,
+                                                                     boolean canViewAll) {
+        return boardAccessService.getAccessibleQnaDetailAndIncreaseView(boardId, viewerMemberId, canViewAll);
     }
 
     @Transactional(readOnly = true)
@@ -143,6 +171,10 @@ public class BoardService {
 
     public boolean reportBoard(Integer boardId, String reporterId) {
         return boardAdminService.reportBoard(boardId, reporterId);
+    }
+
+    public boolean reportAccessibleQna(Integer boardId, String reporterId, boolean canViewAll) {
+        return boardAccessService.reportAccessibleQna(boardId, reporterId, canViewAll);
     }
 
     public void hideBoard(Integer boardId, String reason) {
@@ -174,4 +206,5 @@ public class BoardService {
     public boolean isMyBoard(Integer boardId, String memberId) {
         return boardQueryService.isMyBoard(boardId, memberId);
     }
+
 }

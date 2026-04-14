@@ -73,11 +73,13 @@
                           class="btn btn-outline">방문 후 리뷰 작성 가능</span>
                     <span th:if="${!isDesignerReservationView and reservation.status.name() == 'CANCELLED'}"
                           class="btn btn-outline">취소된 예약</span>
-                    <button th:if="${isDesignerReservationView and reservation.status.name() == 'RESERVED'}"
+                    <button th:if="${isDesignerReservationView and reservation.status.name() == 'RESERVED' and completableReservationMap[reservation.reservationId]}"
                             type="button"
                             class="btn btn-primary"
                             data-reservation-status
                             th:attr="data-reservation-id=${reservation.reservationId},data-reservation-status-value='COMPLETED'">방문 완료</button>
+                    <span th:if="${isDesignerReservationView and reservation.status.name() == 'RESERVED' and !completableReservationMap[reservation.reservationId]}"
+                          class="btn btn-outline">방문 후 완료 처리 가능</span>
                     <button th:if="${isDesignerReservationView and reservation.status.name() == 'RESERVED'}"
                             type="button"
                             class="btn btn-danger"

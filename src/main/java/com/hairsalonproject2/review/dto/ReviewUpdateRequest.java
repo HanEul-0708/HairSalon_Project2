@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,5 +31,6 @@ public class ReviewUpdateRequest {
      * 리뷰 내용
      */
     @NotBlank(message = "리뷰 내용은 필수입니다.")
+    @Size(max = 1000, message = "리뷰 내용은 1,000자 이하로 입력해주세요.")
     private String content;
 }

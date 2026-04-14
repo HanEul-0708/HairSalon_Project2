@@ -18,6 +18,11 @@
             </div>
         </div>
 
+        <div th:if="${boardMessage != null}"
+             class="board-feedback"
+             th:classappend="${boardMessageType == 'error'} ? ' board-feedback-error' : (${boardMessageType == 'success'} ? ' board-feedback-success' : ' board-feedback-info')"
+             th:text="${boardMessage}">게시판 메시지</div>
+
         <div class="board-detail-content" th:utext="${board.content}"></div>
 
         <div class="board-detail-files" th:if="${not #lists.isEmpty(board.files)}">

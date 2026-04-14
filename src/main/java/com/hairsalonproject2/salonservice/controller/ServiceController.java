@@ -84,11 +84,13 @@ public class ServiceController {
         String selectedCity = clean(city);
         String selectedDistrict = clean(district);
         String selectedNeighborhood = clean(neighborhood);
-        boolean filterRequired = !hasCompareFilter(selectedServiceName, selectedCity, selectedDistrict, selectedNeighborhood);
+        FilterPageState pageState = FilterPageState.requireFilter(
+                hasCompareFilter(selectedServiceName, selectedCity, selectedDistrict, selectedNeighborhood)
+        );
 
-        model.addAttribute("comparisons", filterRequired
-                ? java.util.List.of()
-                : salonServiceQueryService.compare(selectedServiceName, selectedCity, selectedDistrict, selectedNeighborhood));
+        model.addAttribute("comparisons", pageState.resultsAllowed()
+                ? salonServiceQueryService.compare(selectedServiceName, selectedCity, selectedDistrict, selectedNeighborhood)
+                : java.util.List.of());
         model.addAttribute("cityOptions", salonQueryService.getCityOptions());
         model.addAttribute("districtOptions", salonQueryService.getDistrictOptions(selectedCity));
         model.addAttribute("neighborhoodOptions", salonQueryService.getNeighborhoodOptions(selectedCity, selectedDistrict));
@@ -98,7 +100,7 @@ public class ServiceController {
         model.addAttribute("city", selectedCity);
         model.addAttribute("district", selectedDistrict);
         model.addAttribute("neighborhood", selectedNeighborhood);
-        model.addAttribute("filterRequired", filterRequired);
+        model.addAttribute("filterRequired", pageState.filterRequired());
         return "service/compare";
     }
 

@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var infoWindow = new kakao.maps.InfoWindow({ zIndex: 1 });
     var markers = [];
     var myLocationMarker = null;
+    var isMyLocationSearch = false;
 
     function clearMarkers() {
         markers.forEach(function (marker) {
@@ -183,16 +184,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
             resultsBox.appendChild(item);
 
-            if (index === 0) {
+            if (index === 0 && !isMyLocationSearch) {
                 item.click();
             }
         });
 
         map.setBounds(bounds);
+        isMyLocationSearch = false;
     }
 
     function searchPlaces() {
         var query = buildQuery();
+        isMyLocationSearch = false;
         if (!query) {
             renderEmpty("지역이나 키워드를 선택해주세요.");
             return;
@@ -251,7 +254,14 @@ document.addEventListener("DOMContentLoaded", function () {
             function (position) {
                 var latitude = position.coords.latitude;
                 var longitude = position.coords.longitude;
+
+                console.log("현재 위치 위도:", latitude);
+                console.log("현재 위치 경도:", longitude);
+                console.log("위치 정확도(m):", position.coords.accuracy);
+
                 var currentPosition = new kakao.maps.LatLng(latitude, longitude);
+
+                isMyLocationSearch = true;
 
                 map.setCenter(currentPosition);
                 map.setLevel(4);

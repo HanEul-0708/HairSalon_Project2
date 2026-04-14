@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Objects;
@@ -153,7 +154,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
 
-        validateStatusTransition(reservation.getStatus(), ReservationStatus.CANCELLED);
+        validateStatusTransition(reservation, ReservationStatus.CANCELLED);
         reservation.changeStatus(ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
         reservationSlotRepository.deleteByReservation_ReservationId(reservationId);
@@ -165,7 +166,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found."));
 
-        validateStatusTransition(reservation.getStatus(), request.getStatus());
+        validateStatusTransition(reservation, request.getStatus());
         reservation.changeStatus(request.getStatus());
         return toResponse(reservationRepository.save(reservation));
     }
@@ -201,7 +202,8 @@ public class ReservationServiceImpl implements ReservationService {
                 .toList();
     }
 
-    private void validateStatusTransition(ReservationStatus currentStatus, ReservationStatus nextStatus) {
+    private void validateStatusTransition(Reservation reservation, ReservationStatus nextStatus) {
+        ReservationStatus currentStatus = reservation.getStatus();
         if (currentStatus == nextStatus) {
             return;
         }
@@ -212,6 +214,18 @@ public class ReservationServiceImpl implements ReservationService {
         if (!allowed) {
             throw new IllegalArgumentException("Only reserved reservations can be changed to cancelled or completed.");
         }
+
+        if (nextStatus == ReservationStatus.COMPLETED && !isReservationVisitTimeReached(reservation)) {
+            throw new IllegalArgumentException("Reservation can be completed after the visit time.");
+        }
+    }
+
+    private boolean isReservationVisitTimeReached(Reservation reservation) {
+        if (reservation.getReservationDate() == null || reservation.getReservationTime() == null) {
+            return false;
+        }
+        return !LocalDateTime.of(reservation.getReservationDate(), reservation.getReservationTime())
+                .isAfter(LocalDateTime.now());
     }
 
     private void validateReservationTimeUnit(LocalTime reservationTime) {

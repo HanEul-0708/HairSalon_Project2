@@ -124,6 +124,12 @@
     cursor: pointer;
 }
 
+.board-table tbody tr.board-row-secret,
+.board-table tbody tr.board-row-secret:hover {
+    background: #f7f1e6;
+    cursor: default;
+}
+
 .board-table tbody td {
     padding: 14px 16px;
     color: #5f5648;
@@ -136,6 +142,24 @@
     text-align: left !important;
     color: #2d261b !important;
     font-weight: 600;
+}
+
+.board-row-secret .board-row-title {
+    color: #756a57 !important;
+}
+
+.board-secret-label {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 8px;
+    padding: 2px 8px;
+    border: 1px solid #d0b86f;
+    border-radius: 8px;
+    background: #fff8e6;
+    color: #6d5a25;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.4;
 }
 
 /* 답글 개수 표시 [2] */
@@ -326,6 +350,32 @@
     font-size: 0.95rem;
     line-height: 1.8;
     border-bottom: 1px solid #2a2a2c;
+}
+
+.board-feedback {
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.board-feedback-error {
+    border: 1px solid #efb4ad;
+    background: #fff0ee;
+    color: #b63d34;
+}
+
+.board-feedback-success {
+    border: 1px solid #9ed8b5;
+    background: #edf9f1;
+    color: #276a42;
+}
+
+.board-feedback-info {
+    border: 1px solid #d8c79b;
+    background: #fff8e6;
+    color: #6d5a25;
 }
 
 .board-detail-content :where(
@@ -640,6 +690,13 @@
 .form-text {
     color: #666;
     font-size: 0.8rem;
+}
+
+.board-field-error {
+    margin-top: 6px;
+    color: #cb5146;
+    font-size: 0.84rem;
+    font-weight: 700;
 }
 
 /* 기존 첨부파일 목록 */

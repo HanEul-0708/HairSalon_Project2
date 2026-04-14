@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Comparator;
 import java.util.Collections;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,6 +88,12 @@ public class ReservationPageController {
                         this::isReviewableReservation
                 ));
 
+        Map<Integer, Boolean> completableReservationMap = pagedReservations.stream()
+                .collect(Collectors.toMap(
+                        ReservationResponse::getReservationId,
+                        this::isCompletableReservation
+                ));
+
         List<ReviewResponse> relatedReviews = designerReservationView
                 ? reviewService.getReviewsByDesignerMember(loginMemberId, loginMemberId)
                 : reviewService.getReviewsByMember(loginMemberId, loginMemberId);
@@ -95,6 +102,7 @@ public class ReservationPageController {
         model.addAttribute("relatedReviews", relatedReviews);
         model.addAttribute("reviewedReservationIds", reviewedReservationIds);
         model.addAttribute("reviewableReservationMap", reviewableReservationMap);
+        model.addAttribute("completableReservationMap", completableReservationMap);
         model.addAttribute("currentPage", currentPage);
         model.addAttribute("totalPages", totalPages);
         model.addAttribute("pageNumbers", PageUtils.pageNumbers(totalPages));
@@ -150,5 +158,15 @@ public class ReservationPageController {
 
     private boolean isReviewableReservation(ReservationResponse reservation) {
         return reservation.getStatus() == ReservationStatus.COMPLETED;
+    }
+
+    private boolean isCompletableReservation(ReservationResponse reservation) {
+        if (reservation.getStatus() != ReservationStatus.RESERVED
+                || reservation.getReservationDate() == null
+                || reservation.getReservationTime() == null) {
+            return false;
+        }
+        return !LocalDateTime.of(reservation.getReservationDate(), reservation.getReservationTime())
+                .isAfter(LocalDateTime.now());
     }
 }

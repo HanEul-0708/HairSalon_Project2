@@ -51,7 +51,7 @@ public final class HtmlSanitizer {
 
         Safelist safelist = Safelist.basicWithImages();
         safelist.addTags("span", "div", "font");
-        safelist.addAttributes("a", "href", "title", "target");
+        safelist.addAttributes("a", "href", "title", "target", "rel");
         safelist.addAttributes("img", "src", "alt", "title", "width", "height", "class");
         safelist.addAttributes("font", "size", "color");
         safelist.addAttributes(":all", "style");
@@ -98,8 +98,26 @@ public final class HtmlSanitizer {
         }
 
         restoreSafeImageSources(sourceDocument, document);
+        sanitizeLinks(document);
 
         return document.body().html();
+    }
+
+    private static void sanitizeLinks(Document document) {
+        for (Element link : document.body().select("a")) {
+            String target = link.attr("target").trim().toLowerCase(Locale.ROOT);
+            if (target.isBlank()) {
+                continue;
+            }
+            if (!Set.of("_blank", "_self", "_parent", "_top").contains(target)) {
+                link.removeAttr("target");
+                link.removeAttr("rel");
+                continue;
+            }
+            if ("_blank".equals(target)) {
+                link.attr("rel", "noopener noreferrer");
+            }
+        }
     }
 
     private static void restoreSafeImageSources(Document sourceDocument, Document cleanedDocument) {
