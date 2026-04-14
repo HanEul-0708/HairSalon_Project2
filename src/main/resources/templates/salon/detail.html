@@ -8,7 +8,7 @@
     <title>미용실 상세</title>
     <link rel="stylesheet" th:href="@{/css/salon.css}">
     <script th:if="${kakaoJavascriptKey != null and !kakaoJavascriptKey.isBlank()}"
-            th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&autoload=false&libraries=services&v=${assetVersion}|"></script>
+            th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&autoload=false&libraries=services|"></script>
     <script th:src="@{/js/salon.js}" defer></script>
     <script th:src="@{/js/salon-detail-map.js(v=${assetVersion})}" defer></script>
 </head>

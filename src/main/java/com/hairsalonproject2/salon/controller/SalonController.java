@@ -42,13 +42,13 @@ public class SalonController {
     private final ExternalSalonSyncService externalSalonSyncService;
     private final SalonMapService salonMapService;
 
-    @Value("${kakao.javascript-key:}")
+    @Value("${kakao.javascript-key:${KAKAO_JAVASCRIPT_KEY:}}")
     private String kakaoJavascriptKey;
 
-    @Value("${kakao.rest-api-key:}")
+    @Value("${kakao.rest-api-key:${KAKAO_REST_API_KEY:}}")
     private String kakaoRestApiKey;
 
-    @Value("${app.asset-version}")
+    @Value("${app.asset-version:${APP_ASSET_VERSION:local}}")
     private String assetVersion;
 
     @GetMapping("/new")

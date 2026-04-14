@@ -94,3 +94,5 @@ jobs:
 
             grep -q "salon-map.js.*v=" /tmp/hairsalon-map.html
             grep -q "sdk.js?appkey=" /tmp/hairsalon-map.html
+            grep -q "data-has-key=\"true\"" /tmp/hairsalon-map.html
+            grep -q "data-has-rest-key=\"true\"" /tmp/hairsalon-map.html

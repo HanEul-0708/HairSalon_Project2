@@ -24,7 +24,7 @@ public class KakaoLocalSearchClient {
     private final RestClient restClient = RestClient.create();
     private final Map<String, Optional<KakaoAddressSearchResult>> addressSearchCache = new ConcurrentHashMap<>();
 
-    @Value("${kakao.rest-api-key:}")
+    @Value("${kakao.rest-api-key:${KAKAO_REST_API_KEY:}}")
     private String restApiKey;
 
     public boolean isConfigured() {

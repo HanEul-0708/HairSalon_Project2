@@ -26,7 +26,7 @@ public class SalonMapService {
     private final SalonRepository salonRepository;
     private final KakaoLocalSearchClient kakaoLocalSearchClient;
 
-    @Value("${kakao.rest-api-key:}")
+    @Value("${kakao.rest-api-key:${KAKAO_REST_API_KEY:}}")
     private String kakaoRestApiKey;
 
     public SalonMapResultsPayload getMapResults(String keyword,

@@ -7,7 +7,7 @@
     <title>미용실 지도 검색</title>
     <link rel="stylesheet" th:href="@{/css/salon.css}">
     <script th:if="${kakaoJavascriptKey != null and !kakaoJavascriptKey.isBlank()}"
-            th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&libraries=services&v=${assetVersion}|"></script>
+            th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&libraries=services|"></script>
     <script th:src="@{/js/salon-map.js(v=${assetVersion})}" defer></script>
 </head>
 <body>
