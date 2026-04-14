@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>좋아요 받은 목록</title>
+    <link rel="stylesheet" th:href="@{/css/designer.css}">
+</head>
+<body>
+<main>
+    <div class="container designer-page designer-list-page">
+        <div class="catalog-hero">
+            <p class="catalog-hero__eyebrow">Received Likes</p>
+            <h1 class="catalog-hero__title">좋아요 받은 목록</h1>
+            <p class="catalog-hero__subtitle">내 디자이너 프로필에 좋아요를 눌러준 회원들을 최근 순으로 볼 수 있습니다.</p>
+        </div>
+
+        <div class="designer-grid" th:if="${!#lists.isEmpty(members)}">
+            <article class="designer-card" th:each="member : ${members}">
+                <div class="designer-card__body">
+                    <div class="designer-card__avatar"
+                         th:text="${#strings.substring(member.name, 0, 1)}">M</div>
+                    <p class="designer-card__salon" th:text="${member.role.description}">일반 회원</p>
+                    <h3 class="designer-card__name" th:text="${member.name}">회원명</h3>
+                    <div class="designer-card__stats">
+                        <span class="designer-card__stat">아이디 <strong th:text="${member.memberId}">user01</strong></span>
+                        <span class="designer-card__stat">연락처 <strong th:text="${member.phone}">010-0000-0000</strong></span>
+                    </div>
+                    <p class="designer-card__salon" th:text="${member.email}">member@example.com</p>
+                </div>
+            </article>
+        </div>
+
+        <div class="designer-empty-state" th:if="${#lists.isEmpty(members)}">
+            <h2>아직 좋아요를 받은 회원이 없습니다.</h2>
+            <p>회원이 디자이너 상세 페이지에서 좋아요를 누르면 이 목록에 표시됩니다.</p>
+            <a th:href="@{/designers}" class="btn btn-primary">디자이너 페이지 보기</a>
+        </div>
+    </div>
+</main>
+</body>
+</html>

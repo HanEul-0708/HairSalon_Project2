@@ -1,0 +1,274 @@
+/* =====================================================
+   member.css — 회원 페이지 전용
+   ===================================================== */
+
+.member-page {
+    padding: 40px 0 70px;
+}
+
+/* 마이페이지 카드 */
+.mypage-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+}
+
+/* 정보 */
+.member-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.member-info strong {
+    color: var(--text-main);
+}
+
+.member-info span {
+    color: var(--text-sub);
+}
+
+/* 버튼 영역 */
+.member-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+/* 폼 */
+.member-form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.member-form input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+}
+
+/* 로그인 */
+.login-box {
+    max-width: 400px;
+    margin: 0 auto;
+    background: var(--white);
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.login-box input {
+    margin-bottom: 10px;
+}
+
+.mypage-shell {
+    padding-top: 32px;
+    padding-bottom: 64px;
+}
+
+.mypage-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.9fr);
+    gap: 24px;
+    margin-bottom: 28px;
+    padding: 32px;
+    border: 1px solid var(--gold-border);
+    border-radius: 28px;
+    background:
+        radial-gradient(circle at top left, rgba(232, 201, 109, 0.28), transparent 34%),
+        linear-gradient(135deg, #fffef8 0%, #fffaf0 100%);
+    box-shadow: var(--shadow-md);
+}
+
+.mypage-eyebrow,
+.mypage-panel__eyebrow {
+    margin: 0 0 8px;
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.mypage-hero h2 {
+    margin-bottom: 10px;
+    font-size: 2rem;
+}
+
+.mypage-hero__text {
+    max-width: 560px;
+    margin: 0;
+    color: var(--text-sub);
+    font-size: 15px;
+}
+
+.mypage-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.mypage-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 14px;
+    border-radius: var(--radius-full);
+    background: rgba(255,255,255,0.9);
+    border: 1px solid var(--gold-border);
+    color: var(--text-main);
+    font-size: 13px;
+    box-shadow: var(--shadow-sm);
+}
+
+.mypage-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 22px;
+    border-radius: 22px;
+    background: rgba(28, 28, 30, 0.96);
+    color: rgba(255,255,255,0.92);
+    box-shadow: 0 18px 36px rgba(28, 28, 30, 0.18);
+}
+
+.mypage-summary__row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mypage-summary__label {
+    color: rgba(255,255,255,0.58);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.mypage-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+}
+
+.mypage-panel {
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+}
+
+.mypage-panel--profile {
+    background:
+        linear-gradient(180deg, rgba(253, 248, 238, 0.9), rgba(255, 255, 255, 1));
+    border-color: var(--gold-border);
+}
+
+.mypage-panel--danger {
+    border-color: rgba(198, 40, 40, 0.16);
+    background: linear-gradient(180deg, #fffdfd 0%, #fff7f7 100%);
+}
+
+.mypage-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+}
+
+.mypage-panel__header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.mypage-profile-list {
+    display: grid;
+    gap: 14px;
+}
+
+.mypage-profile-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.86);
+}
+
+.mypage-profile-item span {
+    color: var(--text-sub);
+    font-size: 13px;
+}
+
+.mypage-profile-item strong {
+    color: var(--text-main);
+    font-size: 14px;
+    text-align: right;
+}
+
+.mypage-form .form-control {
+    background: #fffdfa;
+}
+
+.mypage-form .btn {
+    margin-top: 8px;
+}
+
+.mypage-danger-text {
+    margin-bottom: 18px;
+    color: var(--text-sub);
+    font-size: 14px;
+}
+
+.mypage-action-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.mypage-action-stack form {
+    margin: 0;
+}
+
+@media (max-width: 900px) {
+    .mypage-hero {
+        grid-template-columns: 1fr;
+        padding: 24px;
+    }
+
+    .mypage-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .mypage-shell {
+        padding-top: 18px;
+        padding-bottom: 40px;
+    }
+
+    .mypage-hero h2 {
+        font-size: 1.6rem;
+    }
+
+    .mypage-panel,
+    .mypage-summary {
+        padding: 20px;
+    }
+
+    .mypage-profile-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .mypage-profile-item strong {
+        text-align: left;
+    }
+}

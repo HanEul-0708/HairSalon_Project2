@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리뷰 작성</title>
+    <link rel="stylesheet" th:href="@{/css/review.css}">
+    <script th:src="@{/js/review.js}" defer></script>
+</head>
+<body>
+<main>
+    <div class="container review-page review-form-page">
+        <div class="page-header">
+            <h1 class="page-title">리뷰 작성</h1>
+            <p class="page-desc">방문 완료된 예약에 대해서만 리뷰를 등록할 수 있습니다.</p>
+        </div>
+
+        <div class="review-reservation-summary" th:if="${reservation != null}">
+            <p><strong>디자이너</strong><span th:text="${reservation.designerName}">디자이너명</span></p>
+            <p><strong>시술</strong><span th:text="${reservation.serviceName}">시술명</span></p>
+            <p><strong>예약 일시</strong><span th:text="${reservation.reservationDate + ' ' + reservation.reservationTime}">2026-04-07 15:00</span></p>
+            <p><strong>예약 상태</strong><span th:text="${reservation.status}">COMPLETED</span></p>
+        </div>
+
+        <form id="reviewForm" class="review-form" data-mode="create" sec:authorize="isAuthenticated()">
+            <input type="hidden" id="reservationId" th:value="${reservationId}">
+
+            <div class="form-group">
+                <label for="rating">별점</label>
+                <div class="review-rating">
+                    <input type="hidden" id="rating" name="rating" value="5">
+                    <div class="review-rating__stars">
+                        <button type="button" class="review-rating__star is-active" data-value="1">&#9733;</button>
+                        <button type="button" class="review-rating__star is-active" data-value="2">&#9733;</button>
+                        <button type="button" class="review-rating__star is-active" data-value="3">&#9733;</button>
+                        <button type="button" class="review-rating__star is-active" data-value="4">&#9733;</button>
+                        <button type="button" class="review-rating__star is-active" data-value="5">&#9733;</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="content">리뷰 내용</label>
+                <textarea id="content" name="content" rows="5" placeholder="시술 만족도와 방문 경험을 남겨주세요."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="image">이미지 업로드</label>
+                <input type="file" id="image" name="image" accept="image/*">
+            </div>
+
+            <div class="review-actions">
+                <button type="submit" class="btn btn-primary">리뷰 등록</button>
+                <a href="/reviews" class="btn btn-outline">목록으로</a>
+            </div>
+        </form>
+
+        <div sec:authorize="!isAuthenticated()" class="review-empty">
+            <p>리뷰를 작성하려면 로그인이 필요합니다.</p>
+            <a href="/members/login" class="btn btn-primary">로그인하러 가기</a>
+        </div>
+    </div>
+</main>
+</body>
+</html>

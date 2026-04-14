@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>미용실 지도 검색</title>
+    <link rel="stylesheet" th:href="@{/css/salon.css}">
+    <script th:if="${kakaoJavascriptKey != null and !kakaoJavascriptKey.isBlank()}"
+            th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&libraries=services|"></script>
+    <script th:src="@{/js/salon-map.js}" defer></script>
+</head>
+<body>
+<main>
+    <div class="container salon-page salon-map-page">
+        <div class="catalog-hero">
+            <p class="catalog-hero__eyebrow">Salon Map Search</p>
+            <h1 class="catalog-hero__title">미용실 지도 검색</h1>
+            <p class="catalog-hero__subtitle">시, 구, 동과 키워드로 지역 안의 미용실 위치를 바로 확인해보세요.</p>
+        </div>
+
+        <div class="salon-map-page__layout"
+             th:attr="data-has-key=${kakaoJavascriptKey != null and !kakaoJavascriptKey.isBlank()},data-has-rest-key=${kakaoRestApiKey != null and !kakaoRestApiKey.isBlank()}">
+            <section class="salon-map-panel">
+                <form class="salon-search-form salon-search-form--primary salon-search-form--map"
+                      onsubmit="return false;">
+                    <div class="salon-search-form__intro">
+                        <p class="salon-search-form__eyebrow">Salon Map Search</p>
+                        <h2>지역 필터와 키워드로 미용실을 검색해보세요.</h2>
+                        <p>필터를 적용하면 목록과 지도에서 동시에 확인할 수 있습니다.</p>
+                    </div>
+
+                    <div class="salon-search-form__controls">
+                        <div class="salon-search-form__fields">
+                            <select id="mapCity">
+                                <option value="">전체 시</option>
+                                <option th:each="cityOption : ${cityOptions}"
+                                        th:value="${cityOption}"
+                                        th:text="${cityOption}"
+                                        th:selected="${city == cityOption}">
+                                </option>
+                            </select>
+
+                            <select id="mapDistrict" data-selected-value="" th:attr="data-selected-value=${district}">
+                                <option value="">전체 구</option>
+                                <option th:each="districtOption : ${districtOptions}"
+                                        th:value="${districtOption}"
+                                        th:text="${districtOption}"
+                                        th:selected="${district == districtOption}">
+                                </option>
+                            </select>
+
+                            <select id="mapNeighborhood" data-selected-value="" th:attr="data-selected-value=${neighborhood}">
+                                <option value="">전체 동</option>
+                                <option th:each="neighborhoodOption : ${neighborhoodOptions}"
+                                        th:value="${neighborhoodOption}"
+                                        th:text="${neighborhoodOption}"
+                                        th:selected="${neighborhood == neighborhoodOption}">
+                                </option>
+                            </select>
+
+                            <div>
+                                <label class="sr-only" for="mapKeyword">키워드</label>
+                                <input id="mapKeyword" type="text" placeholder="예: 준오헤어" th:value="${keyword}">
+                            </div>
+                        </div>
+
+                        <div class="salon-search-form__actions">
+                            <button type="button" class="btn btn-primary" id="mapSearchButton">지도 검색</button>
+                            <button type="button" class="btn btn-outline" id="myLocationButton">내 위치 기준 보기</button>
+                            <button type="button" class="btn btn-outline" id="mapResetButton">초기화</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="salon-map-notice"
+                     id="mapNotice"
+                     th:hidden="${kakaoJavascriptKey != null and !kakaoJavascriptKey.isBlank()}">
+                    카카오 JavaScript 키가 없어 지도 검색을 사용할 수 없습니다.
+                </div>
+
+                <div class="salon-map-results" id="mapResults">
+                    <div class="salon-map-results__empty">
+                        검색 결과가 여기에 표시됩니다.
+                    </div>
+                </div>
+            </section>
+
+            <section class="salon-map-canvas-wrap">
+                <div id="salonMapCanvas" class="salon-map-canvas" aria-label="미용실 지도"></div>
+            </section>
+        </div>
+
+        <script th:inline="javascript">
+            window.mapRegionFilterData = {
+                addresses: /*[[${regionAddresses}]]*/ []
+            };
+        </script>
+    </div>
+</main>
+</body>
+</html>

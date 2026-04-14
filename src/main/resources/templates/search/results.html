@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>통합 검색 결과</title>
+    <link rel="stylesheet" th:href="@{/css/search.css}">
+</head>
+<body>
+<main>
+    <div class="container search-page">
+        <section class="search-hero">
+            <p class="search-hero__eyebrow">Unified Search</p>
+            <h1 class="search-hero__title">"<span th:text="${keyword}">가일컷</span>" 검색 결과</h1>
+            <p class="search-hero__subtitle">미용실, 디자이너, 시술, 게시글 결과를 한 화면에서 보고 원하는 페이지로 이동하세요.</p>
+        </section>
+
+        <section class="search-summary">
+            <div class="search-summary__item">
+                <span>미용실</span>
+                <strong th:text="${salonCount}">0</strong>
+            </div>
+            <div class="search-summary__item">
+                <span>디자이너</span>
+                <strong th:text="${designerCount}">0</strong>
+            </div>
+            <div class="search-summary__item">
+                <span>시술</span>
+                <strong th:text="${serviceCount}">0</strong>
+            </div>
+            <div class="search-summary__item">
+                <span>공지사항</span>
+                <strong th:text="${noticeCount}">0</strong>
+            </div>
+            <div class="search-summary__item">
+                <span>문의사항</span>
+                <strong th:text="${qnaCount}">0</strong>
+            </div>
+        </section>
+
+        <div class="search-empty" th:if="${!hasAnyResult}">
+            <h2>검색 결과가 없습니다.</h2>
+            <p>다른 검색어를 입력하거나 상단 필터 메뉴에서 목록을 직접 둘러보세요.</p>
+        </div>
+
+        <section class="search-section" th:if="${hasAnyResult}">
+            <div class="search-section__header">
+                <div>
+                    <p class="search-section__eyebrow">Salon</p>
+                    <h2>미용실 <span th:text="${salonCount}">0</span></h2>
+                </div>
+                <a th:href="@{/salons(keyword=${searchKeyword}, city=${searchCity}, district=${searchDistrict}, neighborhood=${searchNeighborhood}, searched=true)}" class="btn btn-outline">더보기</a>
+            </div>
+
+            <div class="search-card-grid" th:if="${!#lists.isEmpty(salons)}">
+                <article class="search-card" th:each="salon : ${salons}">
+                    <p class="search-card__category">미용실</p>
+                    <h3><a th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.name}">미용실명</a></h3>
+                    <p class="search-card__meta" th:text="${salon.address}">주소</p>
+                    <p class="search-card__meta" th:text="|평점 ${salon.averageRating} / 리뷰 ${salon.reviewCount}|">평점 4.8 / 리뷰 12</p>
+                    <div class="search-card__actions">
+                        <a th:href="@{/salons/{id}(id=${salon.salonId})}" class="btn btn-primary">상세 보기</a>
+                    </div>
+                </article>
+            </div>
+
+            <div class="search-section__empty" th:if="${#lists.isEmpty(salons)}">미용실 결과가 없습니다.</div>
+        </section>
+
+        <section class="search-section" th:if="${hasAnyResult}">
+            <div class="search-section__header">
+                <div>
+                    <p class="search-section__eyebrow">Designer</p>
+                    <h2>디자이너 <span th:text="${designerCount}">0</span></h2>
+                </div>
+                <a th:href="@{/designers(keyword=${searchKeyword}, city=${searchCity}, district=${searchDistrict}, neighborhood=${searchNeighborhood}, searched=true)}" class="btn btn-outline">더보기</a>
+            </div>
+
+            <div class="search-card-grid" th:if="${!#lists.isEmpty(designers)}">
+                <article class="search-card" th:each="designer : ${designers}">
+                    <p class="search-card__category">디자이너</p>
+                    <h3><a th:href="@{/designers/{id}(id=${designer.designerId})}" th:text="${designer.name}">디자이너명</a></h3>
+                    <p class="search-card__meta" th:text="${designer.salonName}">미용실명</p>
+                    <p class="search-card__meta" th:text="|평점 ${#numbers.formatDecimal(designer.averageRating, 1, 0)} / 경력 ${designer.careerYears}년|">평점 5 / 경력 7년</p>
+                    <div class="search-card__actions">
+                        <a th:href="@{/designers/{id}(id=${designer.designerId})}" class="btn btn-primary">상세 보기</a>
+                    </div>
+                </article>
+            </div>
+
+            <div class="search-section__empty" th:if="${#lists.isEmpty(designers)}">디자이너 결과가 없습니다.</div>
+        </section>
+
+        <section class="search-section" th:if="${hasAnyResult}">
+            <div class="search-section__header">
+                <div>
+                    <p class="search-section__eyebrow">Service</p>
+                    <h2>시술 <span th:text="${serviceCount}">0</span></h2>
+                </div>
+                <a th:href="@{/salon-services(keyword=${searchKeyword}, city=${searchCity}, district=${searchDistrict}, neighborhood=${searchNeighborhood}, searched=true)}" class="btn btn-outline">더보기</a>
+            </div>
+
+            <div class="search-card-grid" th:if="${!#lists.isEmpty(services)}">
+                <article class="search-card" th:each="service : ${services}">
+                    <p class="search-card__category">시술</p>
+                    <h3><a th:href="@{/salon-services/{id}(id=${service.serviceId})}" th:text="${service.name}">시술명</a></h3>
+                    <p class="search-card__meta" th:text="${service.salonName}">미용실명</p>
+                    <p class="search-card__meta" th:text="|${#numbers.formatInteger(service.price, 3, 'COMMA')}원 / ${service.duration}분|">50,000원 / 90분</p>
+                    <div class="search-card__actions">
+                        <a th:href="@{/salon-services/{id}(id=${service.serviceId})}" class="btn btn-primary">상세 보기</a>
+                    </div>
+                </article>
+            </div>
+
+            <div class="search-section__empty" th:if="${#lists.isEmpty(services)}">시술 결과가 없습니다.</div>
+        </section>
+
+        <section class="search-section" th:if="${hasAnyResult}">
+            <div class="search-section__header">
+                <div>
+                    <p class="search-section__eyebrow">Notice</p>
+                    <h2>공지사항 <span th:text="${noticeCount}">0</span></h2>
+                </div>
+                <a th:href="@{/boards/notices(keyword=${keyword})}" class="btn btn-outline">더보기</a>
+            </div>
+
+            <div class="search-card-grid" th:if="${!#lists.isEmpty(notices)}">
+                <article class="search-card" th:each="notice : ${notices}">
+                    <p class="search-card__category">공지사항</p>
+                    <h3><a th:href="@{/boards/notices/{id}(id=${notice.boardId})}" th:text="${notice.title}">공지 제목</a></h3>
+                    <p class="search-card__meta" th:text="|조회수 ${notice.viewCount}|">조회수 0</p>
+                    <p class="search-card__meta" th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd')}">2026.04.13</p>
+                    <div class="search-card__actions">
+                        <a th:href="@{/boards/notices/{id}(id=${notice.boardId})}" class="btn btn-primary">상세 보기</a>
+                    </div>
+                </article>
+            </div>
+
+            <div class="search-section__empty" th:if="${#lists.isEmpty(notices)}">공지사항 결과가 없습니다.</div>
+        </section>
+
+        <section class="search-section" th:if="${hasAnyResult}">
+            <div class="search-section__header">
+                <div>
+                    <p class="search-section__eyebrow">Q&amp;A</p>
+                    <h2>문의사항 <span th:text="${qnaCount}">0</span></h2>
+                </div>
+                <a th:href="@{/boards/qna(keyword=${keyword})}" class="btn btn-outline">더보기</a>
+            </div>
+
+            <div class="search-card-grid" th:if="${!#lists.isEmpty(qnas)}">
+                <article class="search-card" th:each="qna : ${qnas}">
+                    <p class="search-card__category">문의사항</p>
+                    <h3><a th:href="@{/boards/qna/{id}(id=${qna.boardId})}" th:text="${qna.title}">문의 제목</a></h3>
+                    <p class="search-card__meta" th:text="|작성자 ${T(com.hairsalonproject2.common.util.NameMaskingUtils).maskName(qna.memberId)}|">작성자 u***1</p>
+                    <p class="search-card__meta" th:text="${qna.answered ? '답변 완료' : '답변 대기'}">답변 대기</p>
+                    <div class="search-card__actions">
+                        <a th:href="@{/boards/qna/{id}(id=${qna.boardId})}" class="btn btn-primary">상세 보기</a>
+                    </div>
+                </article>
+            </div>
+
+            <div class="search-section__empty" th:if="${#lists.isEmpty(qnas)}">문의사항 결과가 없습니다.</div>
+        </section>
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/layout}">
+<head>
+    <title>관리자 - 디자이너 관리</title>
+</head>
+<body>
+<th:block layout:fragment="pageTitle">디자이너 관리</th:block>
+
+<div layout:fragment="content">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:16px;">
+        <div class="admin-card">
+            <div class="admin-card-title">전체 디자이너 수</div>
+            <div style="font-size:28px; font-weight:700;" th:text="${totalDesignerCount}">0</div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-title">오늘 등록된 디자이너</div>
+            <div style="font-size:28px; font-weight:700;" th:text="${todayDesignerCount}">0</div>
+            <a th:href="@{/admin/designers(todayOnly=true)}" class="admin-btn admin-btn-secondary" style="margin-top:12px;">오늘 등록만 보기</a>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <div class="admin-card-title">디자이너 목록</div>
+
+        <div class="admin-action-row" style="margin-bottom:16px;">
+            <a th:href="@{/admin/designers/new}" class="admin-btn admin-btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                신규 디자이너 등록
+            </a>
+        </div>
+
+        <form class="admin-filter-wrap" th:action="@{/admin/designers}" method="get">
+            <input type="text" name="keyword" class="admin-search-input" placeholder="디자이너명 또는 소개 검색" th:value="${search.keyword}">
+            <input type="text" name="salonKeyword" class="admin-search-input" placeholder="매장명 검색" th:value="${search.salonKeyword}">
+            <input type="number" name="minCareerYears" class="admin-search-input" min="0" placeholder="최소 경력" th:value="${search.minCareerYears}">
+            <select name="sortBy" class="admin-select">
+                <option value="">정렬</option>
+                <option value="rating" th:selected="${search.sortBy == 'rating'}">평점순</option>
+                <option value="reviews" th:selected="${search.sortBy == 'reviews'}">리뷰순</option>
+                <option value="career" th:selected="${search.sortBy == 'career'}">경력순</option>
+                <option value="likes" th:selected="${search.sortBy == 'likes'}">좋아요순</option>
+                <option value="name" th:selected="${search.sortBy == 'name'}">이름순</option>
+            </select>
+            <input type="hidden" name="todayOnly" th:value="${todayOnly}">
+            <button type="submit" class="admin-btn admin-btn-primary"><i class="bi bi-search"></i> 검색</button>
+            <a th:href="@{/admin/designers}" class="admin-btn admin-btn-secondary">초기화</a>
+        </form>
+
+        <div th:if="${todayOnly}" style="margin-bottom:12px; color:#555;">오늘 등록된 디자이너만 표시 중입니다.</div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>이름</th>
+                    <th>매장</th>
+                    <th>경력</th>
+                    <th>평점</th>
+                    <th>리뷰 수</th>
+                    <th>관리</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(designers)}">
+                    <td colspan="7" style="text-align:center; padding:40px; color:#555;">조회된 디자이너가 없습니다.</td>
+                </tr>
+                <tr th:each="designer : ${designers}">
+                    <td th:text="${designer.designerId}">1</td>
+                    <td><a th:href="@{/designers/{id}(id=${designer.designerId})}" th:text="${designer.name}">디자이너명</a></td>
+                    <td th:text="${designer.salonName}">매장명</td>
+                    <td th:text="|${designer.careerYears}년|">0년</td>
+                    <td th:text="${designer.averageRating}">0</td>
+                    <td th:text="${designer.reviewCount}">0</td>
+                    <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <a th:href="@{/designers/{id}(id=${designer.designerId})}" class="admin-btn admin-btn-secondary"><i class="bi bi-box-arrow-up-right"></i> 상세</a>
+                        <a th:href="@{/admin/designers/{id}/edit(id=${designer.designerId})}" class="admin-btn admin-btn-secondary"><i class="bi bi-pencil"></i> 수정</a>
+                        <form th:action="@{/admin/designers/{id}/delete(id=${designer.designerId})}" method="post" onsubmit="return confirm('이 디자이너를 삭제하시겠습니까?');">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" class="admin-btn admin-btn-danger"><i class="bi bi-trash"></i> 삭제</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-pagination" th:if="${designerPage != null and designerPage.totalPages > 1}">
+            <a th:if="${previousGroupPage != null}" th:href="@{/admin/designers(page=${previousGroupPage}, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, minCareerYears=${search.minCareerYears}, sortBy=${search.sortBy}, todayOnly=${todayOnly})}" class="admin-page-link">이전</a>
+            <a th:each="pageNumber : ${pageNumbers}" th:href="@{/admin/designers(page=${pageNumber}, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, minCareerYears=${search.minCareerYears}, sortBy=${search.sortBy}, todayOnly=${todayOnly})}" th:text="${pageNumber}" th:classappend="${pageNumber == currentPage} ? ' active'" class="admin-page-link">1</a>
+            <a th:if="${nextGroupPage != null}" th:href="@{/admin/designers(page=${nextGroupPage}, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, minCareerYears=${search.minCareerYears}, sortBy=${search.sortBy}, todayOnly=${todayOnly})}" class="admin-page-link">다음</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

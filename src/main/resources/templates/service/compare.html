@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<head>
+    <meta charset="UTF-8">
+    <title>시술 가격 비교</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/service.css}">
+    <script th:src="@{/js/common.js}" defer></script>
+    <script th:src="@{/js/service.js}" defer></script>
+</head>
+<body>
+<main>
+    <div class="container service-page service-compare-page">
+        <div class="catalog-hero">
+            <p class="catalog-hero__eyebrow">Price Compare</p>
+            <h1 class="catalog-hero__title">시술 가격 비교</h1>
+            <p class="catalog-hero__subtitle">시술과 지역을 필터로 좁혀서 미용실별 가격, 소요 시간, 평점을 한 번에 비교해보세요.</p>
+        </div>
+
+        <form method="get" th:action="@{/salon-services/compare}" class="service-search-form service-search-form--compare">
+            <div class="service-search-form__intro">
+                <p class="service-search-form__eyebrow">Comparison Filter</p>
+                <h2>원하는 조건으로 시술 가격을 비교해보세요.</h2>
+            </div>
+
+            <div>
+                <div class="service-search-form__fields service-search-form__fields--compare">
+                    <select id="city" name="city">
+                        <option value="">전체 시</option>
+                        <option th:each="cityOption : ${cityOptions}"
+                                th:value="${cityOption}"
+                                th:text="${cityOption}"
+                                th:selected="${city == cityOption}">
+                        </option>
+                    </select>
+
+                    <select id="district" name="district" data-selected-value="" th:attr="data-selected-value=${district}">
+                        <option value="">전체 구</option>
+                        <option th:each="districtOption : ${districtOptions}"
+                                th:value="${districtOption}"
+                                th:text="${districtOption}"
+                                th:selected="${district == districtOption}">
+                        </option>
+                    </select>
+
+                    <select id="neighborhood" name="neighborhood" data-selected-value="" th:attr="data-selected-value=${neighborhood}">
+                        <option value="">전체 동</option>
+                        <option th:each="neighborhoodOption : ${neighborhoodOptions}"
+                                th:value="${neighborhoodOption}"
+                                th:text="${neighborhoodOption}"
+                                th:selected="${neighborhood == neighborhoodOption}">
+                        </option>
+                    </select>
+
+                    <select name="serviceName">
+                        <option value="">전체 시술</option>
+                        <option th:each="serviceNameOption : ${serviceNameOptions}"
+                                th:value="${serviceNameOption}"
+                                th:text="${serviceNameOption}"
+                                th:selected="${serviceName == serviceNameOption}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="service-search-form__actions">
+                    <button type="submit" class="btn btn-primary">비교하기</button>
+                    <a th:href="@{/salon-services/compare}" class="btn btn-outline">초기화</a>
+                </div>
+            </div>
+        </form>
+
+        <div class="service-empty-state" th:if="${filterRequired}">
+            <h2>필터를 하나 이상 선택해주세요.</h2>
+            <p>시술이나 지역 조건을 선택하면 가격 비교 결과가 표시됩니다.</p>
+        </div>
+
+        <div class="service-results-head catalog-results-head" th:unless="${filterRequired}">
+            <div>
+                <p class="service-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
+                <h2>비교 결과 <span th:text="${#lists.size(comparisons)}">0</span>건</h2>
+            </div>
+        </div>
+
+        <div class="service-compare-table-wrap" th:unless="${filterRequired}">
+            <table class="service-compare-table">
+                <thead>
+                <tr>
+                    <th>미용실</th>
+                    <th>지역</th>
+                    <th>시술</th>
+                    <th>가격</th>
+                    <th>시간</th>
+                    <th>평점</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${comparisons}">
+                    <td>
+                        <a th:href="@{/salons/{id}(id=${row.salonId})}"
+                           th:text="${row.salonName}">미용실</a>
+                    </td>
+                    <td th:text="${row.address}">주소</td>
+                    <td th:text="${row.serviceName}">시술</td>
+                    <td th:text="|${#numbers.formatInteger(row.price, 3, 'COMMA')}원|">0원</td>
+                    <td th:text="|${row.duration}분|">0분</td>
+                    <td th:text="${row.averageRating}">0</td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(comparisons)}">
+                    <td colspan="6" class="service-compare-table__empty">조건에 맞는 시술 가격 정보가 없습니다.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <script th:inline="javascript">
+            window.regionFilterData = {
+                addresses: /*[[${regionAddresses}]]*/ []
+            };
+        </script>
+    </div>
+</main>
+</body>
+</html>

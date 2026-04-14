@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
+
+<head>
+    <title>글 작성 | HairSalon</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.min.css">
+</head>
+
+<body>
+<main>
+    <div class="board-wrap">
+        <div class="board-header">
+            <h2 class="board-title"
+                th:text="${boardType == 'NOTICE'} ? '공지사항 작성' : '문의 작성'">글 작성</h2>
+        </div>
+
+        <form class="board-write-form"
+              th:action="${boardType == 'NOTICE'} ? '/boards/notices' : '/boards/qna'"
+              th:object="${boardCreateRequest}"
+              method="post"
+              enctype="multipart/form-data">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <div class="form-group">
+                <label for="title" class="form-label">제목</label>
+                <input type="text"
+                       id="title"
+                       th:field="*{title}"
+                       class="form-control board-input-title"
+                       placeholder="제목을 입력하세요"
+                       maxlength="200"
+                       required>
+                <div class="board-field-error"
+                     th:if="${#fields.hasErrors('title')}"
+                     th:errors="*{title}"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="content" class="form-label">내용</label>
+                <textarea id="content"
+                          th:field="*{content}"
+                          class="form-control"
+                          rows="10"></textarea>
+                <div class="board-field-error"
+                     th:if="${#fields.hasErrors('content')}"
+                     th:errors="*{content}"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">첨부파일</label>
+                <div class="board-file-dropzone" data-file-dropzone>
+                    <p class="board-file-dropzone-text">파일을 여기로 끌어 놓거나 아래에서 선택하세요.</p>
+                    <input type="file"
+                           name="files"
+                           class="form-control"
+                           multiple>
+                </div>
+                <div class="board-file-preview" data-file-preview></div>
+                <small class="form-text">파일은 최대 10MB, 여러 개 선택 가능합니다.</small>
+            </div>
+
+            <div class="board-btn-wrap">
+                <button type="button"
+                        class="btn-cancel"
+                        onclick="history.back()">취소</button>
+                <button type="submit"
+                        class="btn-submit"
+                        id="submitBtn">등록</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-bs5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/lang/summernote-ko-KR.min.js"></script>
+    <script th:src="@{/js/board.js}"></script>
+    <script th:src="@{/js/board-form.js}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            window.initializeBoardForm({
+                formSelector: '.board-write-form',
+                submittedText: '등록 중...'
+            });
+        });
+    </script>
+</main>
+</body>
+</html>

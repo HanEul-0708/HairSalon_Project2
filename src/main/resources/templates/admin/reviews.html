@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{admin/layout}">
+<head>
+    <meta charset="UTF-8">
+    <title>관리자 - 리뷰 관리</title>
+</head>
+<body>
+<th:block layout:fragment="pageTitle">리뷰 관리</th:block>
+
+<div layout:fragment="content">
+    <div th:replace="~{fragments/message :: flashMessage}"></div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:16px;">
+        <div class="admin-card">
+            <div class="admin-card-title">전체 리뷰 수</div>
+            <div style="font-size:28px; font-weight:700;" th:text="${totalReviewCount}">0</div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-title">오늘 등록된 리뷰</div>
+            <div style="font-size:28px; font-weight:700;" th:text="${todayReviewCount}">0</div>
+            <a th:href="@{/admin/reviews(todayOnly=true)}"
+               class="admin-btn admin-btn-secondary"
+               style="margin-top:12px;">오늘 등록만 보기</a>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
+            <div class="admin-card-title" style="margin-bottom:0;">리뷰 목록</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <form th:action="@{/admin/reviews/seed}" method="post" onsubmit="return confirm('완료 예약을 기준으로 리뷰 더미를 생성하시겠습니까?');">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" class="admin-btn admin-btn-secondary">
+                        <i class="bi bi-chat-left-text"></i> 리뷰 더미 생성
+                    </button>
+                </form>
+                <form th:action="@{/admin/reviews/seed/replies}" method="post" onsubmit="return confirm('리뷰 답변 더미를 생성하시겠습니까?');">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" class="admin-btn admin-btn-secondary">
+                        <i class="bi bi-chat-dots"></i> 리뷰 답변 생성
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <form class="admin-filter-wrap" th:action="@{/admin/reviews}" method="get">
+            <input type="text" name="keyword" class="admin-search-input" placeholder="검색어 입력" th:value="${keyword}">
+            <select name="filterBy" class="admin-select">
+                <option value="all" th:selected="${filterBy == null or filterBy == 'all'}">전체</option>
+                <option value="member" th:selected="${filterBy == 'member'}">회원명</option>
+                <option value="designer" th:selected="${filterBy == 'designer'}">디자이너명</option>
+                <option value="salon" th:selected="${filterBy == 'salon'}">미용실명</option>
+                <option value="service" th:selected="${filterBy == 'service'}">시술명</option>
+            </select>
+            <select name="sortBy" class="admin-select">
+                <option value="latest" th:selected="${selectedSort == 'latest'}">최신순</option>
+                <option value="rating" th:selected="${selectedSort == 'rating'}">평점순</option>
+                <option value="likes" th:selected="${selectedSort == 'likes'}">좋아요순</option>
+            </select>
+            <input type="hidden" name="todayOnly" th:value="${todayOnly}">
+            <button type="submit" class="admin-btn admin-btn-primary">
+                <i class="bi bi-search"></i> 검색
+            </button>
+            <a th:href="@{/admin/reviews}" class="admin-btn admin-btn-secondary">초기화</a>
+        </form>
+
+        <div th:if="${todayOnly}" style="margin-bottom:12px; color:#555;">오늘 등록된 리뷰만 표시 중입니다.</div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>회원</th>
+                    <th>디자이너</th>
+                    <th>미용실</th>
+                    <th>시술</th>
+                    <th>평점</th>
+                    <th>좋아요 수</th>
+                    <th>작성일</th>
+                    <th>관리</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(reviews)}">
+                    <td colspan="9" style="text-align:center; padding:40px; color:#555;">조회된 리뷰가 없습니다.</td>
+                </tr>
+                <tr th:each="review : ${reviews}">
+                    <td th:text="${review.reviewId}">1</td>
+                    <td th:text="${T(com.hairsalonproject2.common.util.NameMaskingUtils).maskName(review.memberName)}">회원명</td>
+                    <td th:text="${review.designerName}">디자이너명</td>
+                    <td th:text="${review.salonName}">미용실명</td>
+                    <td th:text="${review.serviceName}">시술명</td>
+                    <td th:text="${review.rating}">5</td>
+                    <td th:text="${review.likeCount}">0</td>
+                    <td th:text="${#temporals.format(review.createdAt, 'yyyy-MM-dd HH:mm')}">2026-04-08 12:00</td>
+                    <td>
+                        <a th:href="@{/reviews/{reviewId}(reviewId=${review.reviewId})}" class="admin-btn admin-btn-secondary">상세보기</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-pagination" th:if="${reviewPage != null and reviewPage.totalPages > 1}">
+            <a th:if="${previousGroupPage != null}"
+               th:href="@{/admin/reviews(page=${previousGroupPage}, keyword=${keyword}, filterBy=${filterBy}, todayOnly=${todayOnly}, sortBy=${selectedSort})}"
+               class="admin-page-link">이전</a>
+            <a th:each="pageNumber : ${pageNumbers}"
+               th:href="@{/admin/reviews(page=${pageNumber}, keyword=${keyword}, filterBy=${filterBy}, todayOnly=${todayOnly}, sortBy=${selectedSort})}"
+               th:text="${pageNumber}"
+               th:classappend="${pageNumber == currentPage} ? ' active'"
+               class="admin-page-link">1</a>
+            <a th:if="${nextGroupPage != null}"
+               th:href="@{/admin/reviews(page=${nextGroupPage}, keyword=${keyword}, filterBy=${filterBy}, todayOnly=${todayOnly}, sortBy=${selectedSort})}"
+               class="admin-page-link">다음</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

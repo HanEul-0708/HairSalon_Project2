@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
+
+<!--
+  board-error.html 게시판 오류 페이지
+  =====================================================
+  게시판 관련 예외가 발생하면 이 페이지로 이동한다.
+-->
+
+<head>
+    <title>오류 | HairSalon</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}">
+</head>
+
+<body>
+<main>
+
+    <div class="board-wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;
+                    justify-content:center;min-height:60vh;text-align:center;padding:40px 20px;">
+
+            <div style="font-size:5rem;font-weight:700;color:#c9a84c;
+                        font-family:'Georgia',serif;line-height:1;margin-bottom:16px;">!</div>
+
+            <h2 style="font-size:1.4rem;color:#fff;margin-bottom:12px;">
+                요청을 처리할 수 없습니다
+            </h2>
+
+            <p style="font-size:0.95rem;color:#888;margin-bottom:32px;
+                      max-width:400px;line-height:1.7;"
+               th:text="${errorMessage} ?: '요청하신 페이지를 처리하는 중 문제가 발생했습니다.'">
+            </p>
+
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <a th:href="@{/}"
+                   style="padding:10px 24px;background:#c9a84c;color:#1c1c1e;
+                          border-radius:4px;text-decoration:none;font-weight:700;font-size:0.9rem;">
+                    홈으로
+                </a>
+                <button onclick="history.back()"
+                        style="padding:10px 24px;background:transparent;color:#c9a84c;
+                               border:1px solid #c9a84c;border-radius:4px;
+                               font-size:0.9rem;cursor:pointer;">
+                    이전 페이지
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+</main>
+</body>
+</html>
