@@ -56,5 +56,22 @@ jobs:
           script: |
             NEW_JAR=$(find /home/ubuntu/app/build/libs -name "*.jar" | head -n 1)
             cp "$NEW_JAR" /home/ubuntu/app/HairSalonProject2.jar
+            echo "${{ github.sha }}" > /home/ubuntu/app/deployed-version.txt
+
+            KAKAO_JAVASCRIPT_KEY='${{ secrets.KAKAO_JAVASCRIPT_KEY }}'
+            KAKAO_REST_API_KEY='${{ secrets.KAKAO_REST_API_KEY }}'
+            if [ -n "$KAKAO_JAVASCRIPT_KEY" ] && [ -n "$KAKAO_REST_API_KEY" ]; then
+              sudo mkdir -p /etc/systemd/system/hairsalon.service.d
+              cat > /tmp/hairsalon-kakao.conf <<EOF
+            [Service]
+            Environment="KAKAO_JAVASCRIPT_KEY=$KAKAO_JAVASCRIPT_KEY"
+            Environment="KAKAO_REST_API_KEY=$KAKAO_REST_API_KEY"
+            EOF
+              sudo mv /tmp/hairsalon-kakao.conf /etc/systemd/system/hairsalon.service.d/kakao.conf
+              sudo systemctl daemon-reload
+            else
+              echo "Kakao GitHub Secrets are not configured. Keeping existing server environment."
+            fi
+
             sudo systemctl start hairsalon
             sudo systemctl status hairsalon --no-pager
