@@ -21,7 +21,7 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public String storeFile(MultipartFile file) {
         try {
-            Path uploadDir = Paths.get(uploadPath).toAbsolutePath().normalize();
+            Path uploadDir = Paths.get(uploadPath, "images").toAbsolutePath().normalize();
             if (Files.notExists(uploadDir)) {
                 Files.createDirectories(uploadDir);
             }

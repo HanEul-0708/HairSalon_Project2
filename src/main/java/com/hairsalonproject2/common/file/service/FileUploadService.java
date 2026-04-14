@@ -4,6 +4,7 @@ import com.hairsalonproject2.common.file.dto.FileResponse;
 import com.hairsalonproject2.common.file.entity.UploadFile;
 import com.hairsalonproject2.common.file.FileStore;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +19,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FileUploadService {
 
     private final FileStore fileStore;
@@ -66,7 +68,13 @@ public class FileUploadService {
     public FileResponse uploadEditorImage(MultipartFile file) throws IOException {
         validateEditorImage(file);
 
-        UploadFile uploadFile = fileStore.storeImageFile(file);
+        UploadFile uploadFile;
+        try {
+            uploadFile = fileStore.storeImageFile(file);
+        } catch (IOException e) {
+            log.error("Failed to store editor image. uploadPath={}", uploadPath, e);
+            throw e;
+        }
 
         return FileResponse.builder()
                 .url("/files/images/" + uploadFile.getStoredFilename())
