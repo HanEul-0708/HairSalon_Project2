@@ -254,10 +254,20 @@ document.addEventListener("DOMContentLoaded", function () {
             function (position) {
                 var latitude = position.coords.latitude;
                 var longitude = position.coords.longitude;
+                var accuracy = position.coords.accuracy;
 
                 console.log("현재 위치 위도:", latitude);
                 console.log("현재 위치 경도:", longitude);
-                console.log("위치 정확도(m):", position.coords.accuracy);
+                console.log("위치 정확도(m):", accuracy);
+
+                if (accuracy > 10000) {
+                    showNotice("현재 위치 정확도가 너무 낮습니다. 브라우저 위치 설정을 확인하거나 지역 검색을 이용해주세요.");
+                    renderEmpty("현재 위치를 정확히 확인하지 못했습니다. 지역을 선택해서 검색해주세요.");
+                    clearMarkers();
+                    clearMyLocationMarker();
+                    isMyLocationSearch = false;
+                    return;
+                }
 
                 var currentPosition = new kakao.maps.LatLng(latitude, longitude);
 
