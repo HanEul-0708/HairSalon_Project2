@@ -2,6 +2,9 @@ package com.hairsalonproject2.board.repository;
 
 import com.hairsalonproject2.board.entity.BoardReport;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * BoardReportRepository
@@ -17,5 +20,7 @@ public interface BoardReportRepository extends JpaRepository<BoardReport, Long> 
     /**
      * 특정 게시글의 신고 이력을 모두 삭제
      */
-    void deleteByBoardBoardId(Integer boardId);
+    @Modifying
+    @Query("DELETE FROM BoardReport br WHERE br.board.boardId = :boardId")
+    void deleteByBoardBoardId(@Param("boardId") Integer boardId);
 }

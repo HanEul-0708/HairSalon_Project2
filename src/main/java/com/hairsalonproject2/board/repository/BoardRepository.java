@@ -9,6 +9,7 @@ import com.hairsalonproject2.common.constant.BoardType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -71,6 +72,18 @@ public interface BoardRepository extends JpaRepository<Board, Integer> {
             ORDER BY bf.fileId ASC
             """)
     List<BoardFile> findFilesByBoardId(@Param("boardId") Integer boardId);
+
+    @Modifying
+    @Query("DELETE FROM BoardImage bi WHERE bi.board.boardId = :boardId")
+    void deleteImagesByBoardId(@Param("boardId") Integer boardId);
+
+    @Modifying
+    @Query("DELETE FROM BoardFile bf WHERE bf.board.boardId = :boardId")
+    void deleteFilesByBoardId(@Param("boardId") Integer boardId);
+
+    @Modifying
+    @Query("DELETE FROM Board b WHERE b.boardId = :boardId")
+    void deleteBoardRowById(@Param("boardId") Integer boardId);
 
     /**
      * 특정 회원이 작성한 게시글 목록 조회

@@ -148,7 +148,10 @@ public class BoardAdminService {
             board.changeParent(null);
         }
 
-        boardReportRepository.deleteByBoardBoardId(board.getBoardId());
-        boardRepository.delete(board);
+        Integer boardId = board.getBoardId();
+        boardReportRepository.deleteByBoardBoardId(boardId);
+        boardRepository.deleteImagesByBoardId(boardId);
+        boardRepository.deleteFilesByBoardId(boardId);
+        boardRepository.deleteBoardRowById(boardId);
     }
 }

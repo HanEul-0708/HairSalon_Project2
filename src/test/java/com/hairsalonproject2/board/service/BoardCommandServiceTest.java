@@ -49,7 +49,9 @@ class BoardCommandServiceTest {
         InOrder inOrder = inOrder(boardAttachmentService, boardReportRepository, boardRepository);
         inOrder.verify(boardAttachmentService).deletePhysicalFiles(board);
         inOrder.verify(boardReportRepository).deleteByBoardBoardId(10);
-        inOrder.verify(boardRepository).delete(board);
+        inOrder.verify(boardRepository).deleteImagesByBoardId(10);
+        inOrder.verify(boardRepository).deleteFilesByBoardId(10);
+        inOrder.verify(boardRepository).deleteBoardRowById(10);
     }
 
     private Board qnaBoard(Integer boardId, String memberId) {
