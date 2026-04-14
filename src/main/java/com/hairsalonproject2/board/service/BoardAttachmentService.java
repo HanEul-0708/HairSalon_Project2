@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
  * 2. 선택된 첨부파일 삭제
  * 3. 본문 이미지 추출
  * 4. board_image 동기화
+ * 5. 게시글 삭제 시 실제 파일 삭제
  */
 @Service
 @RequiredArgsConstructor
@@ -44,6 +45,10 @@ public class BoardAttachmentService {
     private final FileStore fileStore;
     private final FileUploadService fileUploadService;
 
+    /**
+     * 업로드 루트 경로
+     * 예: /home/ubuntu/upload
+     */
     @Value("${file.upload.path}")
     private String uploadPath;
 
@@ -60,7 +65,8 @@ public class BoardAttachmentService {
                 .collect(Collectors.toList());
 
         for (BoardFile file : deleteTargets) {
-            fileStore.deleteFile(file.getSavedName());
+            // 일반 첨부파일은 files 폴더에서 삭제
+            fileStore.deleteAttachmentFile(file.getSavedName());
             board.removeBoardFile(file);
         }
     }
@@ -79,10 +85,12 @@ public class BoardAttachmentService {
             }
 
             try {
+                // 일반 첨부파일 저장
                 UploadFile uploadFile = fileUploadService.uploadFile(file);
 
                 String originalFilename = file.getOriginalFilename();
                 String fileExtension = "";
+
                 if (originalFilename != null && originalFilename.contains(".")) {
                     fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.') + 1)
                             .toLowerCase(Locale.ROOT);
@@ -92,7 +100,8 @@ public class BoardAttachmentService {
                         .board(board)
                         .originalName(uploadFile.getOriginalFilename())
                         .savedName(uploadFile.getStoredFilename())
-                        .filePath(uploadPath)
+                        // 실제 첨부파일 저장 폴더 기록
+                        .filePath(uploadPath + "/files")
                         .fileSize(file.getSize())
                         .fileExtension(fileExtension)
                         .build();
@@ -121,7 +130,7 @@ public class BoardAttachmentService {
                         LinkedHashMap::new
                 ));
 
-        // 본문에는 있는데 board_image 에 없는 이미지 추가
+        // 본문에는 있는데 board_image 테이블에는 없는 이미지 추가
         for (ImageMeta imageMeta : contentImages) {
             if (!currentImageMap.containsKey(imageMeta.imageUrl())) {
                 String savedName = extractSavedNameFromImageUrl(imageMeta.imageUrl());
@@ -131,7 +140,8 @@ public class BoardAttachmentService {
                             .board(board)
                             .originalName(resolveOriginalImageName(imageMeta, savedName))
                             .savedName(savedName)
-                            .filePath(uploadPath)
+                            // 실제 이미지 저장 폴더 기록
+                            .filePath(uploadPath + "/images")
                             .imageUrl(imageMeta.imageUrl())
                             .build();
 
@@ -140,23 +150,27 @@ public class BoardAttachmentService {
             }
         }
 
-        // board_image 에는 있는데 본문에는 없는 이미지 제거
+        // board_image 테이블에는 있는데 본문에는 없는 이미지 제거
         List<BoardImage> deleteTargets = board.getBoardImages().stream()
                 .filter(image -> contentImages.stream().noneMatch(meta -> meta.imageUrl().equals(image.getImageUrl())))
                 .collect(Collectors.toList());
 
         for (BoardImage image : deleteTargets) {
-            fileStore.deleteFile(image.getSavedName());
+            // 본문 이미지는 images 폴더에서 삭제
+            fileStore.deleteImageFile(image.getSavedName());
             board.removeBoardImage(image);
         }
     }
 
     /**
-     * 게시글 삭제 시 첨부파일/이미지 실제 파일 삭제
+     * 게시글 삭제 시 첨부파일 / 이미지 실제 파일 삭제
      */
     public void deletePhysicalFiles(Board board) {
-        board.getBoardFiles().forEach(file -> fileStore.deleteFile(file.getSavedName()));
-        board.getBoardImages().forEach(image -> fileStore.deleteFile(image.getSavedName()));
+        // 일반 첨부파일 삭제
+        board.getBoardFiles().forEach(file -> fileStore.deleteAttachmentFile(file.getSavedName()));
+
+        // 본문 이미지 삭제
+        board.getBoardImages().forEach(image -> fileStore.deleteImageFile(image.getSavedName()));
     }
 
     /**
@@ -173,6 +187,7 @@ public class BoardAttachmentService {
         for (Element image : document.select("img[src]")) {
             String src = image.attr("src").trim();
 
+            // 우리 프로젝트 에디터 이미지 URL만 대상으로 처리
             if (!src.contains("/files/images/")) {
                 continue;
             }
@@ -203,6 +218,7 @@ public class BoardAttachmentService {
 
     /**
      * 이미지 URL에서 저장 파일명 추출
+     * 예: /files/images/uuid.png -> uuid.png
      */
     private String extractSavedNameFromImageUrl(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {

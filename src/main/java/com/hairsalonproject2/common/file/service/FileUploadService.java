@@ -58,23 +58,15 @@ public class FileUploadService {
             "jpg", "jpeg", "png", "gif", "webp"
     );
 
-    /**
-     * 일반 첨부파일 업로드
-     */
     public UploadFile uploadFile(MultipartFile file) throws IOException {
         validateFile(file);
-        return fileStore.storeFile(file);
+        return fileStore.storeAttachmentFile(file);
     }
 
-    /**
-     * 썸머노트 에디터 이미지 업로드
-     * 반환값 예:
-     * {"url": "/files/images/UUID.png"}
-     */
     public FileResponse uploadEditorImage(MultipartFile file) throws IOException {
         validateEditorImage(file);
 
-        UploadFile uploadFile = fileStore.storeFile(file);
+        UploadFile uploadFile = fileStore.storeImageFile(file);
 
         return FileResponse.builder()
                 .url("/files/images/" + uploadFile.getStoredFilename())
