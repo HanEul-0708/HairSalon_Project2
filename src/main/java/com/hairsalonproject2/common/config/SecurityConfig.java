@@ -77,6 +77,7 @@ public class SecurityConfig {
                                 "/uploads/**",
                                 "/files/images/**",
                                 "/files/download/**",
+                                "/system/version",
                                 "/error/**",
 
                                 // 회원

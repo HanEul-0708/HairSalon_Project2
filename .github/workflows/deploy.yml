@@ -80,6 +80,24 @@ jobs:
             sudo systemctl status hairsalon --no-pager
             sudo systemctl is-active --quiet hairsalon
 
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              if curl -fsS http://127.0.0.1:8081/system/version -o /tmp/hairsalon-version.json; then
+                break
+              fi
+              sleep 5
+            done
+
+            if [ ! -f /tmp/hairsalon-version.json ]; then
+              echo "Version check failed: /system/version did not respond."
+              sudo journalctl -u hairsalon -n 120 --no-pager
+              exit 1
+            fi
+
+            echo "Expected deployed version: ${{ github.sha }}"
+            echo "Running app version:"
+            cat /tmp/hairsalon-version.json
+            grep -q "${{ github.sha }}" /tmp/hairsalon-version.json
+
             if curl -fsS http://127.0.0.1:8081/salons/map -o /tmp/hairsalon-map.html; then
               echo "Smoke check target: http://127.0.0.1:8081/salons/map"
             elif curl -fsS http://127.0.0.1/salons/map -o /tmp/hairsalon-map.html; then
