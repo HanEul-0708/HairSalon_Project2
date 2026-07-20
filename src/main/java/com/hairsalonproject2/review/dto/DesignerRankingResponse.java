@@ -9,10 +9,10 @@ import lombok.Setter;
 @AllArgsConstructor
 public class DesignerRankingResponse {
 
-    private Integer designerId;
-    private String designerName;
-    private String salonName;
-    private Integer careerYears;
-    private Double averageRating;
-    private Long reviewCount;
+ private Integer designerId;
+ private String designerName;
+ private String salonName;
+ private Integer careerYears;
+ private Double averageRating;
+ private Long reviewCount;
 }

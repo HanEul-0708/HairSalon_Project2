@@ -8,15 +8,15 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class DesignerSearchRequest {
-    private String keyword;
-    private String salonKeyword;
-    private BigDecimal minRating;
-    private Integer minCareerYears;
-    private Long minReviewCount;
-    private String sortBy;
-    private boolean searched;
+ private String keyword;
+ private String salonKeyword;
+ private BigDecimal minRating;
+ private Integer minCareerYears;
+ private Long minReviewCount;
+ private String sortBy;
+ private boolean searched;
 
-    public boolean hasSearchRequest() {
-        return searched;
-    }
+ public boolean hasSearchRequest() {
+  return searched;
+ }
 }

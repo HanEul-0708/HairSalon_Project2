@@ -10,10 +10,10 @@ import java.util.List;
 @Builder
 public class SalonRecommendationConditionResponse {
 
-    private Integer salonId;
-    private String salonName;
-    private BigDecimal averageRating;
-    private Integer reviewCount;
-    private Integer likeCount;
-    private List<String> reviewKeywords;
+ private Integer salonId;
+ private String salonName;
+ private BigDecimal averageRating;
+ private Integer reviewCount;
+ private Integer likeCount;
+ private List<String> reviewKeywords;
 }

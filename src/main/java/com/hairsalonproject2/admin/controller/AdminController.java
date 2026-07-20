@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/admin")
 public class AdminController {
 
-    /**
-     * 관리자 메인 페이지
-     */
-    @GetMapping
-    public String adminMain(Model model) {
-        model.addAttribute("currentMenu", "dashboard");
-        return "admin/admin-main";
-    }
+ /**
+  * 관리자 메인 페이지
+  */
+ @GetMapping
+ public String adminMain(Model model) {
+  model.addAttribute("currentMenu", "dashboard");
+  return "admin/admin-main";
+ }
 }

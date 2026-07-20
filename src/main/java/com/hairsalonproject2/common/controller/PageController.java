@@ -7,23 +7,23 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class PageController {
 
 
-    @GetMapping("/review/list")
-    public String reviewList() {
-        return "review/list";
-    }
+ @GetMapping("/review/list")
+ public String reviewList() {
+  return "review/list";
+ }
 
-    @GetMapping("/review/write")
-    public String reviewWrite() {
-        return "review/write";
-    }
+ @GetMapping("/review/write")
+ public String reviewWrite() {
+  return "review/write";
+ }
 
-    @GetMapping("/reservation/list")
-    public String reservationList() {
-        return "reservation/list";
-    }
+ @GetMapping("/reservation/list")
+ public String reservationList() {
+  return "reservation/list";
+ }
 
-    @GetMapping("/reservation/create")
-    public String reservationCreate() {
-        return "reservation/create";
-    }
+ @GetMapping("/reservation/create")
+ public String reservationCreate() {
+  return "reservation/create";
+ }
 }

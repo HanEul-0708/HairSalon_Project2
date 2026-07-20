@@ -17,28 +17,15 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.ModelAndView;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@ControllerAdvice(assignableTypes = {
-        SalonController.class,
-        DesignerController.class,
-        ServiceController.class,
-        AdminSalonController.class,
-        AdminDesignerController.class
-})
+@ControllerAdvice(assignableTypes = {SalonController.class, DesignerController.class, ServiceController.class, AdminSalonController.class, AdminDesignerController.class})
 public class BDomainPageExceptionHandler {
 
-    @ExceptionHandler({
-            EntityNotFoundException.class,
-            MethodArgumentTypeMismatchException.class,
-            MissingPathVariableException.class
-    })
-    public ModelAndView handleNotFound(Exception exception,
-                                       HttpServletRequest request,
-                                       HttpServletResponse response) {
-        response.setStatus(HttpStatus.NOT_FOUND.value());
-
-        ModelAndView modelAndView = new ModelAndView("error/common-error");
-        modelAndView.addObject("errorMessage", "요청한 B 영역 데이터 또는 화면을 찾을 수 없습니다.");
-        modelAndView.addObject("requestUri", request.getRequestURI());
-        return modelAndView;
-    }
+ @ExceptionHandler({EntityNotFoundException.class, MethodArgumentTypeMismatchException.class, MissingPathVariableException.class})
+ public ModelAndView handleNotFound(Exception exception, HttpServletRequest request, HttpServletResponse response) {
+  response.setStatus(HttpStatus.NOT_FOUND.value());
+  ModelAndView modelAndView = new ModelAndView("error/common-error");
+  modelAndView.addObject("errorMessage", "요청한 B 영역 데이터 또는 화면을 찾을 수 없습니다.");
+  modelAndView.addObject("requestUri", request.getRequestURI());
+  return modelAndView;
+ }
 }

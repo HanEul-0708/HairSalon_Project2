@@ -6,6 +6,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class DesignerAiRecommendationRequest {
-    private String query;
-    private Integer limit = 3;
+ private String query;
+ private Integer limit = 3;
 }

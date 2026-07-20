@@ -6,14 +6,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class DesignerCreateRequest {
-    private Integer salonId;
+ private Integer salonId;
 
-    private String memberId;
+ private String memberId;
 
-    private String name;
+ private String name;
 
-    private String profileImage;
-    private String introduction;
+ private String profileImage;
+ private String introduction;
 
-    private Integer careerYears = 0;
+ private Integer careerYears = 0;
 }

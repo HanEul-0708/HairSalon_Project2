@@ -3,12 +3,12 @@ POST http://localhost:8080/reservations
 Content-Type: application/json
 
 {
-  "memberId": "user1",
-  "designerId": 1,
-  "salonServiceId": 1,
-  "reservationDate": "2026-04-01",
-  "reservationTime": "14:00:00",
-  "totalPrice": 30000
+ "memberId": "user1",
+ "designerId": 1,
+ "salonServiceId": 1,
+ "reservationDate": "2026-04-01",
+ "reservationTime": "14:00:00",
+ "totalPrice": 30000
 }
 
 ###
@@ -33,7 +33,7 @@ PATCH http://localhost:8080/reservations/1/status
 Content-Type: application/json
 
 {
-  "status": "COMPLETED"
+ "status": "COMPLETED"
 }
 
 ###

@@ -12,21 +12,21 @@ import java.util.List;
 @AllArgsConstructor
 public class ReviewDetailResponse {
 
-    private Integer reviewId;
-    private Integer reservationId;
-    private LocalDate reservationDate;
-    private LocalTime reservationTime;
-    private String memberId;
-    private String memberName;
-    private Integer designerId;
-    private String designerName;
-    private String serviceName;
-    private Byte rating;
-    private String content;
-    private String replyContent;
-    private LocalDateTime replyCreatedAt;
-    private LocalDateTime createdAt;
-    private Integer likeCount;
-    private boolean likedByCurrentUser;
-    private List<ReviewImageResponse> images;
+ private Integer reviewId;
+ private Integer reservationId;
+ private LocalDate reservationDate;
+ private LocalTime reservationTime;
+ private String memberId;
+ private String memberName;
+ private Integer designerId;
+ private String designerName;
+ private String serviceName;
+ private Byte rating;
+ private String content;
+ private String replyContent;
+ private LocalDateTime replyCreatedAt;
+ private LocalDateTime createdAt;
+ private Integer likeCount;
+ private boolean likedByCurrentUser;
+ private List<ReviewImageResponse> images;
 }

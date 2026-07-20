@@ -9,13 +9,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface BoardReportRepository extends JpaRepository<BoardReport, Long> {
 
-    /**
-     * 같은 회원이 같은 게시글을 이미 신고했는지 확인
-     */
-    boolean existsByBoardBoardIdAndMemberMemberId(Integer boardId, String memberId);
+ /**
+  * 같은 회원이 같은 게시글을 이미 신고했는지 확인
+  */
+ boolean existsByBoardBoardIdAndMemberMemberId(Integer boardId, String memberId);
 
-    /**
-     * 특정 게시글의 신고 이력을 모두 삭제
-     */
-    void deleteByBoardBoardId(Integer boardId);
+ /**
+  * 특정 게시글의 신고 이력을 모두 삭제
+  */
+ void deleteByBoardBoardId(Integer boardId);
 }

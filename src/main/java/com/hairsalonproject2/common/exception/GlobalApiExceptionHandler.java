@@ -19,90 +19,74 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalApiExceptionHandler {
 
-    /**
-     * IllegalArgumentException 처리
-     *
-     * 주로 잘못된 요청 값이나 비즈니스 검증 실패 상황에 사용한다.
-     */
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException e) {
+ /**
+  * IllegalArgumentException 처리
+  * <p>
+  * 주로 잘못된 요청 값이나 비즈니스 검증 실패 상황에 사용한다.
+  */
+ @ExceptionHandler(IllegalArgumentException.class)
+ public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException e) {
+  Map<String, Object> response = new HashMap<>();
+  response.put("timestamp", LocalDateTime.now());
+  response.put("status", HttpStatus.BAD_REQUEST.value());
+  response.put("message", e.getMessage());
+  return ResponseEntity.badRequest().body(response);
+ }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-        response.put("message", e.getMessage());
+ /**
+  * DTO 검증 예외 처리
+  *
+  * @Valid가 붙은 요청 DTO에서 검증 실패 시 발생한다.
+  */
+ @ExceptionHandler(MethodArgumentNotValidException.class)
+ public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException e) {
+  Map<String, Object> response = new HashMap<>();
+  response.put("timestamp", LocalDateTime.now());
+  response.put("status", HttpStatus.BAD_REQUEST.value());
+  // 첫 번째 검증 에러 메시지만 추출해 응답한다.
+  String message = e.getBindingResult().getFieldError().getDefaultMessage();
+  response.put("message", message);
+  return ResponseEntity.badRequest().body(response);
+ }
 
-        return ResponseEntity.badRequest().body(response);
-    }
+ @ExceptionHandler(AccessDeniedException.class)
+ public ResponseEntity<Map<String, Object>> handleAccessDeniedException(AccessDeniedException e) {
+  Map<String, Object> response = new HashMap<>();
+  response.put("timestamp", LocalDateTime.now());
+  response.put("status", HttpStatus.FORBIDDEN.value());
+  response.put("message", e.getMessage());
+  return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+ }
 
-    /**
-     * DTO 검증 예외 처리
-     *
-     * @Valid가 붙은 요청 DTO에서 검증 실패 시 발생한다.
-     */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException e) {
+ @ExceptionHandler(AuthorizationDeniedException.class)
+ public ResponseEntity<Map<String, Object>> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
+  Map<String, Object> response = new HashMap<>();
+  response.put("timestamp", LocalDateTime.now());
+  response.put("status", HttpStatus.FORBIDDEN.value());
+  response.put("message", "접근 권한이 없습니다.");
+  return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+ }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
+ @ExceptionHandler(ResponseStatusException.class)
+ public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException e) {
+  Map<String, Object> response = new HashMap<>();
+  response.put("timestamp", LocalDateTime.now());
+  response.put("status", e.getStatusCode().value());
+  response.put("message", e.getReason());
+  return ResponseEntity.status(e.getStatusCode()).body(response);
+ }
 
-        // 첫 번째 검증 에러 메시지만 추출해 응답한다.
-        String message = e.getBindingResult()
-                .getFieldError()
-                .getDefaultMessage();
-
-        response.put("message", message);
-
-        return ResponseEntity.badRequest().body(response);
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDeniedException(AccessDeniedException e) {
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.FORBIDDEN.value());
-        response.put("message", e.getMessage());
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-    }
-
-    @ExceptionHandler(AuthorizationDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.FORBIDDEN.value());
-        response.put("message", "접근 권한이 없습니다.");
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-    }
-
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException e) {
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", e.getStatusCode().value());
-        response.put("message", e.getReason());
-
-        return ResponseEntity.status(e.getStatusCode()).body(response);
-    }
-
-    /**
-     * 그 외 모든 예외 처리
-     *
-     * 예상하지 못한 서버 내부 오류를 다룬다.
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleException(Exception e) {
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.put("message", "서버 내부 오류가 발생했습니다.");
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
+ /**
+  * 그 외 모든 예외 처리
+  * <p>
+  * 예상하지 못한 서버 내부 오류를 다룬다.
+  */
+ @ExceptionHandler(Exception.class)
+ public ResponseEntity<Map<String, Object>> handleException(Exception e) {
+  Map<String, Object> response = new HashMap<>();
+  response.put("timestamp", LocalDateTime.now());
+  response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+  response.put("message", "서버 내부 오류가 발생했습니다.");
+  return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+ }
 }

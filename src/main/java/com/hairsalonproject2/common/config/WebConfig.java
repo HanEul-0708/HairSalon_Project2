@@ -10,18 +10,13 @@ import java.nio.file.Paths;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Value("${file.upload.path}")
-    private String uploadPath;
+ @Value("${file.upload.path}")
+ private String uploadPath;
 
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/files/images/**")
-                .addResourceLocations("file:///" + uploadPath);
-
-        registry.addResourceHandler("/files/download/**")
-                .addResourceLocations("file:///" + uploadPath);
-
-        registry.addResourceHandler("/uploads/review/**")
-                .addResourceLocations("file:///" + Paths.get("uploads/review").toAbsolutePath().normalize() + "/");
-    }
+ @Override
+ public void addResourceHandlers(ResourceHandlerRegistry registry) {
+  registry.addResourceHandler("/files/images/**").addResourceLocations("file:///" + uploadPath);
+  registry.addResourceHandler("/files/download/**").addResourceLocations("file:///" + uploadPath);
+  registry.addResourceHandler("/uploads/review/**").addResourceLocations("file:///" + Paths.get("uploads/review").toAbsolutePath().normalize() + "/");
+ }
 }

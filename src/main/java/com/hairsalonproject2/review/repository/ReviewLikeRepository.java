@@ -7,11 +7,11 @@ import java.util.Optional;
 
 public interface ReviewLikeRepository extends JpaRepository<ReviewLike, Integer> {
 
-    Optional<ReviewLike> findByReview_ReviewIdAndMember_MemberId(Integer reviewId, String memberId);
+ Optional<ReviewLike> findByReview_ReviewIdAndMember_MemberId(Integer reviewId, String memberId);
 
-    boolean existsByReview_ReviewIdAndMember_MemberId(Integer reviewId, String memberId);
+ boolean existsByReview_ReviewIdAndMember_MemberId(Integer reviewId, String memberId);
 
-    Optional<ReviewLike> findByReview_ReviewIdAndVisitorToken(Integer reviewId, String visitorToken);
+ Optional<ReviewLike> findByReview_ReviewIdAndVisitorToken(Integer reviewId, String visitorToken);
 
-    boolean existsByReview_ReviewIdAndVisitorToken(Integer reviewId, String visitorToken);
+ boolean existsByReview_ReviewIdAndVisitorToken(Integer reviewId, String visitorToken);
 }

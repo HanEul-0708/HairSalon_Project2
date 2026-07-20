@@ -16,126 +16,115 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequiredArgsConstructor
 @RequestMapping("/salon-services")
 public class ServiceController {
-    private static final int SERVICES_PER_PAGE = 8;
+ private static final int SERVICES_PER_PAGE = 8;
 
-    private final SalonServiceQueryService salonServiceQueryService;
+ private final SalonServiceQueryService salonServiceQueryService;
 
-    @GetMapping("/new")
-    public String createForm(Model model) {
-        model.addAttribute("form", new SalonServiceCreateRequest());
-        return "service/form";
-    }
+ @GetMapping("/new")
+ public String createForm(Model model) {
+  model.addAttribute("form", new SalonServiceCreateRequest());
+  return "service/form";
+ }
 
-    @GetMapping
-    public String list(@ModelAttribute SalonServiceSearchRequest request,
-                       @RequestParam(defaultValue = "1") int page,
-                       Model model) {
-        request.setSearched(true);
-        Page<?> resultPage = salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE);
+ @GetMapping
+ public String list(@ModelAttribute SalonServiceSearchRequest request, @RequestParam(defaultValue = "1") int page, Model model) {
+  request.setSearched(true);
+  Page<?> resultPage = salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE);
+  model.addAttribute("services", resultPage.getContent());
+  model.addAttribute("search", request);
+  model.addAttribute("searched", true);
+  model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
+  model.addAttribute("totalPages", resultPage.getTotalPages());
+  model.addAttribute("totalServiceCount", resultPage.getTotalElements());
+  model.addAttribute("pageNumbers", resultPage.getTotalPages() == 0 ? java.util.Collections.emptyList() : java.util.stream.IntStream.rangeClosed(1, resultPage.getTotalPages()).boxed().toList());
+  return "service/list";
+ }
 
-        model.addAttribute("services", resultPage.getContent());
-        model.addAttribute("search", request);
-        model.addAttribute("searched", true);
-        model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
-        model.addAttribute("totalPages", resultPage.getTotalPages());
-        model.addAttribute("totalServiceCount", resultPage.getTotalElements());
-        model.addAttribute("pageNumbers", resultPage.getTotalPages() == 0
-                ? java.util.Collections.emptyList()
-                : java.util.stream.IntStream.rangeClosed(1, resultPage.getTotalPages()).boxed().toList());
-        return "service/list";
-    }
+ @GetMapping("/popular")
+ public String popular(@ModelAttribute SalonServiceSearchRequest request) {
+  if (request.getSortBy() == null || request.getSortBy().isBlank()) request.setSortBy("rating");
+  return buildListRedirect(request);
+ }
 
-    @GetMapping("/popular")
-    public String popular(@ModelAttribute SalonServiceSearchRequest request) {
-        if (request.getSortBy() == null || request.getSortBy().isBlank()) {
-            request.setSortBy("rating");
-        }
-        return buildListRedirect(request);
-    }
+ @GetMapping("/trend")
+ public String trend(@ModelAttribute SalonServiceSearchRequest request) {
+  if (request.getSortBy() == null || request.getSortBy().isBlank()) request.setSortBy("trend");
+  return buildListRedirect(request);
+ }
 
-    @GetMapping("/trend")
-    public String trend(@ModelAttribute SalonServiceSearchRequest request) {
-        if (request.getSortBy() == null || request.getSortBy().isBlank()) {
-            request.setSortBy("trend");
-        }
-        return buildListRedirect(request);
-    }
+ @GetMapping("/{serviceId}")
+ public String detail(@PathVariable Integer serviceId, Model model) {
+  model.addAttribute("serviceItem", salonServiceQueryService.getDetail(serviceId));
+  return "service/detail";
+ }
 
-    @GetMapping("/{serviceId}")
-    public String detail(@PathVariable Integer serviceId, Model model) {
-        model.addAttribute("serviceItem", salonServiceQueryService.getDetail(serviceId));
-        return "service/detail";
-    }
+ @GetMapping("/compare")
+ public String compare(@RequestParam(required = false) String serviceName, @RequestParam(required = false) String region, Model model) {
+  model.addAttribute("comparisons", salonServiceQueryService.compare(serviceName, region));
+  model.addAttribute("serviceName", serviceName);
+  model.addAttribute("region", region);
+  return "service/compare";
+ }
 
-    @GetMapping("/compare")
-    public String compare(@RequestParam(required = false) String serviceName, @RequestParam(required = false) String region, Model model) {
-        model.addAttribute("comparisons", salonServiceQueryService.compare(serviceName, region));
-        model.addAttribute("serviceName", serviceName);
-        model.addAttribute("region", region);
-        return "service/compare";
-    }
+ @PostMapping
+ public String create(@ModelAttribute("form") SalonServiceCreateRequest request, BindingResult bindingResult) {
+  if (bindingResult.hasErrors()) {
+   return "service/form";
+  }
+  Integer serviceId = salonServiceQueryService.create(request);
+  return "redirect:/salon-services/" + serviceId;
+ }
 
-    @PostMapping
-    public String create(@ModelAttribute("form") SalonServiceCreateRequest request, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return "service/form";
-        }
-        Integer serviceId = salonServiceQueryService.create(request);
-        return "redirect:/salon-services/" + serviceId;
-    }
+ @GetMapping("/{serviceId}/edit")
+ public String editForm(@PathVariable Integer serviceId, Model model) {
+  var detail = salonServiceQueryService.getDetail(serviceId);
+  SalonServiceUpdateRequest form = new SalonServiceUpdateRequest();
+  form.setSalonId(detail.getSalonId());
+  form.setName(detail.getName());
+  form.setPrice(detail.getPrice());
+  form.setDuration(detail.getDuration());
+  form.setDescription(detail.getDescription());
+  model.addAttribute("serviceId", serviceId);
+  model.addAttribute("form", form);
+  return "service/form";
+ }
 
-    @GetMapping("/{serviceId}/edit")
-    public String editForm(@PathVariable Integer serviceId, Model model) {
-        var detail = salonServiceQueryService.getDetail(serviceId);
-        SalonServiceUpdateRequest form = new SalonServiceUpdateRequest();
-        form.setSalonId(detail.getSalonId());
-        form.setName(detail.getName());
-        form.setPrice(detail.getPrice());
-        form.setDuration(detail.getDuration());
-        form.setDescription(detail.getDescription());
-        model.addAttribute("serviceId", serviceId);
-        model.addAttribute("form", form);
-        return "service/form";
-    }
+ @PostMapping("/{serviceId}/edit")
+ public String update(@PathVariable Integer serviceId, @ModelAttribute("form") SalonServiceUpdateRequest request, BindingResult bindingResult, Model model) {
+  if (bindingResult.hasErrors()) {
+   model.addAttribute("serviceId", serviceId);
+   return "service/form";
+  }
+  salonServiceQueryService.update(serviceId, request);
+  return "redirect:/salon-services/" + serviceId;
+ }
 
-    @PostMapping("/{serviceId}/edit")
-    public String update(@PathVariable Integer serviceId, @ModelAttribute("form") SalonServiceUpdateRequest request, BindingResult bindingResult, Model model) {
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("serviceId", serviceId);
-            return "service/form";
-        }
-        salonServiceQueryService.update(serviceId, request);
-        return "redirect:/salon-services/" + serviceId;
-    }
+ @PostMapping("/{serviceId}/delete")
+ public String delete(@PathVariable Integer serviceId) {
+  salonServiceQueryService.delete(serviceId);
+  return "redirect:/salon-services";
+ }
 
-    @PostMapping("/{serviceId}/delete")
-    public String delete(@PathVariable Integer serviceId) {
-        salonServiceQueryService.delete(serviceId);
-        return "redirect:/salon-services";
-    }
-
-    private String buildListRedirect(SalonServiceSearchRequest request) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/salon-services");
-
-        if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
-            builder.queryParam("keyword", request.getKeyword());
-        }
-        if (request.getSalonKeyword() != null && !request.getSalonKeyword().isBlank()) {
-            builder.queryParam("salonKeyword", request.getSalonKeyword());
-        }
-        if (request.getRegion() != null && !request.getRegion().isBlank()) {
-            builder.queryParam("region", request.getRegion());
-        }
-        if (request.getMaxPrice() != null) {
-            builder.queryParam("maxPrice", request.getMaxPrice());
-        }
-        if (request.getMaxDuration() != null) {
-            builder.queryParam("maxDuration", request.getMaxDuration());
-        }
-        if (request.getSortBy() != null && !request.getSortBy().isBlank()) {
-            builder.queryParam("sortBy", request.getSortBy());
-        }
-
-        return "redirect:" + builder.build().encode().toUriString();
-    }
+ private String buildListRedirect(SalonServiceSearchRequest request) {
+  UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/salon-services");
+  if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
+   builder.queryParam("keyword", request.getKeyword());
+  }
+  if (request.getSalonKeyword() != null && !request.getSalonKeyword().isBlank()) {
+   builder.queryParam("salonKeyword", request.getSalonKeyword());
+  }
+  if (request.getRegion() != null && !request.getRegion().isBlank()) {
+   builder.queryParam("region", request.getRegion());
+  }
+  if (request.getMaxPrice() != null) {
+   builder.queryParam("maxPrice", request.getMaxPrice());
+  }
+  if (request.getMaxDuration() != null) {
+   builder.queryParam("maxDuration", request.getMaxDuration());
+  }
+  if (request.getSortBy() != null && !request.getSortBy().isBlank()) {
+   builder.queryParam("sortBy", request.getSortBy());
+  }
+  return "redirect:" + builder.build().encode().toUriString();
+ }
 }

@@ -8,11 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.MediaTypeFactory;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,93 +28,74 @@ import java.nio.file.Paths;
 @RequiredArgsConstructor
 public class FileController {
 
-    private final FileUploadService fileUploadService;
-    private final BoardFileRepository boardFileRepository;
+ private final FileUploadService fileUploadService;
+ private final BoardFileRepository boardFileRepository;
 
-    @Value("${file.upload.path}")
-    private String uploadPath;
+ @Value("${file.upload.path}")
+ private String uploadPath;
 
-    @PostMapping("/images")
-    public ResponseEntity<?> uploadEditorImage(@RequestParam("file") MultipartFile file) {
-        try {
-            FileResponse response = fileUploadService.uploadEditorImage(file);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("이미지 저장 중 오류가 발생했습니다.");
-        }
-    }
+ @PostMapping("/images")
+ public ResponseEntity<?> uploadEditorImage(@RequestParam("file") MultipartFile file) {
+  try {
+   FileResponse response = fileUploadService.uploadEditorImage(file);
+   return ResponseEntity.ok(response);
+  } catch (IllegalArgumentException e) {
+   return ResponseEntity.badRequest().body(e.getMessage());
+  } catch (IOException e) {
+   return ResponseEntity.internalServerError().body("이미지 저장 중 오류가 발생했습니다.");
+  }
+ }
 
-    @GetMapping("/images/{storedFilename}")
-    public ResponseEntity<Resource> viewImage(@PathVariable String storedFilename) {
-        try {
-            if (isQnaAttachment(storedFilename)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
+ @GetMapping("/images/{storedFilename}")
+ public ResponseEntity<Resource> viewImage(@PathVariable String storedFilename) {
+  try {
+   if (isQnaAttachment(storedFilename)) {
+	return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+   }
+   Resource resource = loadSafeResource(storedFilename);
+   if (resource == null) {
+	return ResponseEntity.notFound().build();
+   }
+   MediaType mediaType = MediaTypeFactory.getMediaType(storedFilename).orElse(MediaType.APPLICATION_OCTET_STREAM);
+   return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, mediaType.toString()).body(resource);
 
-            Resource resource = loadSafeResource(storedFilename);
-            if (resource == null) {
-                return ResponseEntity.notFound().build();
-            }
+  } catch (MalformedURLException e) {
+   return ResponseEntity.badRequest().build();
+  }
+ }
 
-            MediaType mediaType = MediaTypeFactory.getMediaType(storedFilename)
-                    .orElse(MediaType.APPLICATION_OCTET_STREAM);
+ @GetMapping("/download/{storedFilename}")
+ public ResponseEntity<Resource> downloadFile(@PathVariable String storedFilename, @RequestParam String originalFilename) {
+  try {
+   if (isQnaAttachment(storedFilename)) {
+	return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+   }
+   Resource resource = loadSafeResource(storedFilename);
+   if (resource == null) {
+	return ResponseEntity.notFound().build();
+   }
+   String encodedName = URLEncoder.encode(originalFilename, StandardCharsets.UTF_8).replace("+", "%20");
+   return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName).body(resource);
 
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_TYPE, mediaType.toString())
-                    .body(resource);
+  } catch (MalformedURLException e) {
+   return ResponseEntity.badRequest().build();
+  }
+ }
 
-        } catch (MalformedURLException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
+ private boolean isQnaAttachment(String storedFilename) {
+  return boardFileRepository.findBySavedNameWithBoard(storedFilename).map(boardFile -> boardFile.getBoard().getType() == BoardType.QNA).orElse(false);
+ }
 
-    @GetMapping("/download/{storedFilename}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String storedFilename,
-                                                 @RequestParam String originalFilename) {
-        try {
-            if (isQnaAttachment(storedFilename)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
-
-            Resource resource = loadSafeResource(storedFilename);
-            if (resource == null) {
-                return ResponseEntity.notFound().build();
-            }
-
-            String encodedName = URLEncoder.encode(originalFilename, StandardCharsets.UTF_8)
-                    .replace("+", "%20");
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename*=UTF-8''" + encodedName)
-                    .body(resource);
-
-        } catch (MalformedURLException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    private boolean isQnaAttachment(String storedFilename) {
-        return boardFileRepository.findBySavedNameWithBoard(storedFilename)
-                .map(boardFile -> boardFile.getBoard().getType() == BoardType.QNA)
-                .orElse(false);
-    }
-
-    private Resource loadSafeResource(String storedFilename) throws MalformedURLException {
-        Path basePath = Paths.get(uploadPath).toAbsolutePath().normalize();
-        Path filePath = basePath.resolve(storedFilename).normalize();
-
-        if (!filePath.startsWith(basePath)) {
-            return null;
-        }
-
-        Resource resource = new UrlResource(filePath.toUri());
-        if (!resource.exists()) {
-            return null;
-        }
-
-        return resource;
-    }
+ private Resource loadSafeResource(String storedFilename) throws MalformedURLException {
+  Path basePath = Paths.get(uploadPath).toAbsolutePath().normalize();
+  Path filePath = basePath.resolve(storedFilename).normalize();
+  if (!filePath.startsWith(basePath)) {
+   return null;
+  }
+  Resource resource = new UrlResource(filePath.toUri());
+  if (!resource.exists()) {
+   return null;
+  }
+  return resource;
+ }
 }

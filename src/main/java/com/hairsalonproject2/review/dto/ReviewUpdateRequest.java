@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /**
  * ReviewUpdateRequest
- *
+ * <p>
  * 리뷰 수정 요청 DTO
  */
 @Getter
@@ -18,17 +18,17 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ReviewUpdateRequest {
 
-    /**
-     * 평점
-     */
-    @NotNull(message = "평점은 필수입니다.")
-    @Min(value = 1, message = "평점은 1 이상이어야 합니다.")
-    @Max(value = 5, message = "평점은 5 이하여야 합니다.")
-    private Byte rating;
+ /**
+  * 평점
+  */
+ @NotNull(message = "평점은 필수입니다.")
+ @Min(value = 1, message = "평점은 1 이상이어야 합니다.")
+ @Max(value = 5, message = "평점은 5 이하여야 합니다.")
+ private Byte rating;
 
-    /**
-     * 리뷰 내용
-     */
-    @NotBlank(message = "리뷰 내용은 필수입니다.")
-    private String content;
+ /**
+  * 리뷰 내용
+  */
+ @NotBlank(message = "리뷰 내용은 필수입니다.")
+ private String content;
 }

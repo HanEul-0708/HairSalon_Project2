@@ -3,19 +3,19 @@ package com.hairsalonproject2.salonservice.projection;
 import java.math.BigDecimal;
 
 public interface ServicePriceCompareRow {
-    Integer getServiceId();
+ Integer getServiceId();
 
-    String getServiceName();
+ String getServiceName();
 
-    Integer getPrice();
+ Integer getPrice();
 
-    Integer getDuration();
+ Integer getDuration();
 
-    Integer getSalonId();
+ Integer getSalonId();
 
-    String getSalonName();
+ String getSalonName();
 
-    String getAddress();
+ String getAddress();
 
-    BigDecimal getAverageRating();
+ BigDecimal getAverageRating();
 }

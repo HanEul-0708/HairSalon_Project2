@@ -6,7 +6,7 @@ package com.hairsalonproject2.board.exception;
  */
 public class BoardException extends RuntimeException {
 
-    public BoardException(String message) {
-        super(message);
-    }
+ public BoardException(String message) {
+  super(message);
+ }
 }

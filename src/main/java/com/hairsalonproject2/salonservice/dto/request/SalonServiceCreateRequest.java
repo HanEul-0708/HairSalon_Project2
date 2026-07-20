@@ -6,13 +6,13 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SalonServiceCreateRequest {
-    private Integer salonId;
+ private Integer salonId;
 
-    private String name;
+ private String name;
 
-    private Integer price;
+ private Integer price;
 
-    private Integer duration;
+ private Integer duration;
 
-    private String description;
+ private String description;
 }

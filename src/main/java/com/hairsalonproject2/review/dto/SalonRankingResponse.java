@@ -9,8 +9,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class SalonRankingResponse {
 
-    private Integer salonId;
-    private String salonName;
-    private Double averageRating;
-    private Long reviewCount;
+ private Integer salonId;
+ private String salonName;
+ private Double averageRating;
+ private Long reviewCount;
 }

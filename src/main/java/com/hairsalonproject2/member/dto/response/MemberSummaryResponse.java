@@ -15,23 +15,15 @@ import java.time.LocalDateTime;
 @Builder
 public class MemberSummaryResponse {
 
-    private String memberId;
-    private String name;
-    private String phone;
-    private String email;
-    private MemberRole role;
-    private MemberStatus status;
-    private LocalDateTime createdAt;
+ private String memberId;
+ private String name;
+ private String phone;
+ private String email;
+ private MemberRole role;
+ private MemberStatus status;
+ private LocalDateTime createdAt;
 
-    public static MemberSummaryResponse from(Member member) {
-        return MemberSummaryResponse.builder()
-                .memberId(member.getMemberId())
-                .name(member.getName())
-                .phone(member.getPhone())
-                .email(member.getEmail())
-                .role(member.getRole())
-                .status(member.getStatus())
-                .createdAt(member.getCreatedAt())
-                .build();
-    }
+ public static MemberSummaryResponse from(Member member) {
+  return MemberSummaryResponse.builder().memberId(member.getMemberId()).name(member.getName()).phone(member.getPhone()).email(member.getEmail()).role(member.getRole()).status(member.getStatus()).createdAt(member.getCreatedAt()).build();
+ }
 }

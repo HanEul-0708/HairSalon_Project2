@@ -26,22 +26,22 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 public abstract class BaseTimeEntity {
 
-    /*
-     * 생성일시
-     *
-     * 엔티티가 처음 INSERT 될 때 자동으로 현재 시간이 저장된다.
-     * 이후 수정 시에는 변경되지 않는다.
-     */
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+ /*
+  * 생성일시
+  *
+  * 엔티티가 처음 INSERT 될 때 자동으로 현재 시간이 저장된다.
+  * 이후 수정 시에는 변경되지 않는다.
+  */
+ @CreationTimestamp
+ @Column(name = "created_at", updatable = false)
+ private LocalDateTime createdAt;
 
-    /*
-     * 수정일시
-     *
-     * 엔티티가 UPDATE 될 때마다 자동으로 현재 시간으로 갱신된다.
-     */
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+ /*
+  * 수정일시
+  *
+  * 엔티티가 UPDATE 될 때마다 자동으로 현재 시간으로 갱신된다.
+  */
+ @UpdateTimestamp
+ @Column(name = "updated_at")
+ private LocalDateTime updatedAt;
 }

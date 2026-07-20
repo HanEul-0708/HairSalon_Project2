@@ -7,29 +7,29 @@ import lombok.NoArgsConstructor;
 
 /**
  * ReservationStatusUpdateRequest
- *
+ * <p>
  * 예약 상태 변경 요청 DTO
- *
+ * <p>
  * 클라이언트가 예약 상태를 변경할 때
  * 어떤 상태로 바꿀지 담아서 보내는 객체
- *
+ * <p>
  * 예시 요청 JSON
  * {
- *   "status": "COMPLETED"
+ * "status": "COMPLETED"
  * }
  */
 @Getter
 @NoArgsConstructor
 public class ReservationStatusUpdateRequest {
 
-    /**
-     * 변경할 예약 상태
-     *
-     * 예:
-     * RESERVED
-     * COMPLETED
-     * CANCELLED
-     */
-    @NotNull(message = "예약 상태는 필수입니다.")
-    private ReservationStatus status;
+ /**
+  * 변경할 예약 상태
+  * <p>
+  * 예:
+  * RESERVED
+  * COMPLETED
+  * CANCELLED
+  */
+ @NotNull(message = "예약 상태는 필수입니다.")
+ private ReservationStatus status;
 }

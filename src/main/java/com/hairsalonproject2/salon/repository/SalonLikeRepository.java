@@ -8,11 +8,11 @@ import java.util.Optional;
 
 public interface SalonLikeRepository extends JpaRepository<SalonLike, Integer> {
 
-    Optional<SalonLike> findByMember_MemberIdAndSalon_SalonId(String memberId, Integer salonId);
+ Optional<SalonLike> findByMember_MemberIdAndSalon_SalonId(String memberId, Integer salonId);
 
-    boolean existsByMember_MemberIdAndSalon_SalonId(String memberId, Integer salonId);
+ boolean existsByMember_MemberIdAndSalon_SalonId(String memberId, Integer salonId);
 
-    List<SalonLike> findAllByMember_MemberIdOrderByCreatedAtDesc(String memberId);
+ List<SalonLike> findAllByMember_MemberIdOrderByCreatedAtDesc(String memberId);
 
-    long countBySalon_SalonId(Integer salonId);
+ long countBySalon_SalonId(Integer salonId);
 }

@@ -16,38 +16,38 @@ import lombok.*;
 @AllArgsConstructor
 public class Designer extends BaseCreatedEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "designer_id")
-    private Integer designerId;
+ @Id
+ @GeneratedValue(strategy = GenerationType.IDENTITY)
+ @Column(name = "designer_id")
+ private Integer designerId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "salon_id", nullable = false)
-    private Salon salon;
+ @ManyToOne(fetch = FetchType.LAZY)
+ @JoinColumn(name = "salon_id", nullable = false)
+ private Salon salon;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", unique = true)
-    private Member member;
+ @OneToOne(fetch = FetchType.LAZY)
+ @JoinColumn(name = "member_id", unique = true)
+ private Member member;
 
-    @Column(nullable = false, length = 50)
-    private String name;
+ @Column(nullable = false, length = 50)
+ private String name;
 
-    @Column(name = "profile_image", length = 255)
-    private String profileImage;
+ @Column(name = "profile_image", length = 255)
+ private String profileImage;
 
-    @Column(columnDefinition = "TEXT")
-    private String introduction;
+ @Column(columnDefinition = "TEXT")
+ private String introduction;
 
-    @Column(name = "career_years", nullable = false)
-    @Builder.Default
-    private Integer careerYears = 0;
+ @Column(name = "career_years", nullable = false)
+ @Builder.Default
+ private Integer careerYears = 0;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "specialty", nullable = false, length = 20)
-    @Builder.Default
-    private DesignerSpecialty specialty = DesignerSpecialty.CUT;
+ @Enumerated(EnumType.STRING)
+ @Column(name = "specialty", nullable = false, length = 20)
+ @Builder.Default
+ private DesignerSpecialty specialty = DesignerSpecialty.CUT;
 
-    @Column(name = "like_count", nullable = false)
-    @Builder.Default
-    private Integer likeCount = 0;
+ @Column(name = "like_count", nullable = false)
+ @Builder.Default
+ private Integer likeCount = 0;
 }

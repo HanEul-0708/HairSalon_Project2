@@ -15,39 +15,25 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReviewImageController {
 
-    private final ReviewImageService reviewImageService;
+ private final ReviewImageService reviewImageService;
 
-    @PostMapping
-    public ReviewImageResponse uploadImage(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                           @PathVariable Integer reviewId,
-                                           @RequestParam("file") MultipartFile file,
-                                           @RequestParam(value = "sortOrder", required = false) Integer sortOrder) {
-        return reviewImageService.uploadReviewImage(
-                userDetails.getMember().getMemberId(),
-                isAdmin(userDetails),
-                reviewId,
-                file,
-                sortOrder
-        );
-    }
+ @PostMapping
+ public ReviewImageResponse uploadImage(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Integer reviewId, @RequestParam("file") MultipartFile file, @RequestParam(value = "sortOrder", required = false) Integer sortOrder) {
+  return reviewImageService.uploadReviewImage(userDetails.getMember().getMemberId(), isAdmin(userDetails), reviewId, file, sortOrder);
+ }
 
-    @GetMapping
-    public List<ReviewImageResponse> getImages(@PathVariable Integer reviewId) {
-        return reviewImageService.getImagesByReview(reviewId);
-    }
+ @GetMapping
+ public List<ReviewImageResponse> getImages(@PathVariable Integer reviewId) {
+  return reviewImageService.getImagesByReview(reviewId);
+ }
 
-    @DeleteMapping("/{imageId}")
-    public String deleteImage(@AuthenticationPrincipal CustomUserDetails userDetails,
-                              @PathVariable Integer imageId) {
-        reviewImageService.deleteImage(
-                userDetails.getMember().getMemberId(),
-                isAdmin(userDetails),
-                imageId
-        );
-        return "이미지가 삭제되었습니다.";
-    }
+ @DeleteMapping("/{imageId}")
+ public String deleteImage(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable Integer imageId) {
+  reviewImageService.deleteImage(userDetails.getMember().getMemberId(), isAdmin(userDetails), imageId);
+  return "이미지가 삭제되었습니다.";
+ }
 
-    private boolean isAdmin(CustomUserDetails userDetails) {
-        return userDetails.getMember().getRole().name().equals("ADMIN");
-    }
+ private boolean isAdmin(CustomUserDetails userDetails) {
+  return userDetails.getMember().getRole().name().equals("ADMIN");
+ }
 }

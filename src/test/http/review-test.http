@@ -3,9 +3,9 @@ POST http://localhost:8080/reviews
 Content-Type: application/json
 
 {
-  "reservationId": 1,
-  "rating": 5,
-  "content": "커트 너무 만족합니다."
+ "reservationId": 1,
+ "rating": 5,
+ "content": "커트 너무 만족합니다."
 }
 
 ###
@@ -25,8 +25,8 @@ PUT http://localhost:8080/reviews/2
 Content-Type: application/json
 
 {
-  "rating": 4,
-  "content": "커트 괜찮았습니다."
+ "rating": 4,
+ "content": "커트 괜찮았습니다."
 }
 
 ### 리뷰 수정 확인

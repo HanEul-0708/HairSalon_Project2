@@ -1,277 +1,277 @@
 document.addEventListener("DOMContentLoaded", function () {
-    bindReviewRatingStars();
-    bindReviewContentCounter();
-    bindReviewFormSubmit();
-    bindReviewDeleteButton();
-    bindReviewLikeButtons();
+ bindReviewRatingStars();
+ bindReviewContentCounter();
+ bindReviewFormSubmit();
+ bindReviewDeleteButton();
+ bindReviewLikeButtons();
 });
 
 function bindReviewRatingStars() {
-    var stars = document.querySelectorAll(".review-rating__star");
-    var ratingInput = document.querySelector('input[name="rating"]');
+ var stars = document.querySelectorAll(".review-rating__star");
+ var ratingInput = document.querySelector('input[name="rating"]');
 
-    if (!stars.length || !ratingInput) return;
+ if (!stars.length || !ratingInput) return;
 
-    function renderStars(value) {
-        stars.forEach(function (star, index) {
-            star.classList.toggle("is-active", index < value);
-        });
-    }
+ function renderStars(value) {
+  stars.forEach(function (star, index) {
+   star.classList.toggle("is-active", index < value);
+  });
+ }
 
-    stars.forEach(function (star) {
-        star.addEventListener("click", function () {
-            var value = parseInt(star.getAttribute("data-value"), 10);
-            if (isNaN(value)) return;
+ stars.forEach(function (star) {
+  star.addEventListener("click", function () {
+   var value = parseInt(star.getAttribute("data-value"), 10);
+   if (isNaN(value)) return;
 
-            ratingInput.value = value;
-            renderStars(value);
-        });
-    });
+   ratingInput.value = value;
+   renderStars(value);
+  });
+ });
 
-    renderStars(parseInt(ratingInput.value || "0", 10));
+ renderStars(parseInt(ratingInput.value || "0", 10));
 }
 
 function bindReviewContentCounter() {
-    var textarea = document.querySelector(".review-form textarea");
-    if (!textarea) return;
+ var textarea = document.querySelector(".review-form textarea");
+ if (!textarea) return;
 
-    var counter = document.createElement("p");
-    counter.className = "form-help-text";
-    textarea.insertAdjacentElement("afterend", counter);
+ var counter = document.createElement("p");
+ counter.className = "form-help-text";
+ textarea.insertAdjacentElement("afterend", counter);
 
-    function updateCounter() {
-        counter.textContent = "현재 " + textarea.value.length + "자 입력";
-    }
+ function updateCounter() {
+  counter.textContent = "현재 " + textarea.value.length + "자 입력";
+ }
 
-    textarea.addEventListener("input", updateCounter);
-    updateCounter();
+ textarea.addEventListener("input", updateCounter);
+ updateCounter();
 }
 
 function bindReviewFormSubmit() {
-    var form = document.getElementById("reviewForm");
-    if (!form) return;
+ var form = document.getElementById("reviewForm");
+ if (!form) return;
 
-    form.addEventListener("submit", async function (event) {
-        event.preventDefault();
+ form.addEventListener("submit", async function (event) {
+  event.preventDefault();
 
-        var mode = form.getAttribute("data-mode") || "create";
-        var rating = document.getElementById("rating");
-        var content = document.getElementById("content");
+  var mode = form.getAttribute("data-mode") || "create";
+  var rating = document.getElementById("rating");
+  var content = document.getElementById("content");
 
-        if (!rating || !content) {
-            alert("리뷰 입력 구성이 올바르지 않습니다.");
-            return;
-        }
+  if (!rating || !content) {
+   alert("리뷰 입력 구성이 올바르지 않습니다.");
+   return;
+  }
 
-        if (!content.value.trim()) {
-            alert("리뷰 내용을 입력해 주세요.");
-            return;
-        }
+  if (!content.value.trim()) {
+   alert("리뷰 내용을 입력해 주세요.");
+   return;
+  }
 
-        if (mode === "edit") {
-            await submitReviewUpdate(rating, content);
-            return;
-        }
+  if (mode === "edit") {
+   await submitReviewUpdate(rating, content);
+   return;
+  }
 
-        await submitReviewCreate(rating, content);
-    });
+  await submitReviewCreate(rating, content);
+ });
 }
 
 async function submitReviewCreate(rating, content) {
-    var reservationId = document.getElementById("reservationId");
-    var image = document.getElementById("image");
+ var reservationId = document.getElementById("reservationId");
+ var image = document.getElementById("image");
 
-    if (!reservationId || !reservationId.value) {
-        alert("예약 정보가 없습니다. 예약 목록에서 다시 진입해 주세요.");
-        return;
-    }
+ if (!reservationId || !reservationId.value) {
+  alert("예약 정보가 없습니다. 예약 목록에서 다시 진입해 주세요.");
+  return;
+ }
 
-    var reviewRequest = {
-        reservationId: Number(reservationId.value),
-        rating: Number(rating.value),
-        content: content.value.trim()
-    };
+ var reviewRequest = {
+  reservationId: Number(reservationId.value),
+  rating: Number(rating.value),
+  content: content.value.trim()
+ };
 
-    var jsonHeaders = {
-        "Content-Type": "application/json"
-    };
-    applyCsrfHeaders(jsonHeaders);
+ var jsonHeaders = {
+  "Content-Type": "application/json"
+ };
+ applyCsrfHeaders(jsonHeaders);
 
-    try {
-        var reviewResponse = await fetch("/api/reviews", {
-            method: "POST",
-            headers: jsonHeaders,
-            body: JSON.stringify(reviewRequest)
-        });
+ try {
+  var reviewResponse = await fetch("/api/reviews", {
+   method: "POST",
+   headers: jsonHeaders,
+   body: JSON.stringify(reviewRequest)
+  });
 
-        if (!reviewResponse.ok) {
-            alert("리뷰 등록에 실패했습니다.\n" + await extractErrorMessage(reviewResponse));
-            return;
-        }
+  if (!reviewResponse.ok) {
+   alert("리뷰 등록에 실패했습니다.\n" + await extractErrorMessage(reviewResponse));
+   return;
+  }
 
-        var createdReview = await reviewResponse.json();
+  var createdReview = await reviewResponse.json();
 
-        if (image && image.files && image.files.length > 0) {
-            var formData = new FormData();
-            formData.append("file", image.files[0]);
+  if (image && image.files && image.files.length > 0) {
+   var formData = new FormData();
+   formData.append("file", image.files[0]);
 
-            var imageHeaders = {};
-            applyCsrfHeaders(imageHeaders);
+   var imageHeaders = {};
+   applyCsrfHeaders(imageHeaders);
 
-            var imageResponse = await fetch("/reviews/" + createdReview.reviewId + "/images", {
-                method: "POST",
-                headers: imageHeaders,
-                body: formData
-            });
+   var imageResponse = await fetch("/reviews/" + createdReview.reviewId + "/images", {
+	method: "POST",
+	headers: imageHeaders,
+	body: formData
+   });
 
-            if (!imageResponse.ok) {
-                alert("리뷰는 등록됐지만 이미지 업로드에 실패했습니다.\n" + await extractErrorMessage(imageResponse));
-                window.location.href = "/reviews";
-                return;
-            }
-        }
+   if (!imageResponse.ok) {
+	alert("리뷰는 등록됐지만 이미지 업로드에 실패했습니다.\n" + await extractErrorMessage(imageResponse));
+	window.location.href = "/reviews";
+	return;
+   }
+  }
 
-        alert("리뷰가 등록되었습니다.");
-        window.location.href = "/reviews";
-    } catch (error) {
-        console.error(error);
-        alert("리뷰 요청 중 오류가 발생했습니다.");
-    }
+  alert("리뷰가 등록되었습니다.");
+  window.location.href = "/reviews";
+ } catch (error) {
+  console.error(error);
+  alert("리뷰 요청 중 오류가 발생했습니다.");
+ }
 }
 
 async function submitReviewUpdate(rating, content) {
-    var reviewId = document.getElementById("reviewId");
-    if (!reviewId || !reviewId.value) {
-        alert("리뷰 정보가 올바르지 않습니다.");
-        return;
-    }
+ var reviewId = document.getElementById("reviewId");
+ if (!reviewId || !reviewId.value) {
+  alert("리뷰 정보가 올바르지 않습니다.");
+  return;
+ }
 
-    var requestBody = {
-        rating: Number(rating.value),
-        content: content.value.trim()
-    };
+ var requestBody = {
+  rating: Number(rating.value),
+  content: content.value.trim()
+ };
 
-    var headers = {
-        "Content-Type": "application/json"
-    };
-    applyCsrfHeaders(headers);
+ var headers = {
+  "Content-Type": "application/json"
+ };
+ applyCsrfHeaders(headers);
 
-    try {
-        var response = await fetch("/api/reviews/" + reviewId.value, {
-            method: "PUT",
-            headers: headers,
-            body: JSON.stringify(requestBody)
-        });
+ try {
+  var response = await fetch("/api/reviews/" + reviewId.value, {
+   method: "PUT",
+   headers: headers,
+   body: JSON.stringify(requestBody)
+  });
 
-        if (!response.ok) {
-            alert("리뷰 수정에 실패했습니다.\n" + await extractErrorMessage(response));
-            return;
-        }
+  if (!response.ok) {
+   alert("리뷰 수정에 실패했습니다.\n" + await extractErrorMessage(response));
+   return;
+  }
 
-        alert("리뷰가 수정되었습니다.");
-        window.location.href = "/reviews/" + reviewId.value;
-    } catch (error) {
-        console.error(error);
-        alert("리뷰 수정 중 오류가 발생했습니다.");
-    }
+  alert("리뷰가 수정되었습니다.");
+  window.location.href = "/reviews/" + reviewId.value;
+ } catch (error) {
+  console.error(error);
+  alert("리뷰 수정 중 오류가 발생했습니다.");
+ }
 }
 
 function bindReviewDeleteButton() {
-    var deleteButton = document.querySelector("[data-review-delete]");
-    if (!deleteButton) return;
+ var deleteButton = document.querySelector("[data-review-delete]");
+ if (!deleteButton) return;
 
-    deleteButton.addEventListener("click", async function () {
-        var reviewId = deleteButton.getAttribute("data-review-id");
-        if (!reviewId) return;
+ deleteButton.addEventListener("click", async function () {
+  var reviewId = deleteButton.getAttribute("data-review-id");
+  if (!reviewId) return;
 
-        if (!window.confirm("이 리뷰를 삭제하시겠습니까?")) {
-            return;
-        }
+  if (!window.confirm("이 리뷰를 삭제하시겠습니까?")) {
+   return;
+  }
 
-        var headers = {};
-        applyCsrfHeaders(headers);
+  var headers = {};
+  applyCsrfHeaders(headers);
 
-        try {
-            var response = await fetch("/api/reviews/" + reviewId, {
-                method: "DELETE",
-                headers: headers
-            });
+  try {
+   var response = await fetch("/api/reviews/" + reviewId, {
+	method: "DELETE",
+	headers: headers
+   });
 
-            if (!response.ok) {
-                alert("리뷰 삭제에 실패했습니다.\n" + await extractErrorMessage(response));
-                return;
-            }
+   if (!response.ok) {
+	alert("리뷰 삭제에 실패했습니다.\n" + await extractErrorMessage(response));
+	return;
+   }
 
-            alert("리뷰가 삭제되었습니다.");
-            window.location.href = "/reviews";
-        } catch (error) {
-            console.error(error);
-            alert("리뷰 삭제 중 오류가 발생했습니다.");
-        }
-    });
+   alert("리뷰가 삭제되었습니다.");
+   window.location.href = "/reviews";
+  } catch (error) {
+   console.error(error);
+   alert("리뷰 삭제 중 오류가 발생했습니다.");
+  }
+ });
 }
 
 function bindReviewLikeButtons() {
-    var likeButtons = document.querySelectorAll("[data-review-like]");
-    if (!likeButtons.length) return;
+ var likeButtons = document.querySelectorAll("[data-review-like]");
+ if (!likeButtons.length) return;
 
-    likeButtons.forEach(function (button) {
-        button.addEventListener("click", async function (event) {
-            event.preventDefault();
-            event.stopPropagation();
+ likeButtons.forEach(function (button) {
+  button.addEventListener("click", async function (event) {
+   event.preventDefault();
+   event.stopPropagation();
 
-            var reviewId = button.getAttribute("data-review-like");
-            if (!reviewId) return;
+   var reviewId = button.getAttribute("data-review-like");
+   if (!reviewId) return;
 
-            var headers = {};
-            applyCsrfHeaders(headers);
+   var headers = {};
+   applyCsrfHeaders(headers);
 
-            try {
-                var response = await fetch("/api/reviews/" + reviewId + "/likes", {
-                    method: "POST",
-                    headers: headers
-                });
+   try {
+	var response = await fetch("/api/reviews/" + reviewId + "/likes", {
+	 method: "POST",
+	 headers: headers
+	});
 
-                if (!response.ok) {
-                    alert("좋아요 처리에 실패했습니다.\n" + await extractErrorMessage(response));
-                    return;
-                }
+	if (!response.ok) {
+	 alert("좋아요 처리에 실패했습니다.\n" + await extractErrorMessage(response));
+	 return;
+	}
 
-                var result = await response.json();
-                button.classList.toggle("is-liked", result.liked);
+	var result = await response.json();
+	button.classList.toggle("is-liked", result.liked);
 
-                var count = button.querySelector(".review-like-button__count");
-                if (count) {
-                    count.textContent = result.likeCount;
-                }
-            } catch (error) {
-                console.error(error);
-                alert("좋아요 처리 중 오류가 발생했습니다.");
-            }
-        });
-    });
+	var count = button.querySelector(".review-like-button__count");
+	if (count) {
+	 count.textContent = result.likeCount;
+	}
+   } catch (error) {
+	console.error(error);
+	alert("좋아요 처리 중 오류가 발생했습니다.");
+   }
+  });
+ });
 }
 
 function applyCsrfHeaders(headers) {
-    var csrfTokenMeta = document.querySelector('meta[name="_csrf"]');
-    var csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
+ var csrfTokenMeta = document.querySelector('meta[name="_csrf"]');
+ var csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
 
-    if (!csrfTokenMeta || !csrfHeaderMeta) {
-        return;
-    }
+ if (!csrfTokenMeta || !csrfHeaderMeta) {
+  return;
+ }
 
-    headers[csrfHeaderMeta.getAttribute("content")] = csrfTokenMeta.getAttribute("content");
+ headers[csrfHeaderMeta.getAttribute("content")] = csrfTokenMeta.getAttribute("content");
 }
 
 async function extractErrorMessage(response) {
-    try {
-        var data = await response.json();
-        if (data && data.message) {
-            return data.message;
-        }
-    } catch (error) {
-        console.error(error);
-    }
+ try {
+  var data = await response.json();
+  if (data && data.message) {
+   return data.message;
+  }
+ } catch (error) {
+  console.error(error);
+ }
 
-    return await response.text();
+ return await response.text();
 }

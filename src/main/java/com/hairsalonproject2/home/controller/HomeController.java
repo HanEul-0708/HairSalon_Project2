@@ -7,8 +7,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.sql.SQLOutput;
-
 /**
  * 메인 화면 요청 처리 컨트롤러
  */
@@ -16,14 +14,14 @@ import java.sql.SQLOutput;
 @RequiredArgsConstructor
 public class HomeController {
 
-    private final ReviewService reviewService;
-    private final SalonQueryService salonQueryService;
+ private final ReviewService reviewService;
+ private final SalonQueryService salonQueryService;
 
-    @GetMapping("/")
-    public String home(Model model) {
-        model.addAttribute("topSalons", salonQueryService.recommendedTop3());
-        model.addAttribute("topDesigners", reviewService.getTop3Designers());
-        model.addAttribute("recentReviews", reviewService.getRecentReviews());
-        return "index";
-    }
+ @GetMapping("/")
+ public String home(Model model) {
+  model.addAttribute("topSalons", salonQueryService.recommendedTop3());
+  model.addAttribute("topDesigners", reviewService.getTop3Designers());
+  model.addAttribute("recentReviews", reviewService.getRecentReviews());
+  return "index";
+ }
 }

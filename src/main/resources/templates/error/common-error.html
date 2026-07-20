@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout(~{::title}, ~{::link}, ~{::main})}">
 
 <!--
   common-error.html 공통 오류 페이지
@@ -9,46 +8,37 @@
 -->
 
 <head>
-    <title>서버 오류 | HairSalon</title>
-    <link rel="stylesheet" th:href="@{/css/board.css}">
+ <title>서버 오류 | HairSalon</title>
+ <link rel="stylesheet" th:href="@{/css/board.css}">
 </head>
 
 <body>
 <main>
 
-    <div class="board-wrap">
-        <div style="display:flex;flex-direction:column;align-items:center;
+ <div class="board-wrap">
+  <div style="display:flex;flex-direction:column;align-items:center;
                     justify-content:center;min-height:60vh;text-align:center;padding:40px 20px;">
 
-            <div style="font-size:6rem;font-weight:700;color:#c9a84c;
-                        font-family:'Georgia',serif;line-height:1;
-                        margin-bottom:16px;letter-spacing:-2px;">500</div>
+   <div style="font-size:6rem;font-weight:700;color:#c9a84c;font-family:'Georgia',serif;line-height:1;margin-bottom:16px;letter-spacing:-2px;">500
+   </div>
 
-            <h2 style="font-size:1.4rem;color:#fff;margin-bottom:12px;">
-                서버에서 문제가 발생했습니다
-            </h2>
+   <h2 style="font-size:1.4rem;color:#fff;margin-bottom:12px;">
+	서버에서 문제가 발생했습니다 </h2>
 
-            <p style="font-size:0.95rem;color:#888;margin-bottom:32px;
-                      max-width:440px;line-height:1.7;"
-               th:text="${errorMessage} ?: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'">
-            </p>
+   <p style="font-size:0.95rem;color:#888;margin-bottom:32px;
+                      max-width:440px;line-height:1.7;" th:text="${errorMessage} ?: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'"></p>
 
-            <div style="display:flex;gap:12px;justify-content:center;">
-                <a th:href="@{/}"
-                   style="padding:10px 24px;background:#c9a84c;color:#1c1c1e;
-                          border-radius:4px;text-decoration:none;font-weight:700;font-size:0.9rem;">
-                    홈으로
-                </a>
-                <button onclick="history.back()"
-                        style="padding:10px 24px;background:transparent;color:#c9a84c;
-                               border:1px solid #c9a84c;border-radius:4px;
-                               font-size:0.9rem;cursor:pointer;">
-                    이전 페이지
-                </button>
-            </div>
+   <div style="display:flex;gap:12px;justify-content:center;">
+	<a th:href="@{/}" style="padding:10px 24px;background:#c9a84c;color:#1c1c1e;  border-radius:4px;text-decoration:none;font-weight:700;font-size:0.9rem;">
+	 홈으로
+	</a>
+	<button onclick="history.back()" style="padding:10px 24px;background:transparent;color:#c9a84c;   border:1px solid #c9a84c;border-radius:4px;   font-size:0.9rem;cursor:pointer;">
+	 이전 페이지
+	</button>
+   </div>
 
-        </div>
-    </div>
+  </div>
+ </div>
 
 </main>
 </body>

@@ -8,13 +8,13 @@ import java.util.List;
 @Getter
 @Builder
 public class DesignerAiRecommendationResponse {
-    private String query;
-    private String summary;
-    private String source;
-    private boolean llmUsed;
-    private List<DesignerAiRecommendationItemResponse> recommendations;
+ private String query;
+ private String summary;
+ private String source;
+ private boolean llmUsed;
+ private List<DesignerAiRecommendationItemResponse> recommendations;
 
-    public boolean hasRecommendations() {
-        return recommendations != null && !recommendations.isEmpty();
-    }
+ public boolean hasRecommendations() {
+  return recommendations != null && !recommendations.isEmpty();
+ }
 }

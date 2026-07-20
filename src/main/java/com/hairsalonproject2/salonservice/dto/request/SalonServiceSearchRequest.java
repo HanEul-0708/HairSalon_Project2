@@ -6,15 +6,15 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SalonServiceSearchRequest {
-    private String keyword;
-    private String salonKeyword;
-    private String region;
-    private Integer maxPrice;
-    private Integer maxDuration;
-    private String sortBy;
-    private boolean searched;
+ private String keyword;
+ private String salonKeyword;
+ private String region;
+ private Integer maxPrice;
+ private Integer maxDuration;
+ private String sortBy;
+ private boolean searched;
 
-    public boolean hasSearchRequest() {
-        return searched;
-    }
+ public boolean hasSearchRequest() {
+  return searched;
+ }
 }

@@ -15,19 +15,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.function.Consumer;
 
 /**
  * 회원 컨트롤러
- *
+ * <p>
  * URL 규칙:
  * /members/signup
  * /members/login
@@ -40,166 +35,141 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class MemberController {
 
-    private final MemberService memberService;
+ private final MemberService memberService;
 
-    @GetMapping("/signup")
-    public String signupForm(Model model) {
-        model.addAttribute("memberSignupRequest", new MemberSignupRequest());
-        return "member/signup";
-    }
+ @GetMapping("/signup")
+ public String signupForm(Model model) {
+  model.addAttribute("memberSignupRequest", new MemberSignupRequest());
+  return "member/signup";
+ }
 
-    @PostMapping("/signup")
-    public String signup(@Valid @ModelAttribute MemberSignupRequest memberSignupRequest,
-                         BindingResult bindingResult,
-                         Model model) {
-        if (bindingResult.hasErrors()) {
-            return "member/signup";
-        }
+ @PostMapping("/signup")
+ public String signup(@Valid @ModelAttribute MemberSignupRequest memberSignupRequest, BindingResult bindingResult, Model model) {
+  if (bindingResult.hasErrors()) {
+   return "member/signup";
+  }
+  try {
+   memberService.signup(memberSignupRequest);
+  } catch (BusinessException e) {
+   model.addAttribute("signupErrorMessage", e.getErrorCode().getMessage());
+   return "member/signup";
+  }
+  return "redirect:/members/login?signup=true";
+ }
 
-        try {
-            memberService.signup(memberSignupRequest);
-        } catch (BusinessException e) {
-            model.addAttribute("signupErrorMessage", e.getErrorCode().getMessage());
-            return "member/signup";
-        }
+ @GetMapping("/login")
+ public String loginForm(Model model, @AuthenticationPrincipal CustomUserDetails userDetails) {
+  if (userDetails != null) {
+   return "redirect:/members/me";
+  }
+  if (!model.containsAttribute("memberLoginRequest")) {
+   model.addAttribute("memberLoginRequest", new MemberLoginRequest());
+  }
+  return "member/login";
+ }
 
-        return "redirect:/members/login?signup=true";
-    }
+ @GetMapping("/check-id")
+ @ResponseBody
+ public AvailabilityResponse checkMemberId(@RequestParam String memberId) {
+  return AvailabilityResponse.from(memberService.isMemberIdAvailable(memberId));
+ }
 
-    @GetMapping("/login")
-    public String loginForm(Model model,
-                            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        if (userDetails != null) {
-            return "redirect:/members/me";
-        }
+ @GetMapping("/check-email")
+ @ResponseBody
+ public AvailabilityResponse checkEmail(@RequestParam String email) {
+  return AvailabilityResponse.from(memberService.isEmailAvailable(email));
+ }
 
-        if (!model.containsAttribute("memberLoginRequest")) {
-            model.addAttribute("memberLoginRequest", new MemberLoginRequest());
-        }
+ @GetMapping("/check-phone")
+ @ResponseBody
+ public AvailabilityResponse checkPhone(@RequestParam String phone) {
+  return AvailabilityResponse.from(memberService.isPhoneAvailable(phone));
+ }
 
-        return "member/login";
-    }
+ @GetMapping("/me/check-email")
+ @ResponseBody
+ public AvailabilityResponse checkMyEmail(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam String email) {
+  return AvailabilityResponse.from(memberService.isEmailAvailableForUpdate(userDetails.getUsername(), email));
+ }
 
-    @GetMapping("/check-id")
-    @ResponseBody
-    public AvailabilityResponse checkMemberId(@RequestParam String memberId) {
-        return AvailabilityResponse.from(memberService.isMemberIdAvailable(memberId));
-    }
+ @GetMapping("/me/check-phone")
+ @ResponseBody
+ public AvailabilityResponse checkMyPhone(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestParam String phone) {
+  return AvailabilityResponse.from(memberService.isPhoneAvailableForUpdate(userDetails.getUsername(), phone));
+ }
 
-    @GetMapping("/check-email")
-    @ResponseBody
-    public AvailabilityResponse checkEmail(@RequestParam String email) {
-        return AvailabilityResponse.from(memberService.isEmailAvailable(email));
-    }
+ @GetMapping("/me")
+ public String myPage(@AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
+  prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
+  });
+  return "member/mypage";
+ }
 
-    @GetMapping("/check-phone")
-    @ResponseBody
-    public AvailabilityResponse checkPhone(@RequestParam String phone) {
-        return AvailabilityResponse.from(memberService.isPhoneAvailable(phone));
-    }
+ @GetMapping("/me/edit")
+ public String myEditPage(@AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
+  prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
+  });
+  return "member/mypage";
+ }
 
-    @GetMapping("/me/check-email")
-    @ResponseBody
-    public AvailabilityResponse checkMyEmail(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                             @RequestParam String email) {
-        return AvailabilityResponse.from(memberService.isEmailAvailableForUpdate(userDetails.getUsername(), email));
-    }
+ @PostMapping("/me/edit")
+ public String updateMyProfile(@AuthenticationPrincipal CustomUserDetails userDetails, @Valid @ModelAttribute MemberUpdateRequest memberUpdateRequest, BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes) {
+  if (bindingResult.hasErrors()) {
+   prepareMyPageModel(model, userDetails.getUsername(), currentModel -> currentModel.addAttribute("memberUpdateRequest", memberUpdateRequest));
+   return "member/mypage";
+  }
+  try {
+   memberService.updateMyProfile(userDetails.getUsername(), memberUpdateRequest);
+  } catch (BusinessException e) {
+   prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
+	currentModel.addAttribute("memberUpdateRequest", memberUpdateRequest);
+	currentModel.addAttribute("errorMessage", e.getErrorCode().getMessage());
+   });
+   return "member/mypage";
+  }
+  redirectAttributes.addFlashAttribute("successMessage", "회원 정보가 수정되었습니다.");
+  return "redirect:/members/me";
+ }
 
-    @GetMapping("/me/check-phone")
-    @ResponseBody
-    public AvailabilityResponse checkMyPhone(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                             @RequestParam String phone) {
-        return AvailabilityResponse.from(memberService.isPhoneAvailableForUpdate(userDetails.getUsername(), phone));
-    }
+ @PostMapping("/me/password")
+ public String changePassword(@AuthenticationPrincipal CustomUserDetails userDetails, @Valid @ModelAttribute MemberPasswordChangeRequest memberPasswordChangeRequest, BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes) {
+  if (bindingResult.hasErrors()) {
+   prepareMyPageModel(model, userDetails.getUsername(), currentModel -> currentModel.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest));
+   return "member/mypage";
+  }
+  try {
+   memberService.changePassword(userDetails.getUsername(), memberPasswordChangeRequest);
+  } catch (BusinessException e) {
+   prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
+	currentModel.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest);
+	currentModel.addAttribute("errorMessage", e.getErrorCode().getMessage());
+   });
+   return "member/mypage";
+  }
+  redirectAttributes.addFlashAttribute("successMessage", "비밀번호가 변경되었습니다.");
+  return "redirect:/members/me";
+ }
 
-    @GetMapping("/me")
-    public String myPage(@AuthenticationPrincipal CustomUserDetails userDetails,
-                         Model model) {
-        prepareMyPageModel(model, userDetails.getUsername(), currentModel -> { });
-        return "member/mypage";
-    }
+ @PostMapping("/me/delete")
+ public String deleteMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
+  String memberId = userDetails.getMember().getMemberId();
+  memberService.softDeleteSelf(memberId);
+  return "redirect:/members/logout";
+ }
 
-    @GetMapping("/me/edit")
-    public String myEditPage(@AuthenticationPrincipal CustomUserDetails userDetails,
-                             Model model) {
-        prepareMyPageModel(model, userDetails.getUsername(), currentModel -> { });
-        return "member/mypage";
-    }
+ private void prepareMyPageModel(Model model, String memberId, Consumer<Model> customizer) {
+  MemberDetailResponse member = memberService.getMyDetail(memberId);
+  model.addAttribute("member", member);
+  model.addAttribute("memberUpdateRequest", createMemberUpdateRequest(member));
+  model.addAttribute("memberPasswordChangeRequest", new MemberPasswordChangeRequest());
+  customizer.accept(model);
+ }
 
-    @PostMapping("/me/edit")
-    public String updateMyProfile(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                  @Valid @ModelAttribute MemberUpdateRequest memberUpdateRequest,
-                                  BindingResult bindingResult,
-                                  Model model,
-                                  RedirectAttributes redirectAttributes) {
-        if (bindingResult.hasErrors()) {
-            prepareMyPageModel(model, userDetails.getUsername(),
-                    currentModel -> currentModel.addAttribute("memberUpdateRequest", memberUpdateRequest));
-            return "member/mypage";
-        }
-
-        try {
-            memberService.updateMyProfile(userDetails.getUsername(), memberUpdateRequest);
-        } catch (BusinessException e) {
-            prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
-                currentModel.addAttribute("memberUpdateRequest", memberUpdateRequest);
-                currentModel.addAttribute("errorMessage", e.getErrorCode().getMessage());
-            });
-            return "member/mypage";
-        }
-
-        redirectAttributes.addFlashAttribute("successMessage", "회원 정보가 수정되었습니다.");
-        return "redirect:/members/me";
-    }
-
-    @PostMapping("/me/password")
-    public String changePassword(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                 @Valid @ModelAttribute MemberPasswordChangeRequest memberPasswordChangeRequest,
-                                 BindingResult bindingResult,
-                                 Model model,
-                                 RedirectAttributes redirectAttributes) {
-        if (bindingResult.hasErrors()) {
-            prepareMyPageModel(model, userDetails.getUsername(),
-                    currentModel -> currentModel.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest));
-            return "member/mypage";
-        }
-
-        try {
-            memberService.changePassword(userDetails.getUsername(), memberPasswordChangeRequest);
-        } catch (BusinessException e) {
-            prepareMyPageModel(model, userDetails.getUsername(), currentModel -> {
-                currentModel.addAttribute("memberPasswordChangeRequest", memberPasswordChangeRequest);
-                currentModel.addAttribute("errorMessage", e.getErrorCode().getMessage());
-            });
-            return "member/mypage";
-        }
-
-        redirectAttributes.addFlashAttribute("successMessage", "비밀번호가 변경되었습니다.");
-        return "redirect:/members/me";
-    }
-
-    @PostMapping("/me/delete")
-    public String deleteMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        String memberId = userDetails.getMember().getMemberId();
-        memberService.softDeleteSelf(memberId);
-        return "redirect:/members/logout";
-    }
-
-    private void prepareMyPageModel(Model model,
-                                    String memberId,
-                                    Consumer<Model> customizer) {
-        MemberDetailResponse member = memberService.getMyDetail(memberId);
-        model.addAttribute("member", member);
-        model.addAttribute("memberUpdateRequest", createMemberUpdateRequest(member));
-        model.addAttribute("memberPasswordChangeRequest", new MemberPasswordChangeRequest());
-        customizer.accept(model);
-    }
-
-    private MemberUpdateRequest createMemberUpdateRequest(MemberDetailResponse member) {
-        MemberUpdateRequest request = new MemberUpdateRequest();
-        request.setName(member.getName());
-        request.setPhone(member.getPhone());
-        request.setEmail(member.getEmail());
-        return request;
-    }
+ private MemberUpdateRequest createMemberUpdateRequest(MemberDetailResponse member) {
+  MemberUpdateRequest request = new MemberUpdateRequest();
+  request.setName(member.getName());
+  request.setPhone(member.getPhone());
+  request.setEmail(member.getEmail());
+  return request;
+ }
 }

@@ -8,11 +8,11 @@ import java.util.Optional;
 
 public interface DesignerLikeRepository extends JpaRepository<DesignerLike, Integer> {
 
-    Optional<DesignerLike> findByMember_MemberIdAndDesigner_DesignerId(String memberId, Integer designerId);
+ Optional<DesignerLike> findByMember_MemberIdAndDesigner_DesignerId(String memberId, Integer designerId);
 
-    boolean existsByMember_MemberIdAndDesigner_DesignerId(String memberId, Integer designerId);
+ boolean existsByMember_MemberIdAndDesigner_DesignerId(String memberId, Integer designerId);
 
-    List<DesignerLike> findAllByMember_MemberIdOrderByCreatedAtDesc(String memberId);
+ List<DesignerLike> findAllByMember_MemberIdOrderByCreatedAtDesc(String memberId);
 
-    long countByDesigner_DesignerId(Integer designerId);
+ long countByDesigner_DesignerId(Integer designerId);
 }

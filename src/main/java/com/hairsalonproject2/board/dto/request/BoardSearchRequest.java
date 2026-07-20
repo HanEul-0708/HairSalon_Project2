@@ -12,14 +12,14 @@ import lombok.Setter;
 @Setter
 public class BoardSearchRequest {
 
-    /**
-     * 게시판 종류
-     * 예: NOTICE, QNA
-     */
-    private BoardType type;
+ /**
+  * 게시판 종류
+  * 예: NOTICE, QNA
+  */
+ private BoardType type;
 
-    /**
-     * 검색어
-     */
-    private String keyword;
+ /**
+  * 검색어
+  */
+ private String keyword;
 }

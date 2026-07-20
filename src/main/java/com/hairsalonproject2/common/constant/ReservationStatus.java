@@ -10,18 +10,18 @@ package com.hairsalonproject2.common.constant;
  */
 public enum ReservationStatus {
 
-    /*
-     * 예약 완료 상태
-     */
-    RESERVED,
+ /*
+  * 예약 완료 상태
+  */
+ RESERVED,
 
-    /*
-     * 예약 취소
-     */
-    CANCELLED,
+ /*
+  * 예약 취소
+  */
+ CANCELLED,
 
-    /*
-     * 시술 완료
-     */
-    COMPLETED
+ /*
+  * 시술 완료
+  */
+ COMPLETED
 }

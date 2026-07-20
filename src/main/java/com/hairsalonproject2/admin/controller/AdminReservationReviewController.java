@@ -11,20 +11,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/admin")
 public class AdminReservationReviewController {
 
-    private final ReservationService reservationService;
-    private final ReviewService reviewService;
+ private final ReservationService reservationService;
+ private final ReviewService reviewService;
 
-    @GetMapping("/reservations")
-    public String reservations(Model model) {
-        model.addAttribute("currentMenu", "reservations");
-        model.addAttribute("reservations", reservationService.getAllReservations());
-        return "admin/reservations";
-    }
+ @GetMapping("/reservations")
+ public String reservations(Model model) {
+  model.addAttribute("currentMenu", "reservations");
+  model.addAttribute("reservations", reservationService.getAllReservations());
+  return "admin/reservations";
+ }
 
-    @GetMapping("/reviews")
-    public String reviews(Model model) {
-        model.addAttribute("currentMenu", "reviews");
-        model.addAttribute("reviews", reviewService.getAllReviews(null, null, null, "latest"));
-        return "admin/reviews";
-    }
+ @GetMapping("/reviews")
+ public String reviews(Model model) {
+  model.addAttribute("currentMenu", "reviews");
+  model.addAttribute("reviews", reviewService.getAllReviews(null, null, null, "latest"));
+  return "admin/reviews";
+ }
 }

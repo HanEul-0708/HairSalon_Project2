@@ -20,53 +20,51 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class AdminReviewController {
 
-    private final ReviewService reviewService;
-    private final ReviewRepository reviewRepository;
+ private final ReviewService reviewService;
+ private final ReviewRepository reviewRepository;
 
-    @GetMapping
-    public String reviewList(@RequestParam(required = false) String keyword, @RequestParam(required = false) String filterBy, @RequestParam(defaultValue = "false") boolean todayOnly, @RequestParam(defaultValue = "latest") String sortBy, Model model) {
-        List<ReviewResponse> reviews = reviewService.getAllReviews(null, null, null, sortBy).stream().filter(review -> !todayOnly || isToday(review.getCreatedAt())).filter(review -> matchesReviewFilter(review, keyword, filterBy)).toList();
+ @GetMapping
+ public String reviewList(@RequestParam(required = false) String keyword, @RequestParam(required = false) String filterBy, @RequestParam(defaultValue = "false") boolean todayOnly, @RequestParam(defaultValue = "latest") String sortBy, Model model) {
+  List<ReviewResponse> reviews = reviewService.getAllReviews(null, null, null, sortBy).stream().filter(review -> !todayOnly || isToday(review.getCreatedAt())).filter(review -> matchesReviewFilter(review, keyword, filterBy)).toList();
+  model.addAttribute("reviews", reviews);
+  model.addAttribute("keyword", keyword);
+  model.addAttribute("filterBy", filterBy);
+  model.addAttribute("selectedSort", sortBy);
+  model.addAttribute("totalReviewCount", reviewRepository.count());
+  model.addAttribute("todayReviewCount", reviewRepository.countByCreatedAtBetween(todayStart(), tomorrowStart()));
+  model.addAttribute("todayOnly", todayOnly);
+  model.addAttribute("currentMenu", "reviews");
+  return "admin/reviews";
+ }
 
-        model.addAttribute("reviews", reviews);
-        model.addAttribute("keyword", keyword);
-        model.addAttribute("filterBy", filterBy);
-        model.addAttribute("selectedSort", sortBy);
-        model.addAttribute("totalReviewCount", reviewRepository.count());
-        model.addAttribute("todayReviewCount", reviewRepository.countByCreatedAtBetween(todayStart(), tomorrowStart()));
-        model.addAttribute("todayOnly", todayOnly);
-        model.addAttribute("currentMenu", "reviews");
-        return "admin/reviews";
-    }
+ private boolean matchesReviewFilter(ReviewResponse review, String keyword, String filterBy) {
+  if (keyword == null || keyword.isBlank()) {
+   return true;
+  }
+  String normalizedKeyword = keyword.trim().toLowerCase(Locale.ROOT);
+  return switch (filterBy == null ? "all" : filterBy) {
+   case "member" -> contains(review.getMemberName(), normalizedKeyword);
+   case "designer" -> contains(review.getDesignerName(), normalizedKeyword);
+   case "salon" -> contains(review.getSalonName(), normalizedKeyword);
+   case "service" -> contains(review.getServiceName(), normalizedKeyword);
+   default ->
+		   contains(review.getMemberName(), normalizedKeyword) || contains(review.getDesignerName(), normalizedKeyword) || contains(review.getSalonName(), normalizedKeyword) || contains(review.getServiceName(), normalizedKeyword) || contains(review.getContent(), normalizedKeyword);
+  };
+ }
 
-    private boolean matchesReviewFilter(ReviewResponse review, String keyword, String filterBy) {
-        if (keyword == null || keyword.isBlank()) {
-            return true;
-        }
+ private boolean contains(String value, String keyword) {
+  return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
+ }
 
-        String normalizedKeyword = keyword.trim().toLowerCase(Locale.ROOT);
-        return switch (filterBy == null ? "all" : filterBy) {
-            case "member" -> contains(review.getMemberName(), normalizedKeyword);
-            case "designer" -> contains(review.getDesignerName(), normalizedKeyword);
-            case "salon" -> contains(review.getSalonName(), normalizedKeyword);
-            case "service" -> contains(review.getServiceName(), normalizedKeyword);
-            default ->
-                    contains(review.getMemberName(), normalizedKeyword) || contains(review.getDesignerName(), normalizedKeyword) || contains(review.getSalonName(), normalizedKeyword) || contains(review.getServiceName(), normalizedKeyword) || contains(review.getContent(), normalizedKeyword);
-        };
-    }
+ private LocalDateTime todayStart() {
+  return LocalDate.now().atStartOfDay();
+ }
 
-    private boolean contains(String value, String keyword) {
-        return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
-    }
+ private LocalDateTime tomorrowStart() {
+  return LocalDate.now().plusDays(1).atStartOfDay();
+ }
 
-    private LocalDateTime todayStart() {
-        return LocalDate.now().atStartOfDay();
-    }
-
-    private LocalDateTime tomorrowStart() {
-        return LocalDate.now().plusDays(1).atStartOfDay();
-    }
-
-    private boolean isToday(LocalDateTime value) {
-        return value != null && !value.isBefore(todayStart()) && value.isBefore(tomorrowStart());
-    }
+ private boolean isToday(LocalDateTime value) {
+  return value != null && !value.isBefore(todayStart()) && value.isBefore(tomorrowStart());
+ }
 }

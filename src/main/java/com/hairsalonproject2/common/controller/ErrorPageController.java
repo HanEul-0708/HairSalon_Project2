@@ -9,11 +9,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class ErrorPageController {
 
-    /**
-     * 403 접근 거부 페이지
-     */
-    @GetMapping("/access-denied")
-    public String accessDeniedPage() {
-        return "error/access-denied";
-    }
+ /**
+  * 403 접근 거부 페이지
+  */
+ @GetMapping("/access-denied")
+ public String accessDeniedPage() {
+  return "error/access-denied";
+ }
 }

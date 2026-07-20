@@ -9,11 +9,11 @@ import java.util.Optional;
 
 public interface BoardFileRepository extends JpaRepository<BoardFile, Long> {
 
-    @Query("""
-            select boardFile
-            from BoardFile boardFile
-            join fetch boardFile.board board
-            where boardFile.savedName = :savedName
-            """)
-    Optional<BoardFile> findBySavedNameWithBoard(@Param("savedName") String savedName);
+ @Query("""
+		 select boardFile
+		 from BoardFile boardFile
+		 join fetch boardFile.board board
+		 where boardFile.savedName = :savedName
+		 """)
+ Optional<BoardFile> findBySavedNameWithBoard(@Param("savedName") String savedName);
 }

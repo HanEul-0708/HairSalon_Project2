@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentMethodColumnInitializer implements ApplicationRunner {
 
-    private final JdbcTemplate jdbcTemplate;
+ private final JdbcTemplate jdbcTemplate;
 
-    @Override
-    public void run(ApplicationArguments args) {
-        jdbcTemplate.execute("ALTER TABLE reservation MODIFY COLUMN payment_method VARCHAR(20) NOT NULL");
-    }
+ @Override
+ public void run(ApplicationArguments args) {
+  jdbcTemplate.execute("ALTER TABLE reservation MODIFY COLUMN payment_method VARCHAR(20) NOT NULL");
+ }
 }

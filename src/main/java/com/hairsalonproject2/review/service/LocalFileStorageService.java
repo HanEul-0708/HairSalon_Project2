@@ -15,32 +15,28 @@ import java.util.UUID;
 @Service
 public class LocalFileStorageService implements FileStorageService {
 
-    @Value("${file.upload.path}")
-    private String uploadPath;
+ @Value("${file.upload.path}")
+ private String uploadPath;
 
-    @Override
-    public String storeFile(MultipartFile file) {
-        try {
-            Path uploadDir = Paths.get(uploadPath).toAbsolutePath().normalize();
-            if (Files.notExists(uploadDir)) {
-                Files.createDirectories(uploadDir);
-            }
-
-            String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
-            String extension = "";
-            int extensionIndex = originalFilename.lastIndexOf('.');
-            if (extensionIndex >= 0) {
-                extension = originalFilename.substring(extensionIndex);
-            }
-
-            String savedFileName = UUID.randomUUID() + extension;
-            Path targetPath = uploadDir.resolve(savedFileName);
-
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-            return "/files/images/" + savedFileName;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("파일 저장에 실패했습니다.");
-        }
-    }
+ @Override
+ public String storeFile(MultipartFile file) {
+  try {
+   Path uploadDir = Paths.get(uploadPath).toAbsolutePath().normalize();
+   if (Files.notExists(uploadDir)) {
+	Files.createDirectories(uploadDir);
+   }
+   String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
+   String extension = "";
+   int extensionIndex = originalFilename.lastIndexOf('.');
+   if (extensionIndex >= 0) {
+	extension = originalFilename.substring(extensionIndex);
+   }
+   String savedFileName = UUID.randomUUID() + extension;
+   Path targetPath = uploadDir.resolve(savedFileName);
+   Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+   return "/files/images/" + savedFileName;
+  } catch (IOException e) {
+   throw new IllegalArgumentException("파일 저장에 실패했습니다.");
+  }
+ }
 }

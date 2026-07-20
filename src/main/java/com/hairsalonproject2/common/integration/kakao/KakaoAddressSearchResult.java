@@ -8,8 +8,8 @@ import java.math.BigDecimal;
 @Getter
 @Builder
 public class KakaoAddressSearchResult {
-    private String addressName;
-    private String roadAddressName;
-    private BigDecimal longitude;
-    private BigDecimal latitude;
+ private String addressName;
+ private String roadAddressName;
+ private BigDecimal longitude;
+ private BigDecimal latitude;
 }

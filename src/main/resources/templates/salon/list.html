@@ -1,54 +1,47 @@
 <!DOCTYPE html>
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      th:replace="~{fragments/layout :: layout(~{::title}, ~{::headExtra}, ~{::main})}">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout(~{::title}, ~{::headExtra}, ~{::main})}">
 <head>
-    <title th:text="${pageTitle} ?: '살롱 목록'">살롱 목록</title>
-    <th:block th:fragment="headExtra">
-        <link rel="stylesheet" th:href="@{/css/salon.css}">
-        <script th:if="${branchView and kakaoMapConfigured}"
-                th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&autoload=false&libraries=services|"
-                defer></script>
-        <script th:src="@{/js/salon.js}" defer></script>
-    </th:block>
+ <title th:text="${pageTitle} ?: '살롱 목록'">살롱 목록</title>
+ <th:block th:fragment="headExtra">
+  <link rel="stylesheet" th:href="@{/css/salon.css}">
+  <script th:if="${branchView and kakaoMapConfigured}" th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&autoload=false&libraries=services|" defer></script>
+  <script th:src="@{/js/salon.js}" defer></script>
+ </th:block>
 </head>
 <body>
 <main class="salon-list-layout">
-    <div class="container salon-page salon-list-page">
-        <div id="salon-list-hero">
-            <th:block th:replace="~{salon/list-fragments :: hero(pageTitle=${pageTitle}, pageDescription=${pageDescription}, presetTitle=${presetTitle}, presetDescription=${presetDescription})}"></th:block>
-        </div>
+ <div class="container salon-page salon-list-page">
+  <div id="salon-list-hero">
+   <th:block th:replace="~{salon/list-fragments :: hero(pageTitle=${pageTitle}, pageDescription=${pageDescription}, presetTitle=${presetTitle}, presetDescription=${presetDescription})}"></th:block>
+  </div>
 
-        <div id="salon-list-message">
-            <div class="alert alert-info" th:if="${message}" th:text="${message}">안내 메시지</div>
-        </div>
+  <div id="salon-list-message">
+   <div class="alert alert-info" th:if="${message}" th:text="${message}">안내 메시지</div>
+  </div>
 
-        <div class="salon-search-map-shell"
-             id="salon-search-map-shell"
-             th:if="${showPrimarySearch or branchView}">
-            <div id="salon-primary-search-area" th:if="${showPrimarySearch}">
-                <th:block th:replace="~{salon/list-fragments :: primarySearch(search=${search}, searchAction=${searchAction}, activePreset=${activePreset}, keywordPlaceholder=${primaryKeywordPlaceholder}, submitLabel=${primarySubmitLabel}, currentLocationActionEnabled=${branchView and kakaoMapConfigured})}"></th:block>
-            </div>
+  <div class="salon-search-map-shell" id="salon-search-map-shell" th:if="${showPrimarySearch or branchView}">
+   <div id="salon-primary-search-area" th:if="${showPrimarySearch}">
+	<th:block th:replace="~{salon/list-fragments :: primarySearch(search=${search}, searchAction=${searchAction}, activePreset=${activePreset}, keywordPlaceholder=${primaryKeywordPlaceholder}, submitLabel=${primarySubmitLabel}, currentLocationActionEnabled=${branchView and kakaoMapConfigured})}"></th:block>
+   </div>
 
-            <div id="salon-branch-map-area" th:if="${branchView}">
-                <th:block th:replace="~{salon/list-fragments :: branchMap(branchMarkers=${branchMarkers}, branchMapStatus=${branchMapStatus}, kakaoMapConfigured=${kakaoMapConfigured})}"></th:block>
-            </div>
-        </div>
+   <div id="salon-branch-map-area" th:if="${branchView}">
+	<th:block th:replace="~{salon/list-fragments :: branchMap(branchMarkers=${branchMarkers}, branchMapStatus=${branchMapStatus}, kakaoMapConfigured=${kakaoMapConfigured})}"></th:block>
+   </div>
+  </div>
 
-        <div id="salon-kakao-sync-area">
-            <th:block th:if="${showKakaoSyncAction}">
-                <th:block th:replace="~{salon/list-fragments :: kakaoSync(search=${search})}"></th:block>
-            </th:block>
-        </div>
+  <div id="salon-kakao-sync-area">
+   <th:block th:if="${showKakaoSyncAction}">
+	<th:block th:replace="~{salon/list-fragments :: kakaoSync(search=${search})}"></th:block>
+   </th:block>
+  </div>
 
-        <div id="salon-kakao-results-area">
-            <th:block th:replace="~{salon/list-fragments :: kakaoResults(kakaoResults=${kakaoResults}, kakaoResultsMessage=${kakaoResultsMessage})}"></th:block>
-        </div>
-        <div id="salon-results-area">
-            <th:block th:replace="~{salon/list-fragments :: salonResults(salons=${salons}, branchView=${branchView}, emptyMessage=${emptyMessage})}"></th:block>
-        </div>
-    </div>
+  <div id="salon-kakao-results-area">
+   <th:block th:replace="~{salon/list-fragments :: kakaoResults(kakaoResults=${kakaoResults}, kakaoResultsMessage=${kakaoResultsMessage})}"></th:block>
+  </div>
+  <div id="salon-results-area">
+   <th:block th:replace="~{salon/list-fragments :: salonResults(salons=${salons}, branchView=${branchView}, emptyMessage=${emptyMessage})}"></th:block>
+  </div>
+ </div>
 </main>
 </body>
 </html>

@@ -1,50 +1,48 @@
 <!DOCTYPE html>
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout(~{::title}, ~{::head}, ~{::main})}">
 <head>
-    <meta charset="UTF-8">
-    <title>좋아요한 디자이너</title>
-    <link rel="stylesheet" th:href="@{/css/designer.css}">
+ <meta charset="UTF-8">
+ <title>좋아요한 디자이너</title>
+ <link rel="stylesheet" th:href="@{/css/designer.css}">
 </head>
 <body>
 <main>
-    <div class="container designer-page designer-list-page">
-        <section class="catalog-hero">
-            <p class="catalog-hero__eyebrow">Liked Designers</p>
-            <h1 class="catalog-hero__title">좋아요한 디자이너</h1>
-            <p class="catalog-hero__subtitle">나중에 다시 보고 싶은 디자이너를 한곳에서 확인하세요.</p>
-        </section>
+ <div class="container designer-page designer-list-page">
+  <section class="catalog-hero">
+   <p class="catalog-hero__eyebrow">Liked Designers</p>
+   <h1 class="catalog-hero__title">좋아요한 디자이너</h1>
+   <p class="catalog-hero__subtitle">나중에 다시 보고 싶은 디자이너를 한곳에서 확인하세요.</p>
+  </section>
 
-        <div class="designer-grid" th:if="${!#lists.isEmpty(designers)}">
-            <article class="designer-card" th:each="designer : ${designers}">
-                <div class="designer-card__body">
-                    <div class="designer-card__avatar"
-                         th:text="${designer.name != null and !#strings.isEmpty(designer.name) ? #strings.substring(designer.name, 0, 1) : 'D'}">D</div>
-                    <p class="designer-card__salon" th:text="${designer.salonName}">Salon Name</p>
-                    <h3 class="designer-card__name">
-                        <a th:href="@{/designers/{id}(id=${designer.designerId})}"
-                           th:text="${designer.name}">디자이너명</a>
-                    </h3>
-                    <div class="designer-card__stats">
-                        <span class="designer-card__stat">평점 <strong th:text="${designer.averageRating}">0</strong></span>
-                        <span class="designer-card__stat">리뷰 <strong th:text="${designer.reviewCount}">0</strong></span>
-                        <span class="designer-card__stat">좋아요 <strong th:text="${designer.likeCount}">0</strong></span>
-                    </div>
-                    <div class="designer-card__footer">
-                        <a th:href="@{/designers/{id}(id=${designer.designerId})}" class="btn btn-outline">상세 보기</a>
-                        <a th:href="@{/salons/{id}(id=${designer.salonId})}" class="btn btn-primary">미용실 보기</a>
-                    </div>
-                </div>
-            </article>
-        </div>
+  <div class="designer-grid" th:if="${!#lists.isEmpty(designers)}">
+   <article class="designer-card" th:each="designer : ${designers}">
+	<div class="designer-card__body">
+	 <div class="designer-card__avatar" th:text="${designer.name != null and !#strings.isEmpty(designer.name) ? #strings.substring(designer.name, 0, 1) : 'D'}">
+	  D
+	 </div>
+	 <p class="designer-card__salon" th:text="${designer.salonName}">Salon Name</p>
+	 <h3 class="designer-card__name">
+	  <a th:href="@{/designers/{id}(id=${designer.designerId})}" th:text="${designer.name}">디자이너명</a>
+	 </h3>
+	 <div class="designer-card__stats">
+	  <span class="designer-card__stat">평점 <strong th:text="${designer.averageRating}">0</strong></span>
+	  <span class="designer-card__stat">리뷰 <strong th:text="${designer.reviewCount}">0</strong></span>
+	  <span class="designer-card__stat">좋아요 <strong th:text="${designer.likeCount}">0</strong></span>
+	 </div>
+	 <div class="designer-card__footer">
+	  <a th:href="@{/designers/{id}(id=${designer.designerId})}" class="btn btn-outline">상세 보기</a>
+	  <a th:href="@{/salons/{id}(id=${designer.salonId})}" class="btn btn-primary">미용실 보기</a>
+	 </div>
+	</div>
+   </article>
+  </div>
 
-        <div class="designer-empty-state" th:if="${#lists.isEmpty(designers)}">
-            <h2>좋아요한 디자이너가 없습니다.</h2>
-            <p>마음에 드는 디자이너를 찾으면 좋아요를 눌러 나중에 다시 확인할 수 있습니다.</p>
-            <a th:href="@{/designers}" class="btn btn-primary">디자이너 둘러보기</a>
-        </div>
-    </div>
+  <div class="designer-empty-state" th:if="${#lists.isEmpty(designers)}">
+   <h2>좋아요한 디자이너가 없습니다.</h2>
+   <p>마음에 드는 디자이너를 찾으면 좋아요를 눌러 나중에 다시 확인할 수 있습니다.</p>
+   <a th:href="@{/designers}" class="btn btn-primary">디자이너 둘러보기</a>
+  </div>
+ </div>
 </main>
 </body>
 </html>

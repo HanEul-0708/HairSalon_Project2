@@ -10,13 +10,13 @@ package com.hairsalonproject2.common.constant;
  */
 public enum BoardType {
 
-    /*
-     * 공지사항
-     */
-    NOTICE,
+ /*
+  * 공지사항
+  */
+ NOTICE,
 
-    /*
-     * 문의게시판
-     */
-    QNA
+ /*
+  * 문의게시판
+  */
+ QNA
 }

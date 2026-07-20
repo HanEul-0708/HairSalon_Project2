@@ -30,65 +30,36 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "file.upload.path=C:/upload/")
 class FileControllerSecurityTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+ @Autowired
+ private MockMvc mockMvc;
 
-    @MockitoBean
-    private FileUploadService fileUploadService;
+ @MockitoBean
+ private FileUploadService fileUploadService;
 
-    @MockitoBean
-    private BoardFileRepository boardFileRepository;
+ @MockitoBean
+ private BoardFileRepository boardFileRepository;
 
-    @MockitoBean
-    private CustomUserDetailsService customUserDetailsService;
+ @MockitoBean
+ private CustomUserDetailsService customUserDetailsService;
 
-    @MockitoBean
-    private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+ @MockitoBean
+ private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
-    @Test
-    void qnaAttachmentImageRequestIsForbidden() throws Exception {
-        when(boardFileRepository.findBySavedNameWithBoard("qna-image.png"))
-                .thenReturn(Optional.of(qnaAttachment("qna-image.png")));
+ @Test
+ void qnaAttachmentImageRequestIsForbidden() throws Exception {
+  when(boardFileRepository.findBySavedNameWithBoard("qna-image.png")).thenReturn(Optional.of(qnaAttachment("qna-image.png")));
+  mockMvc.perform(get("/files/images/qna-image.png")).andExpect(status().isForbidden());
+ }
 
-        mockMvc.perform(get("/files/images/qna-image.png"))
-                .andExpect(status().isForbidden());
-    }
+ @Test
+ void qnaAttachmentDownloadRequestIsForbidden() throws Exception {
+  when(boardFileRepository.findBySavedNameWithBoard("qna-file.pdf")).thenReturn(Optional.of(qnaAttachment("qna-file.pdf")));
+  mockMvc.perform(get("/files/download/qna-file.pdf").param("originalFilename", "qna-file.pdf")).andExpect(status().isForbidden());
+ }
 
-    @Test
-    void qnaAttachmentDownloadRequestIsForbidden() throws Exception {
-        when(boardFileRepository.findBySavedNameWithBoard("qna-file.pdf"))
-                .thenReturn(Optional.of(qnaAttachment("qna-file.pdf")));
-
-        mockMvc.perform(get("/files/download/qna-file.pdf").param("originalFilename", "qna-file.pdf"))
-                .andExpect(status().isForbidden());
-    }
-
-    private BoardFile qnaAttachment(String savedName) {
-        Member member = Member.builder()
-                .memberId("user01")
-                .password("encoded-password")
-                .name("Tester")
-                .phone("010-1234-5678")
-                .email("tester@example.com")
-                .role(MemberRole.USER)
-                .status(MemberStatus.ACTIVE)
-                .build();
-
-        Board board = Board.builder()
-                .member(member)
-                .type(BoardType.QNA)
-                .title("QnA")
-                .content("content")
-                .viewCount(0)
-                .build();
-
-        return BoardFile.builder()
-                .board(board)
-                .originalName(savedName)
-                .savedName(savedName)
-                .filePath("C:/upload/" + savedName)
-                .fileSize(1L)
-                .fileExtension("png")
-                .build();
-    }
+ private BoardFile qnaAttachment(String savedName) {
+  Member member = Member.builder().memberId("user01").password("encoded-password").name("Tester").phone("010-1234-5678").email("tester@example.com").role(MemberRole.USER).status(MemberStatus.ACTIVE).build();
+  Board board = Board.builder().member(member).type(BoardType.QNA).title("QnA").content("content").viewCount(0).build();
+  return BoardFile.builder().board(board).originalName(savedName).savedName(savedName).filePath("C:/upload/" + savedName).fileSize(1L).fileExtension("png").build();
+ }
 }

@@ -12,19 +12,13 @@ import lombok.Getter;
 @Builder
 public class MemberResponse {
 
-    private String memberId;
-    private String name;
-    private String phone;
-    private String email;
-    private MemberRole role;
+ private String memberId;
+ private String name;
+ private String phone;
+ private String email;
+ private MemberRole role;
 
-    public static MemberResponse from(Member member) {
-        return MemberResponse.builder()
-                .memberId(member.getMemberId())
-                .name(member.getName())
-                .phone(member.getPhone())
-                .email(member.getEmail())
-                .role(member.getRole())
-                .build();
-    }
+ public static MemberResponse from(Member member) {
+  return MemberResponse.builder().memberId(member.getMemberId()).name(member.getName()).phone(member.getPhone()).email(member.getEmail()).role(member.getRole()).build();
+ }
 }

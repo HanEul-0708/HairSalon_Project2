@@ -26,88 +26,74 @@ import java.util.List;
 @Table(name = "reservation")
 public class Reservation extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "reservation_id")
-    private Integer reservationId;
+ @Id
+ @GeneratedValue(strategy = GenerationType.IDENTITY)
+ @Column(name = "reservation_id")
+ private Integer reservationId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+ @ManyToOne(fetch = FetchType.LAZY)
+ @JoinColumn(name = "member_id", nullable = false)
+ private Member member;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "designer_id", nullable = false)
-    private Designer designer;
+ @ManyToOne(fetch = FetchType.LAZY)
+ @JoinColumn(name = "designer_id", nullable = false)
+ private Designer designer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_id", nullable = false)
-    private SalonService salonService;
+ @ManyToOne(fetch = FetchType.LAZY)
+ @JoinColumn(name = "service_id", nullable = false)
+ private SalonService salonService;
 
-    @Column(name = "reservation_date", nullable = false)
-    private LocalDate reservationDate;
+ @Column(name = "reservation_date", nullable = false)
+ private LocalDate reservationDate;
 
-    @Column(name = "reservation_time", nullable = false)
-    private LocalTime reservationTime;
+ @Column(name = "reservation_time", nullable = false)
+ private LocalTime reservationTime;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    private ReservationStatus status;
+ @Enumerated(EnumType.STRING)
+ @Column(name = "status")
+ private ReservationStatus status;
 
-    @Column(name = "total_price", nullable = false)
-    private Integer totalPrice;
+ @Column(name = "total_price", nullable = false)
+ private Integer totalPrice;
 
-    @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(name = "payment_method", nullable = false, length = 20)
-    private PaymentMethod paymentMethod;
+ @Enumerated(EnumType.STRING)
+ @JdbcTypeCode(SqlTypes.VARCHAR)
+ @Column(name = "payment_method", nullable = false, length = 20)
+ private PaymentMethod paymentMethod;
 
-    @OneToMany(mappedBy = "reservation",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true)
-    private List<ReservationSlot> reservationSlots = new ArrayList<>();
+ @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+ private List<ReservationSlot> reservationSlots = new ArrayList<>();
 
-    @OneToOne(mappedBy = "reservation")
-    private Review review;
+ @OneToOne(mappedBy = "reservation")
+ private Review review;
 
-    @Builder
-    public Reservation(Member member,
-                       Designer designer,
-                       SalonService salonService,
-                       LocalDate reservationDate,
-                       LocalTime reservationTime,
-                       ReservationStatus status,
-                       Integer totalPrice,
-                       PaymentMethod paymentMethod) {
-        this.member = member;
-        this.designer = designer;
-        this.salonService = salonService;
-        this.reservationDate = reservationDate;
-        this.reservationTime = reservationTime;
-        this.status = status;
-        this.totalPrice = totalPrice;
-        this.paymentMethod = paymentMethod;
-    }
+ @Builder
+ public Reservation(Member member, Designer designer, SalonService salonService, LocalDate reservationDate, LocalTime reservationTime, ReservationStatus status, Integer totalPrice, PaymentMethod paymentMethod) {
+  this.member = member;
+  this.designer = designer;
+  this.salonService = salonService;
+  this.reservationDate = reservationDate;
+  this.reservationTime = reservationTime;
+  this.status = status;
+  this.totalPrice = totalPrice;
+  this.paymentMethod = paymentMethod;
+ }
 
-    public void changeStatus(ReservationStatus status) {
-        this.status = status;
-    }
+ public void changeStatus(ReservationStatus status) {
+  this.status = status;
+ }
 
-    public void updateReservation(Designer designer,
-                                  SalonService salonService,
-                                  LocalDate reservationDate,
-                                  LocalTime reservationTime,
-                                  Integer totalPrice,
-                                  PaymentMethod paymentMethod) {
-        this.designer = designer;
-        this.salonService = salonService;
-        this.reservationDate = reservationDate;
-        this.reservationTime = reservationTime;
-        this.totalPrice = totalPrice;
-        this.paymentMethod = paymentMethod;
-    }
+ public void updateReservation(Designer designer, SalonService salonService, LocalDate reservationDate, LocalTime reservationTime, Integer totalPrice, PaymentMethod paymentMethod) {
+  this.designer = designer;
+  this.salonService = salonService;
+  this.reservationDate = reservationDate;
+  this.reservationTime = reservationTime;
+  this.totalPrice = totalPrice;
+  this.paymentMethod = paymentMethod;
+ }
 
-    public void addReservationSlot(ReservationSlot slot) {
-        this.reservationSlots.add(slot);
-        slot.changeReservation(this);
-    }
+ public void addReservationSlot(ReservationSlot slot) {
+  this.reservationSlots.add(slot);
+  slot.changeReservation(this);
+ }
 }

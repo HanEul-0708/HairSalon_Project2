@@ -1,329 +1,228 @@
 ﻿<!DOCTYPE html>
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <th:block th:fragment="hero(pageTitle, pageDescription, presetTitle, presetDescription)">
-    <section class="catalog-hero">
-        <p class="catalog-hero__eyebrow">Salon Explorer</p>
-        <h1 th:text="${pageTitle}">살롱 통합 탐색</h1>
-        <p th:text="${presetDescription != null and !#strings.isEmpty(presetDescription) ? presetDescription : pageDescription}">
-            내부 살롱 목록, 지점 안내 지도, 카카오 외부 검색 결과를 한 페이지에서 확인합니다.
-        </p>
-    </section>
+ <section class="catalog-hero">
+  <p class="catalog-hero__eyebrow">Salon Explorer</p>
+  <h1 th:text="${pageTitle}">살롱 통합 탐색</h1>
+  <p th:text="${presetDescription != null and !#strings.isEmpty(presetDescription) ? presetDescription : pageDescription}">
+   내부 살롱 목록, 지점 안내 지도, 카카오 외부 검색 결과를 한 페이지에서 확인합니다. </p>
+ </section>
 </th:block>
 
 <th:block th:fragment="primarySearch(search, searchAction, activePreset, keywordPlaceholder, submitLabel, currentLocationActionEnabled)">
-    <form method="get"
-          th:action="${searchAction}"
-          class="salon-search-form salon-search-form--primary"
-          data-auto-submit="true"
-          th:attr="data-reset-url=@{/salons(preset=${activePreset != null and activePreset != 'all' ? activePreset : null})}">
-        <input type="hidden"
-               name="preset"
-               th:if="${activePreset != null and activePreset != 'all'}"
-               th:value="${activePreset}">
+ <form method="get" th:action="${searchAction}" class="salon-search-form salon-search-form--primary" data-auto-submit="true" th:attr="data-reset-url=@{/salons(preset=${activePreset != null and activePreset != 'all' ? activePreset : null})}">
+  <input type="hidden" name="preset" th:if="${activePreset != null and activePreset != 'all'}" th:value="${activePreset}">
 
-        <div class="salon-search-form__stack salon-search-form__stack--keyword">
-            <input class="salon-search-form__control salon-search-form__control--keyword"
-                   type="text"
-                   name="keyword"
-                   th:placeholder="${keywordPlaceholder}"
-                   th:value="${search.keyword}">
-            <div class="salon-search-form__shortcut-group">
-                <a th:href="@{/salons}"
-                   class="salon-tab-nav__link"
-                   data-preset-mode="all"
-                   th:classappend="${activePreset == 'all'} ? ' is-active' : ''">
-                    전체 검색
-                </a>
-                <a th:href="@{/salons(preset='recommend-by-service')}"
-                   class="salon-tab-nav__link"
-                   data-preset-mode="recommend-by-service"
-                   th:classappend="${activePreset == 'recommend-by-service'} ? ' is-active' : ''">
-                    스타일 추천
-                </a>
-            </div>
-        </div>
+  <div class="salon-search-form__stack salon-search-form__stack--keyword">
+   <input class="salon-search-form__control salon-search-form__control--keyword" type="text" name="keyword" th:placeholder="${keywordPlaceholder}" th:value="${search.keyword}">
+   <div class="salon-search-form__shortcut-group">
+	<a th:href="@{/salons}" class="salon-tab-nav__link" data-preset-mode="all" th:classappend="${activePreset == 'all'} ? ' is-active' : ''">
+	 전체 검색
+	</a>
+	<a th:href="@{/salons(preset='recommend-by-service')}" class="salon-tab-nav__link" data-preset-mode="recommend-by-service" th:classappend="${activePreset == 'recommend-by-service'} ? ' is-active' : ''">
+	 스타일 추천
+	</a>
+   </div>
+  </div>
 
-        <div class="salon-search-form__stack salon-search-form__stack--region">
-            <input class="salon-search-form__control salon-search-form__control--region"
-                   type="text"
-                   name="region"
-                   placeholder="지역"
-                   th:value="${search.region}">
-            <div class="salon-search-form__shortcut-group">
-                <button type="button"
-                        class="salon-tab-nav__link salon-tab-nav__link--map-action"
-                        data-current-location-trigger
-                        th:disabled="${!currentLocationActionEnabled}">
-                    현재 위치 표시
-                </button>
-            </div>
-        </div>
+  <div class="salon-search-form__stack salon-search-form__stack--region">
+   <input class="salon-search-form__control salon-search-form__control--region" type="text" name="region" placeholder="지역" th:value="${search.region}">
+   <div class="salon-search-form__shortcut-group">
+	<button type="button" class="salon-tab-nav__link salon-tab-nav__link--map-action" data-current-location-trigger th:disabled="${!currentLocationActionEnabled}">
+	 현재 위치 표시
+	</button>
+   </div>
+  </div>
 
-        <div class="salon-search-form__stack salon-search-form__stack--rating">
-            <div class="salon-rating-slider"
-                 data-rating-slider
-                 th:attr="data-rating-active=${minRatingSliderActive}">
-                <input type="hidden"
-                       name="minRating"
-                       th:value="${minRatingSliderActive ? minRatingSliderValue : ''}">
-                <div class="salon-rating-slider__header">
-                    <span class="salon-rating-slider__label">최소 평점</span>
-                    <strong class="salon-rating-slider__value"
-                            data-rating-slider-value
-                            th:text="${minRatingSliderLabel}">
-                        전체
-                    </strong>
-                </div>
-                <div class="salon-rating-slider__control">
-                    <input class="salon-search-form__control salon-search-form__control--rating salon-rating-slider__input"
-                           type="range"
-                           min="0"
-                           max="5"
-                           step="0.5"
-                           value="0"
-                           data-rating-slider-input
-                           aria-label="최소 평점"
-                           th:value="${minRatingSliderValue}">
-                    <div class="salon-rating-slider__ticks" aria-hidden="true">
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-                        <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-                    </div>
-                </div>
-            </div>
-            <div class="salon-search-form__shortcut-group salon-search-form__shortcut-group--rating">
-                <a th:href="@{/salons(preset='top-rated')}"
-                   class="salon-tab-nav__link"
-                   data-preset-mode="top-rated"
-                   th:classappend="${activePreset == 'top-rated'} ? ' is-active' : ''">
-                    평점 4점+
-                </a>
-                <a th:href="@{/salons(preset='top-rated-4-5')}"
-                   class="salon-tab-nav__link"
-                   data-preset-mode="top-rated-4-5"
-                   th:classappend="${activePreset == 'top-rated-4-5'} ? ' is-active' : ''">
-                    평점 4.5점+
-                </a>
-            </div>
-        </div>
+  <div class="salon-search-form__stack salon-search-form__stack--rating">
+   <div class="salon-rating-slider" data-rating-slider th:attr="data-rating-active=${minRatingSliderActive}">
+	<input type="hidden" name="minRating" th:value="${minRatingSliderActive ? minRatingSliderValue : ''}">
+	<div class="salon-rating-slider__header">
+	 <span class="salon-rating-slider__label">최소 평점</span>
+	 <strong class="salon-rating-slider__value" data-rating-slider-value th:text="${minRatingSliderLabel}">
+	  전체
+	 </strong>
+	</div>
+	<div class="salon-rating-slider__control">
+	 <input class="salon-search-form__control salon-search-form__control--rating salon-rating-slider__input" type="range" min="0" max="5" step="0.5" value="0" data-rating-slider-input aria-label="최소 평점" th:value="${minRatingSliderValue}">
+	 <div class="salon-rating-slider__ticks" aria-hidden="true">
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
+	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+	 </div>
+	</div>
+   </div>
+   <div class="salon-search-form__shortcut-group salon-search-form__shortcut-group--rating">
+	<a th:href="@{/salons(preset='top-rated')}" class="salon-tab-nav__link" data-preset-mode="top-rated" th:classappend="${activePreset == 'top-rated'} ? ' is-active' : ''">
+	 평점 4점+
+	</a>
+	<a th:href="@{/salons(preset='top-rated-4-5')}" class="salon-tab-nav__link" data-preset-mode="top-rated-4-5" th:classappend="${activePreset == 'top-rated-4-5'} ? ' is-active' : ''">
+	 평점 4.5점+
+	</a>
+   </div>
+  </div>
 
-        <label class="salon-search-check salon-search-form__control salon-search-form__control--toggle">
-            <input type="checkbox"
-                   name="reservable"
-                   value="true"
-                   th:checked="${search.reservable != null and search.reservable}">
-            예약 가능
-        </label>
+  <label class="salon-search-check salon-search-form__control salon-search-form__control--toggle">
+   <input type="checkbox" name="reservable" value="true" th:checked="${search.reservable != null and search.reservable}">
+   예약 가능
+  </label>
 
-        <select class="salon-search-form__control salon-search-form__control--sort" name="sort">
-            <option value="recommended" th:selected="${search.sort == 'recommended' or search.sort == null}">추천순</option>
-            <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
-            <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
-        </select>
+  <select class="salon-search-form__control salon-search-form__control--sort" name="sort">
+   <option value="recommended" th:selected="${search.sort == 'recommended' or search.sort == null}">추천순</option>
+   <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
+   <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
+  </select>
 
-        <div class="salon-search-form__actions">
-            <button type="button"
-                    class="btn btn-primary salon-search-form__submit"
-                    data-search-reset>
-                초기화
-            </button>
-            <a sec:authorize="hasRole('ADMIN')"
-               th:href="@{/salons/new}"
-               class="salon-tab-nav__link salon-tab-nav__link--ghost salon-tab-nav__link--compact">
-                살롱 등록
-            </a>
-        </div>
-    </form>
+  <div class="salon-search-form__actions">
+   <button type="button" class="btn btn-primary salon-search-form__submit" data-search-reset>
+	초기화
+   </button>
+   <a sec:authorize="hasRole('ADMIN')" th:href="@{/salons/new}" class="salon-tab-nav__link salon-tab-nav__link--ghost salon-tab-nav__link--compact">
+	살롱 등록
+   </a>
+  </div>
+ </form>
 </th:block>
 
 <th:block th:fragment="branchMap(branchMarkers, branchMapStatus, kakaoMapConfigured)">
-    <section id="salon-branch-map-section">
-        <div class="salon-branch-map-panel">
-            <div id="salon-branch-map"
-                 class="salon-branch-map"
-                 th:attr="data-kakao-enabled=${kakaoMapConfigured}">
-            </div>
+ <section id="salon-branch-map-section">
+  <div class="salon-branch-map-panel">
+   <div id="salon-branch-map" class="salon-branch-map" th:attr="data-kakao-enabled=${kakaoMapConfigured}"></div>
 
-            <div id="salon-branch-marker-data" hidden th:if="${branchMarkers != null}">
-                <div th:each="marker : ${branchMarkers}"
-                     class="js-branch-map-marker"
-                     th:attr="data-salon-id=${marker.salonId},
-                              data-name=${marker.name},
-                              data-address=${marker.address},
-                              data-road-address=${marker.roadAddress},
-                              data-phone=${marker.phone},
-                              data-detail-url=${marker.detailUrl},
-                              data-latitude=${marker.latitude},
-                              data-longitude=${marker.longitude}">
-                </div>
-            </div>
+   <div id="salon-branch-marker-data" hidden th:if="${branchMarkers != null}">
+	<div th:each="marker : ${branchMarkers}" class="js-branch-map-marker" th:attr="data-salon-id=${marker.salonId},  data-name=${marker.name},  data-address=${marker.address},  data-road-address=${marker.roadAddress},  data-phone=${marker.phone},  data-detail-url=${marker.detailUrl},  data-latitude=${marker.latitude},  data-longitude=${marker.longitude}"></div>
+   </div>
 
-            <p class="salon-branch-map__status"
-               id="salon-branch-map-status"
-               data-branch-map-status
-               th:text="${branchMapStatus}">
-                카카오 지도에서 지점 위치를 확인할 수 있습니다.
-            </p>
-        </div>
-    </section>
+   <p class="salon-branch-map__status" id="salon-branch-map-status" data-branch-map-status th:text="${branchMapStatus}">
+	카카오 지도에서 지점 위치를 확인할 수 있습니다. </p>
+  </div>
+ </section>
 </th:block>
 
 <th:block th:fragment="kakaoSync(search)">
-    <form method="post"
-          th:action="@{/salons/sync/kakao}"
-          sec:authorize="hasRole('ADMIN')"
-          class="salon-inline-action">
-        <input type="hidden" name="keyword" th:value="${search.keyword}">
-        <input type="hidden" name="region" th:value="${search.region}">
-        <button type="submit"
-                class="btn btn-outline"
-                th:disabled="${search.keyword == null or #strings.isEmpty(search.keyword)}">
-            현재 검색어로 Kakao API 동기화
-        </button>
-        <p class="salon-inline-action__hint">
-            같은 검색어와 지역 조건으로 카카오 외부 결과를 내부 데이터에 반영합니다.
-        </p>
-    </form>
+ <form method="post" th:action="@{/salons/sync/kakao}" sec:authorize="hasRole('ADMIN')" class="salon-inline-action">
+  <input type="hidden" name="keyword" th:value="${search.keyword}">
+  <input type="hidden" name="region" th:value="${search.region}">
+  <button type="submit" class="btn btn-outline" th:disabled="${search.keyword == null or #strings.isEmpty(search.keyword)}">
+   현재 검색어로 Kakao API 동기화
+  </button>
+  <p class="salon-inline-action__hint">
+   같은 검색어와 지역 조건으로 카카오 외부 결과를 내부 데이터에 반영합니다. </p>
+ </form>
 </th:block>
 
 <th:block th:fragment="kakaoResults(kakaoResults, kakaoResultsMessage)">
-    <section class="salon-section-block">
-        <div class="page-header page-header--secondary">
-            <h2>카카오 외부 검색 결과</h2>
-            <p>동일한 검색어 기준의 외부 결과입니다. 내부 목록과 바로 비교할 수 있습니다.</p>
-        </div>
+ <section class="salon-section-block">
+  <div class="page-header page-header--secondary">
+   <h2>카카오 외부 검색 결과</h2>
+   <p>동일한 검색어 기준의 외부 결과입니다. 내부 목록과 바로 비교할 수 있습니다.</p>
+  </div>
 
-        <div class="empty-state" th:if="${kakaoResultsMessage != null and !#strings.isEmpty(kakaoResultsMessage)}">
-            <p th:text="${kakaoResultsMessage}">검색어를 입력하면 카카오 검색 결과를 확인할 수 있습니다.</p>
-        </div>
+  <div class="empty-state" th:if="${kakaoResultsMessage != null and !#strings.isEmpty(kakaoResultsMessage)}">
+   <p th:text="${kakaoResultsMessage}">검색어를 입력하면 카카오 검색 결과를 확인할 수 있습니다.</p>
+  </div>
 
-        <div class="empty-state"
-             th:if="${(kakaoResultsMessage == null or #strings.isEmpty(kakaoResultsMessage)) and kakaoResults != null and #lists.isEmpty(kakaoResults)}">
-            <p>표시할 카카오 검색 결과가 없습니다.</p>
-        </div>
+  <div class="empty-state" th:if="${(kakaoResultsMessage == null or #strings.isEmpty(kakaoResultsMessage)) and kakaoResults != null and #lists.isEmpty(kakaoResults)}">
+   <p>표시할 카카오 검색 결과가 없습니다.</p>
+  </div>
 
-        <div class="salon-grid salon-grid--external"
-             th:if="${kakaoResults != null and !#lists.isEmpty(kakaoResults)}">
-            <div class="salon-card salon-branch-card"
-                 th:each="place : ${kakaoResults}">
-                <div class="salon-card__image">
-                    <img th:if="${place.thumbnailUrl != null and !#strings.isEmpty(place.thumbnailUrl)}"
-                         th:src="${place.thumbnailUrl}"
-                         th:alt="${place.placeName + ' 이미지'}"
-                         loading="lazy">
-                    <span th:unless="${place.thumbnailUrl != null and !#strings.isEmpty(place.thumbnailUrl)}">KAKAO</span>
-                </div>
-                <div class="salon-card__body">
-                    <div class="salon-card__title-row">
-                        <h2 class="salon-card__name" th:text="${place.placeName}">외부 살롱명</h2>
-                        <span class="salon-status-badge salon-status-badge--on">외부 결과</span>
-                    </div>
-                    <div class="salon-branch-card__info">
-                        <p class="salon-card__meta">
-                            <strong>주소</strong>
-                            <span th:text="${#strings.isEmpty(place.roadAddressName) ? place.addressName : place.roadAddressName}">
-                                주소
-                            </span>
-                        </p>
-                        <p class="salon-card__meta">
-                            <strong>전화</strong>
-                            <span th:text="${#strings.isEmpty(place.phone) ? '전화 정보 없음' : place.phone}">
-                                전화번호
-                            </span>
-                        </p>
-                    </div>
-                    <div class="salon-card__footer salon-card__footer--single">
-                        <a class="btn btn-outline"
-                           th:if="${place.placeUrl != null and !#strings.isEmpty(place.placeUrl)}"
-                           th:href="${place.placeUrl}"
-                           target="_blank"
-                           rel="noopener">
-                            카카오 상세
-                        </a>
-                        <span class="btn btn-outline salon-card__action-placeholder"
-                              th:unless="${place.placeUrl != null and !#strings.isEmpty(place.placeUrl)}">
-                            링크 없음
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+  <div class="salon-grid salon-grid--external" th:if="${kakaoResults != null and !#lists.isEmpty(kakaoResults)}">
+   <div class="salon-card salon-branch-card" th:each="place : ${kakaoResults}">
+	<div class="salon-card__image">
+	 <img th:if="${place.thumbnailUrl != null and !#strings.isEmpty(place.thumbnailUrl)}" th:src="${place.thumbnailUrl}" th:alt="${place.placeName + ' 이미지'}" loading="lazy">
+	 <span th:unless="${place.thumbnailUrl != null and !#strings.isEmpty(place.thumbnailUrl)}">KAKAO</span>
+	</div>
+	<div class="salon-card__body">
+	 <div class="salon-card__title-row">
+	  <h2 class="salon-card__name" th:text="${place.placeName}">외부 살롱명</h2>
+	  <span class="salon-status-badge salon-status-badge--on">외부 결과</span>
+	 </div>
+	 <div class="salon-branch-card__info">
+	  <p class="salon-card__meta">
+	   <strong>주소</strong>
+	   <span th:text="${#strings.isEmpty(place.roadAddressName) ? place.addressName : place.roadAddressName}">주소</span>
+	  </p>
+	  <p class="salon-card__meta">
+	   <strong>전화</strong>
+	   <span th:text="${#strings.isEmpty(place.phone) ? '전화 정보 없음' : place.phone}">전화번호</span>
+	  </p>
+	  <p class="salon-card__meta">
+	   <strong>평점</strong>
+	   <span th:if="${place.averageRating != null}" th:text="|${place.averageRating} / 리뷰 ${place.reviewCount}|">평점</span>
+	   <span th:unless="${place.averageRating != null}">평점 정보 없음</span>
+	  </p>
+	 </div>
+	 <div class="salon-card__footer salon-card__footer--single">
+	  <a class="btn btn-outline" th:if="${place.placeUrl != null and !#strings.isEmpty(place.placeUrl)}" th:href="${place.placeUrl}" target="_blank" rel="noopener">
+	   카카오 상세
+	  </a>
+	  <span class="btn btn-outline salon-card__action-placeholder" th:unless="${place.placeUrl != null and !#strings.isEmpty(place.placeUrl)}">링크 없음</span>
+	 </div>
+	</div>
+   </div>
+  </div>
+ </section>
 </th:block>
 
 <th:block th:fragment="salonResults(salons, branchView, emptyMessage)">
-    <div class="empty-state" th:if="${#lists.isEmpty(salons)}">
-        <p th:text="${emptyMessage}">조건에 맞는 미용실이 없습니다.</p>
-    </div>
+ <div class="empty-state" th:if="${#lists.isEmpty(salons)}">
+  <p th:text="${emptyMessage}">조건에 맞는 미용실이 없습니다.</p>
+ </div>
 
-    <div class="salon-grid" th:unless="${#lists.isEmpty(salons)}">
-        <div class="salon-card"
-             th:each="salon : ${salons}"
-             th:classappend="${branchView} ? ' salon-branch-card' : ''"
-             th:attr="data-salon-id=${branchView ? salon.salonId : null}">
-            <div class="salon-card__image"
-                 th:text="${salon.imageUrl != null and !#strings.isEmpty(salon.imageUrl) ? (branchView ? 'BRANCH' : 'IMAGE') : 'SALON'}">
-                SALON
-            </div>
+ <div class="salon-grid" th:unless="${#lists.isEmpty(salons)}">
+  <div class="salon-card" th:each="salon : ${salons}" th:classappend="${branchView} ? ' salon-branch-card' : ''" th:attr="data-salon-id=${branchView ? salon.salonId : null}">
+   <div class="salon-card__image" th:text="${salon.imageUrl != null and !#strings.isEmpty(salon.imageUrl) ? (branchView ? 'BRANCH' : 'IMAGE') : 'SALON'}">
+	SALON
+   </div>
 
-            <div class="salon-card__body">
-                <div class="salon-card__title-row">
-                    <h2 class="salon-card__name">
-                        <a th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.name}">살롱명</a>
-                    </h2>
-                    <span class="salon-status-badge salon-status-badge--on"
-                          th:if="${salon.reservable}">예약 가능</span>
-                    <span class="salon-status-badge salon-status-badge--off"
-                          th:unless="${salon.reservable}">예약 준비중</span>
-                </div>
+   <div class="salon-card__body">
+	<div class="salon-card__title-row">
+	 <h2 class="salon-card__name">
+	  <a th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.name}">살롱명</a>
+	 </h2>
+	 <span class="salon-status-badge salon-status-badge--on" th:if="${salon.reservable}">예약 가능</span>
+	 <span class="salon-status-badge salon-status-badge--off" th:unless="${salon.reservable}">예약 준비중</span>
+	</div>
 
-                <th:block th:if="${branchView}">
-                    <div class="salon-branch-card__info">
-                        <p class="salon-card__meta">
-                            <strong>주소</strong>
-                            <span th:text="${#strings.isEmpty(salon.roadAddress) ? salon.address : salon.roadAddress}">주소</span>
-                        </p>
-                        <p class="salon-card__meta">
-                            <strong>전화</strong>
-                            <span th:text="${#strings.isEmpty(salon.phone) ? '전화 정보 없음' : salon.phone}">전화번호</span>
-                        </p>
-                        <p class="salon-card__meta"
-                           th:text="|평점 ${salon.averageRating} / 리뷰 ${salon.reviewCount} / 좋아요 ${salon.likeCount}|">
-                            통계
-                        </p>
-                    </div>
-                </th:block>
+	<th:block th:if="${branchView}">
+	 <div class="salon-branch-card__info">
+	  <p class="salon-card__meta">
+	   <strong>주소</strong>
+	   <span th:text="${#strings.isEmpty(salon.roadAddress) ? salon.address : salon.roadAddress}">주소</span>
+	  </p>
+	  <p class="salon-card__meta">
+	   <strong>전화</strong>
+	   <span th:text="${#strings.isEmpty(salon.phone) ? '전화 정보 없음' : salon.phone}">전화번호</span>
+	  </p>
+	  <p class="salon-card__meta" th:text="|평점 ${salon.averageRating} / 리뷰 ${salon.reviewCount} / 좋아요 ${salon.likeCount}|">
+	   통계 </p>
+	 </div>
+	</th:block>
 
-                <th:block th:unless="${branchView}">
-                    <p class="salon-card__meta" th:text="${salon.address}">주소</p>
-                    <p class="salon-card__meta"
-                       th:text="|평점 ${salon.averageRating} / 리뷰 ${salon.reviewCount} / 좋아요 ${salon.likeCount}|">
-                        통계
-                    </p>
-                </th:block>
+	<th:block th:unless="${branchView}">
+	 <p class="salon-card__meta" th:text="${salon.address}">주소</p>
+	 <p class="salon-card__meta" th:text="|평점 ${salon.averageRating} / 리뷰 ${salon.reviewCount} / 좋아요 ${salon.likeCount}|">
+	  통계 </p>
+	</th:block>
 
-                <div class="salon-card__footer">
-                    <a class="btn btn-outline" th:href="@{/salons/{id}(id=${salon.salonId})}">상세 보기</a>
-                    <a class="btn btn-primary"
-                       th:href="@{/salons/{id}(id=${salon.salonId})}"
-                       th:text="${salon.reservable} ? '예약 페이지' : '살롱 보기'">
-                        상세 보기
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+	<div class="salon-card__footer">
+	 <a class="btn btn-outline" th:href="@{/salons/{id}(id=${salon.salonId})}">상세 보기</a>
+	 <a class="btn btn-primary" th:href="@{/salons/{id}(id=${salon.salonId})}" th:text="${salon.reservable} ? '예약 페이지' : '살롱 보기'">
+	  상세 보기
+	 </a>
+	</div>
+   </div>
+  </div>
+ </div>
 </th:block>
 
 </html>

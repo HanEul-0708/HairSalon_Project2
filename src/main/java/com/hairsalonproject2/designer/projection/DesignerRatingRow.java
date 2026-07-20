@@ -1,9 +1,9 @@
 package com.hairsalonproject2.designer.projection;
 
 public interface DesignerRatingRow {
-    Integer getDesignerId();
+ Integer getDesignerId();
 
-    Double getAverageRating();
+ Double getAverageRating();
 
-    Long getReviewCount();
+ Long getReviewCount();
 }

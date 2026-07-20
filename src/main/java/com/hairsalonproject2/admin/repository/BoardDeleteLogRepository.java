@@ -11,5 +11,5 @@ import java.util.List;
  */
 public interface BoardDeleteLogRepository extends JpaRepository<BoardDeleteLog, Long> {
 
-    List<BoardDeleteLog> findTop10ByOrderByCreatedAtDesc();
+ List<BoardDeleteLog> findTop10ByOrderByCreatedAtDesc();
 }

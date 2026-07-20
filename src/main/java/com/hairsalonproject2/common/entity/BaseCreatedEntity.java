@@ -30,16 +30,16 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 public abstract class BaseCreatedEntity {
 
-    /*
-     * 생성일시
-     *
-     * DB의 created_at 컬럼과 매핑된다.
-     * 엔티티가 처음 저장될 때 Hibernate가 자동으로 현재 시간을 넣어준다.
-     *
-     * updatable = false
-     * -> 한 번 생성된 뒤에는 수정되지 않도록 설정
-     */
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+ /*
+  * 생성일시
+  *
+  * DB의 created_at 컬럼과 매핑된다.
+  * 엔티티가 처음 저장될 때 Hibernate가 자동으로 현재 시간을 넣어준다.
+  *
+  * updatable = false
+  * -> 한 번 생성된 뒤에는 수정되지 않도록 설정
+  */
+ @CreationTimestamp
+ @Column(name = "created_at", updatable = false)
+ private LocalDateTime createdAt;
 }

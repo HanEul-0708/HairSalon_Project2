@@ -7,9 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableJpaAuditing
 @SpringBootApplication
 public class HairSalonProject2Application {
-
-	public static void main(String[] args) {
-		SpringApplication.run(HairSalonProject2Application.class, args);
-	}
-
+ public static void main(String[] args) {
+  SpringApplication.run(HairSalonProject2Application.class, args);
+ }
 }

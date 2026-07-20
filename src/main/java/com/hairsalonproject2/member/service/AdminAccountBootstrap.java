@@ -17,38 +17,28 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminAccountBootstrap implements ApplicationRunner {
 
-    private static final String ADMIN_ID = "admin1";
-    private static final String ADMIN_PASSWORD = "12341234";
-    private static final String ADMIN_NAME = "관리자1";
-    private static final String ADMIN_EMAIL = "admin1@test.com";
-    private static final String ADMIN_PHONE = "010-1234-5678";
+ private static final String ADMIN_ID = "admin1";
+ private static final String ADMIN_PASSWORD = "12341234";
+ private static final String ADMIN_NAME = "관리자1";
+ private static final String ADMIN_EMAIL = "admin1@test.com";
+ private static final String ADMIN_PHONE = "010-1234-5678";
 
-    private final MemberRepository memberRepository;
-    private final PasswordEncoder passwordEncoder;
+ private final MemberRepository memberRepository;
+ private final PasswordEncoder passwordEncoder;
 
-    @Override
-    @Transactional
-    public void run(ApplicationArguments args) {
-        ensureAdminAccount();
-    }
+ @Override
+ @Transactional
+ public void run(ApplicationArguments args) {
+  ensureAdminAccount();
+ }
 
-    @Transactional
-    public void ensureAdminAccount() {
-        if (memberRepository.existsByMemberId(ADMIN_ID)) {
-            return;
-        }
-
-        Member admin = Member.builder()
-                .memberId(ADMIN_ID)
-                .password(passwordEncoder.encode(ADMIN_PASSWORD))
-                .name(ADMIN_NAME)
-                .phone(ADMIN_PHONE)
-                .email(ADMIN_EMAIL)
-                .role(MemberRole.ADMIN)
-                .status(MemberStatus.ACTIVE)
-                .build();
-
-        memberRepository.save(admin);
-        log.info("Bootstrapped default admin account '{}'.", ADMIN_ID);
-    }
+ @Transactional
+ public void ensureAdminAccount() {
+  if (memberRepository.existsByMemberId(ADMIN_ID)) {
+   return;
+  }
+  Member admin = Member.builder().memberId(ADMIN_ID).password(passwordEncoder.encode(ADMIN_PASSWORD)).name(ADMIN_NAME).phone(ADMIN_PHONE).email(ADMIN_EMAIL).role(MemberRole.ADMIN).status(MemberStatus.ACTIVE).build();
+  memberRepository.save(admin);
+  log.info("Bootstrapped default admin account '{}'.", ADMIN_ID);
+ }
 }
