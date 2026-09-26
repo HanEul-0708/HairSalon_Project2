@@ -34,9 +34,7 @@ public class AdminAccountBootstrap implements ApplicationRunner {
 
  @Transactional
  public void ensureAdminAccount() {
-  if (memberRepository.existsByMemberId(ADMIN_ID)) {
-   return;
-  }
+  if (memberRepository.existsByMemberId(ADMIN_ID)) return;
   Member admin = Member.builder().memberId(ADMIN_ID).password(passwordEncoder.encode(ADMIN_PASSWORD)).name(ADMIN_NAME).phone(ADMIN_PHONE).email(ADMIN_EMAIL).role(MemberRole.ADMIN).status(MemberStatus.ACTIVE).build();
   memberRepository.save(admin);
   log.info("Bootstrapped default admin account '{}'.", ADMIN_ID);

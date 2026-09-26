@@ -17,5 +17,7 @@ public interface ServicePriceCompareRow {
 
  String getAddress();
 
+ String getRoadAddress();
+
  BigDecimal getAverageRating();
 }

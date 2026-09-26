@@ -1,5 +1,6 @@
 package com.hairsalonproject2.member.service;
 
+import com.hairsalonproject2.common.catalog.CatalogIntegrityService;
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.common.exception.BusinessException;
@@ -33,6 +34,7 @@ public class MemberService {
  private final DesignerRepository designerRepository;
  private final MemberRepository memberRepository;
  private final PasswordEncoder passwordEncoder;
+ private final CatalogIntegrityService catalogIntegrityService;
 
  @Transactional
  public void signup(MemberSignupRequest request) {
@@ -40,18 +42,11 @@ public class MemberService {
   String normalizedName = normalizeName(request.getName());
   String normalizedPhone = normalizePhone(request.getPhone());
   String normalizedEmail = normalizeEmail(request.getEmail());
-  if (!request.getPassword().equals(request.getPasswordConfirm())) {
+  if (!request.getPassword().equals(request.getPasswordConfirm()))
    throw new BusinessException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
-  }
-  if (memberRepository.existsByMemberId(normalizedMemberId)) {
-   throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_ID);
-  }
-  if (memberRepository.existsByEmail(normalizedEmail)) {
-   throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_EMAIL);
-  }
-  if (memberRepository.existsByPhone(normalizedPhone)) {
-   throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_PHONE);
-  }
+  if (memberRepository.existsByMemberId(normalizedMemberId)) throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_ID);
+  if (memberRepository.existsByEmail(normalizedEmail)) throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_EMAIL);
+  if (memberRepository.existsByPhone(normalizedPhone)) throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_PHONE);
   Member member = Member.builder().memberId(normalizedMemberId).password(passwordEncoder.encode(request.getPassword())).name(normalizedName).phone(normalizedPhone).email(normalizedEmail).role(MemberRole.USER).status(MemberStatus.ACTIVE).build();
   memberRepository.save(member);
  }
@@ -62,43 +57,33 @@ public class MemberService {
 
  public boolean isMemberIdAvailable(String memberId) {
   String normalizedMemberId = normalizeMemberId(memberId);
-  if (normalizedMemberId == null) {
-   return false;
-  }
+  if (normalizedMemberId == null) return false;
   return !memberRepository.existsByMemberId(normalizedMemberId);
  }
 
  public boolean isEmailAvailable(String email) {
   String normalizedEmail = normalizeEmail(email);
-  if (normalizedEmail == null) {
-   return false;
-  }
+  if (normalizedEmail == null) return false;
   return !memberRepository.existsByEmail(normalizedEmail);
  }
 
  public boolean isPhoneAvailable(String phone) {
   String normalizedPhone = normalizePhone(phone);
-  if (normalizedPhone == null) {
-   return false;
-  }
+  if (normalizedPhone == null) return false;
   return !memberRepository.existsByPhone(normalizedPhone);
  }
 
  public boolean isEmailAvailableForUpdate(String memberId, String email) {
   String normalizedMemberId = normalizeMemberId(memberId);
   String normalizedEmail = normalizeEmail(email);
-  if (normalizedMemberId == null || normalizedEmail == null) {
-   return false;
-  }
+  if (normalizedMemberId == null || normalizedEmail == null) return false;
   return memberRepository.findByEmail(normalizedEmail).map(found -> found.getMemberId().equals(normalizedMemberId)).orElse(true);
  }
 
  public boolean isPhoneAvailableForUpdate(String memberId, String phone) {
   String normalizedMemberId = normalizeMemberId(memberId);
   String normalizedPhone = normalizePhone(phone);
-  if (normalizedMemberId == null || normalizedPhone == null) {
-   return false;
-  }
+  if (normalizedMemberId == null || normalizedPhone == null) return false;
   return memberRepository.findByPhone(normalizedPhone).map(found -> found.getMemberId().equals(normalizedMemberId)).orElse(true);
  }
 
@@ -109,20 +94,12 @@ public class MemberService {
   String normalizedName = normalizeName(request.getName());
   String normalizedPhone = normalizePhone(request.getPhone());
   String normalizedEmail = normalizeEmail(request.getEmail());
-  if (normalizedEmail != null) {
-   memberRepository.findByEmail(normalizedEmail).ifPresent(found -> {
-	if (!found.getMemberId().equals(memberId)) {
-	 throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_EMAIL);
-	}
-   });
-  }
-  if (normalizedPhone != null) {
-   memberRepository.findByPhone(normalizedPhone).ifPresent(found -> {
-	if (!found.getMemberId().equals(memberId)) {
-	 throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_PHONE);
-	}
-   });
-  }
+  if (normalizedEmail != null) memberRepository.findByEmail(normalizedEmail).ifPresent(found -> {
+   if (!found.getMemberId().equals(memberId)) throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_EMAIL);
+  });
+  if (normalizedPhone != null) memberRepository.findByPhone(normalizedPhone).ifPresent(found -> {
+   if (!found.getMemberId().equals(memberId)) throw new BusinessException(ErrorCode.DUPLICATE_MEMBER_PHONE);
+  });
   member.updateProfile(normalizedName, normalizedPhone, normalizedEmail);
  }
 
@@ -130,12 +107,10 @@ public class MemberService {
  public void changePassword(String memberId, MemberPasswordChangeRequest request) {
   Member member = getMember(memberId);
   ensureMemberCanBeModified(member);
-  if (!request.getNewPassword().equals(request.getNewPasswordConfirm())) {
+  if (!request.getNewPassword().equals(request.getNewPasswordConfirm()))
    throw new BusinessException(ErrorCode.PASSWORD_CONFIRM_NOT_MATCH);
-  }
-  if (!passwordEncoder.matches(request.getCurrentPassword(), member.getPassword())) {
+  if (!passwordEncoder.matches(request.getCurrentPassword(), member.getPassword()))
    throw new BusinessException(ErrorCode.INVALID_PASSWORD);
-  }
   member.changePassword(passwordEncoder.encode(request.getNewPassword()));
  }
 
@@ -155,44 +130,32 @@ public class MemberService {
 
  @Transactional
  public void softDeleteByAdmin(String adminMemberId, String targetMemberId) {
-  if (adminMemberId.equals(targetMemberId)) {
-   throw new BusinessException(ErrorCode.CANNOT_DELETE_MYSELF);
-  }
+  if (adminMemberId.equals(targetMemberId)) throw new BusinessException(ErrorCode.CANNOT_DELETE_MYSELF);
   Member targetMember = getMember(targetMemberId);
   if (targetMember.getRole() == MemberRole.ADMIN) {
    long adminCount = memberRepository.countByRole(MemberRole.ADMIN);
-   if (adminCount <= 1) {
-	throw new BusinessException(ErrorCode.LAST_ADMIN_CANNOT_BE_DELETED);
-   }
+   if (adminCount <= 1) throw new BusinessException(ErrorCode.LAST_ADMIN_CANNOT_BE_DELETED);
   }
   memberRepository.delete(targetMember);
  }
 
  @Transactional
  public void changeMemberRoleByAdmin(String adminMemberId, String targetMemberId, MemberRole role) {
-  if (adminMemberId.equals(targetMemberId)) {
-   throw new BusinessException(ErrorCode.CANNOT_CHANGE_MY_ROLE);
-  }
-  Member member = getMember(targetMemberId);
+  if (adminMemberId.equals(targetMemberId)) throw new BusinessException(ErrorCode.CANNOT_CHANGE_MY_ROLE);
+  Member member = memberRepository.findByIdForUpdate(targetMemberId)
+    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
   ensureMemberCanBeModified(member);
   if (member.getRole() == MemberRole.ADMIN && role != MemberRole.ADMIN) {
    long adminCount = memberRepository.countByRole(MemberRole.ADMIN);
-   if (adminCount <= 1) {
-	throw new BusinessException(ErrorCode.LAST_ADMIN_ROLE_CANNOT_BE_CHANGED);
-   }
+   if (adminCount <= 1) throw new BusinessException(ErrorCode.LAST_ADMIN_ROLE_CANNOT_BE_CHANGED);
   }
-  boolean isLinkedDesigner = designerRepository.existsByMember_MemberId(targetMemberId);
-  if (isLinkedDesigner && role != MemberRole.DESIGNER) {
-   throw new BusinessException(ErrorCode.CONNECTED_DESIGNER_ACCOUNT_ROLE_CHANGE_NOT_ALLOWED);
-  }
+  catalogIntegrityService.assertDesignerMemberRoleChangeAllowed(targetMemberId, role);
   member.changeRole(role);
  }
 
  @Transactional
  public void changeStatusByAdmin(String adminMemberId, String targetMemberId, MemberStatus status) {
-  if (adminMemberId.equals(targetMemberId)) {
-   throw new BusinessException(ErrorCode.CANNOT_CHANGE_MY_STATUS);
-  }
+  if (adminMemberId.equals(targetMemberId)) throw new BusinessException(ErrorCode.CANNOT_CHANGE_MY_STATUS);
   Member member = getMember(targetMemberId);
   validateStatusTransition(member, status);
   applyStatusChange(member, status);
@@ -210,19 +173,14 @@ public class MemberService {
  }
 
  private Sort createSort(String sort) {
-  if ("name".equalsIgnoreCase(sort)) {
-   return Sort.by(Sort.Order.asc("name"), Sort.Order.desc("createdAt"));
-  }
-  if ("role".equalsIgnoreCase(sort)) {
-   return Sort.by(Sort.Order.asc("role"), Sort.Order.desc("createdAt"));
-  }
+  if ("name".equalsIgnoreCase(sort)) return Sort.by(Sort.Order.asc("name"), Sort.Order.desc("createdAt"));
+  if ("role".equalsIgnoreCase(sort)) return Sort.by(Sort.Order.asc("role"), Sort.Order.desc("createdAt"));
   return Sort.by(Sort.Order.desc("createdAt"));
  }
 
  private void ensureMemberCanBeModified(Member member) {
-  if (member.getStatus() == MemberStatus.DELETED) {
+  if (member.getStatus() == MemberStatus.DELETED)
    throw new BusinessException(ErrorCode.DELETED_MEMBER_MODIFICATION_NOT_ALLOWED);
-  }
  }
 
  private void validateStatusTransition(Member member, MemberStatus targetStatus) {
@@ -235,33 +193,25 @@ public class MemberService {
  }
 
  private String normalizeMemberId(String memberId) {
-  if (memberId == null) {
-   return null;
-  }
+  if (memberId == null) return null;
   String normalized = memberId.trim();
   return normalized.isEmpty() ? null : normalized;
  }
 
  private String normalizeName(String name) {
-  if (name == null) {
-   return null;
-  }
+  if (name == null) return null;
   String normalized = name.trim();
   return normalized.isEmpty() ? null : normalized;
  }
 
  private String normalizePhone(String phone) {
-  if (phone == null) {
-   return null;
-  }
+  if (phone == null) return null;
   String normalized = phone.trim();
   return normalized.isEmpty() ? null : normalized;
  }
 
  private String normalizeEmail(String email) {
-  if (email == null) {
-   return null;
-  }
+  if (email == null) return null;
   String normalized = email.trim().toLowerCase(Locale.ROOT);
   return normalized.isEmpty() ? null : normalized;
  }

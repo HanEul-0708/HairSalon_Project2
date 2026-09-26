@@ -79,9 +79,8 @@ public class ReservationController {
 
  private void validateReservationAccess(CustomUserDetails userDetails, Integer reservationId) {
   ReservationResponse reservation = reservationService.getReservation(reservationId);
-  if (!isAdmin(userDetails) && !reservation.getMemberId().equals(userDetails.getMember().getMemberId())) {
+  if (!isAdmin(userDetails) && !reservation.getMemberId().equals(userDetails.getMember().getMemberId()))
    throw new org.springframework.security.access.AccessDeniedException("You can only access your own reservation.");
-  }
  }
 
  private boolean isAdmin(CustomUserDetails userDetails) {
@@ -89,8 +88,7 @@ public class ReservationController {
  }
 
  private void validateMemberAccess(CustomUserDetails userDetails, String memberId) {
-  if (!isAdmin(userDetails) && !memberId.equals(userDetails.getMember().getMemberId())) {
+  if (!isAdmin(userDetails) && !memberId.equals(userDetails.getMember().getMemberId()))
    throw new org.springframework.security.access.AccessDeniedException("You can only access your own reservations.");
-  }
  }
 }

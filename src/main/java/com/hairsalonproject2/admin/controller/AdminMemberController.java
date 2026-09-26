@@ -71,11 +71,8 @@ public class AdminMemberController {
  @PostMapping("/seed")
  public String seedDummyMembers(RedirectAttributes redirectAttributes) {
   int created = dummyMemberSeeder.seedMembers();
-  if (created > 0) {
-   redirectAttributes.addFlashAttribute("successMessage", created + "개의 더미 회원을 생성했습니다.");
-  } else {
-   redirectAttributes.addFlashAttribute("successMessage", "추가로 생성할 더미 회원이 없습니다.");
-  }
+  if (created > 0) redirectAttributes.addFlashAttribute("successMessage", created + "개의 더미 회원을 생성했습니다.");
+  else redirectAttributes.addFlashAttribute("successMessage", "추가로 생성할 더미 회원이 없습니다.");
   return "redirect:/admin/members";
  }
 

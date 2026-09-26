@@ -48,29 +48,21 @@ public class AdminReservationController {
  @PostMapping("/seed")
  public String seedReservations(RedirectAttributes redirectAttributes) {
   int created = reservationDummySeeder.seedReservations();
-  if (created > 0) {
-   redirectAttributes.addFlashAttribute("successMessage", created + "개의 예약 더미를 생성했습니다.");
-  } else {
-   redirectAttributes.addFlashAttribute("successMessage", "추가로 생성할 예약 더미가 없습니다.");
-  }
+  if (created > 0) redirectAttributes.addFlashAttribute("successMessage", created + "개의 예약 더미를 생성했습니다.");
+  else redirectAttributes.addFlashAttribute("successMessage", "추가로 생성할 예약 더미가 없습니다.");
   return "redirect:/admin/reservations";
  }
 
  @PostMapping("/seed-reviews")
  public String seedReviews(RedirectAttributes redirectAttributes) {
   int created = reviewDummySeeder.seedReviewsFromCompletedReservations();
-  if (created > 0) {
-   redirectAttributes.addFlashAttribute("successMessage", created + "개의 리뷰 더미를 생성했습니다.");
-  } else {
-   redirectAttributes.addFlashAttribute("successMessage", "리뷰를 생성할 완료 예약이 없습니다.");
-  }
+  if (created > 0) redirectAttributes.addFlashAttribute("successMessage", created + "개의 리뷰 더미를 생성했습니다.");
+  else redirectAttributes.addFlashAttribute("successMessage", "리뷰를 생성할 완료 예약이 없습니다.");
   return "redirect:/admin/reservations";
  }
 
  private boolean matchesKeyword(ReservationResponse reservation, String keyword) {
-  if (keyword == null || keyword.isBlank()) {
-   return true;
-  }
+  if (keyword == null || keyword.isBlank()) return true;
   String normalized = keyword.trim().toLowerCase(Locale.ROOT);
   return contains(reservation.getMemberId(), normalized) || contains(reservation.getDesignerName(), normalized) || contains(reservation.getServiceName(), normalized) || contains(String.valueOf(reservation.getReservationId()), normalized);
  }

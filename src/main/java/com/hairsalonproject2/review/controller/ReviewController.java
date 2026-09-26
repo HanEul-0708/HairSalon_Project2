@@ -100,22 +100,15 @@ public class ReviewController {
  }
 
  private String getVisitorToken(HttpServletRequest request) {
-  if (request.getCookies() == null) {
-   return null;
-  }
-  for (Cookie cookie : request.getCookies()) {
-   if (REVIEW_VISITOR_COOKIE.equals(cookie.getName())) {
-	return cookie.getValue();
-   }
-  }
+  if (request.getCookies() == null) return null;
+  for (Cookie cookie : request.getCookies())
+   if (REVIEW_VISITOR_COOKIE.equals(cookie.getName())) return cookie.getValue();
   return null;
  }
 
  private String ensureVisitorToken(HttpServletRequest request, HttpServletResponse response) {
   String token = getVisitorToken(request);
-  if (token != null && !token.isBlank()) {
-   return token;
-  }
+  if (token != null && !token.isBlank()) return token;
   String generatedToken = UUID.randomUUID().toString();
   Cookie cookie = new Cookie(REVIEW_VISITOR_COOKIE, generatedToken);
   cookie.setHttpOnly(true);

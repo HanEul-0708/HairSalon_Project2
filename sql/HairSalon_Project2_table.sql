@@ -79,7 +79,7 @@ CREATE TABLE salon
 (
  salon_id       INT AUTO_INCREMENT PRIMARY KEY,      -- 미용실 PK
 
- external_id    VARCHAR(100) UNIQUE,                 -- 외부 API 연동용 식별자
+ external_id    VARCHAR(100),                 -- 외부 API 연동용 식별자
  source_type    VARCHAR(30),                         -- 외부 API 출처 (KAKAO / NAVER 등)
 
  name           VARCHAR(100)  NOT NULL,              -- 미용실 이름
@@ -107,7 +107,8 @@ CREATE TABLE salon
  -- 데이터 무결성 체크
  CHECK (average_rating BETWEEN 0 AND 5),
  CHECK (review_count >= 0),
- CHECK (like_count >= 0)
+ CHECK (like_count >= 0),
+ CONSTRAINT uq_salon_external UNIQUE (source_type, external_id)
 );
 
 
@@ -137,7 +138,7 @@ CREATE TABLE designer
 
  CHECK (career_years >= 0),
 
- FOREIGN KEY (salon_id) REFERENCES salon (salon_id) ON DELETE CASCADE,
+ FOREIGN KEY (salon_id) REFERENCES salon (salon_id) ON DELETE RESTRICT,
  FOREIGN KEY (member_id) REFERENCES member (member_id) ON DELETE SET NULL
 );
 
@@ -165,7 +166,7 @@ CREATE TABLE salon_service
  CHECK (price >= 0),
  CHECK (duration > 0),
 
- FOREIGN KEY (salon_id) REFERENCES salon (salon_id) ON DELETE CASCADE
+ FOREIGN KEY (salon_id) REFERENCES salon (salon_id) ON DELETE RESTRICT
 );
 
 
@@ -200,8 +201,8 @@ CREATE TABLE reservation
  CHECK (total_price >= 0),
 
  FOREIGN KEY (member_id) REFERENCES member (member_id) ON DELETE CASCADE,
- FOREIGN KEY (designer_id) REFERENCES designer (designer_id) ON DELETE CASCADE,
- FOREIGN KEY (service_id) REFERENCES salon_service (service_id) ON DELETE CASCADE
+ FOREIGN KEY (designer_id) REFERENCES designer (designer_id) ON DELETE RESTRICT,
+ FOREIGN KEY (service_id) REFERENCES salon_service (service_id) ON DELETE RESTRICT
 );
 
 
@@ -262,7 +263,7 @@ CREATE TABLE review
 
  FOREIGN KEY (reservation_id) REFERENCES reservation (reservation_id) ON DELETE CASCADE,
  FOREIGN KEY (member_id) REFERENCES member (member_id) ON DELETE CASCADE,
- FOREIGN KEY (designer_id) REFERENCES designer (designer_id) ON DELETE CASCADE
+ FOREIGN KEY (designer_id) REFERENCES designer (designer_id) ON DELETE RESTRICT
 );
 
 
@@ -378,6 +379,18 @@ CREATE TABLE board_file
 -- - 회원이 미용실에 좋아요(찜) 누른 정보 저장
 -- - 같은 회원이 같은 미용실에 중복 좋아요 불가
 -- =========================================================
+CREATE TABLE designer_like
+(
+ id          INT AUTO_INCREMENT PRIMARY KEY,
+ member_id   VARCHAR(30) NOT NULL,
+ designer_id INT NOT NULL,
+ created_at  DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
+
+ CONSTRAINT uq_designer_like UNIQUE (member_id, designer_id),
+ CONSTRAINT fk_designer_like_member FOREIGN KEY (member_id) REFERENCES member (member_id) ON DELETE RESTRICT,
+ CONSTRAINT fk_designer_like_designer FOREIGN KEY (designer_id) REFERENCES designer (designer_id) ON DELETE CASCADE
+);
+
 CREATE TABLE salon_like
 (
  like_id    INT AUTO_INCREMENT PRIMARY KEY, -- 좋아요 PK

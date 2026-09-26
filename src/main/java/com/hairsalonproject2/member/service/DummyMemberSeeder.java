@@ -38,9 +38,7 @@ public class DummyMemberSeeder implements ApplicationRunner {
  @Override
  @Transactional
  public void run(ApplicationArguments args) {
-  if (!enabled) {
-   return;
-  }
+  if (!enabled) return;
   seedMembers();
  }
 
@@ -50,25 +48,19 @@ public class DummyMemberSeeder implements ApplicationRunner {
   int created = 0;
   created += seedRole(MemberRole.DESIGNER, "designer", "디자이너", targetDesignerCount, encodedPassword, 2000);
   created += seedRole(MemberRole.USER, "user", "회원", targetUserCount, encodedPassword, 3000);
-  if (created > 0) {
-   log.info("Seeded {} dummy members for local profile.", created);
-  }
+  if (created > 0) log.info("Seeded {} dummy members for local profile.", created);
   return created;
  }
 
  private int seedRole(MemberRole role, String idPrefix, String namePrefix, int targetCount, String encodedPassword, int phoneBase) {
   long existingCount = memberRepository.countByRoleAndStatus(role, MemberStatus.ACTIVE);
-  if (existingCount >= targetCount) {
-   return 0;
-  }
+  if (existingCount >= targetCount) return 0;
   int created = 0;
   int sequence = 1;
   while (existingCount + created < targetCount) {
    String memberId = idPrefix + sequence;
    sequence++;
-   if (memberRepository.existsByMemberId(memberId)) {
-	continue;
-   }
+   if (memberRepository.existsByMemberId(memberId)) continue;
    Member member = Member.builder().memberId(memberId).password(encodedPassword).name(namePrefix + (sequence - 1)).phone(buildPhone(phoneBase + sequence - 1)).email(memberId + "@example.com").role(role).status(MemberStatus.ACTIVE).build();
    memberRepository.save(member);
    created++;

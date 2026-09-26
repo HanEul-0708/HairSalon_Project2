@@ -1384,6 +1384,59 @@ textarea.form-control {
  pointer-events: none;
 }
 
+.pagination--catalog {
+ flex-wrap: wrap;
+ gap: 8px;
+ padding: 24px 0 0;
+ border-top: 1px solid var(--gold-border);
+}
+
+.pagination--catalog .page-link {
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ min-width: 42px;
+ min-height: 42px;
+ padding: 8px 14px;
+ border: 1px solid var(--gold-border);
+ border-radius: var(--radius-full);
+ background: var(--white);
+ color: var(--text-sub);
+ font-size: 0.875rem;
+ font-weight: 600;
+ line-height: 1.4;
+ text-decoration: none;
+ box-shadow: var(--shadow-sm);
+ transition: var(--transition);
+}
+
+.pagination--catalog .page-link:hover {
+ background: var(--gold-soft);
+ border-color: var(--gold);
+ color: var(--primary);
+ transform: translateY(-2px);
+}
+
+.pagination--catalog .page-link:focus-visible {
+ outline: 2px solid var(--gold);
+ outline-offset: 3px;
+}
+
+.pagination--catalog .page-link.active {
+ background: var(--primary);
+ border-color: var(--primary);
+ color: var(--gold-light);
+ font-weight: 700;
+}
+
+.pagination--catalog .page-link.disabled {
+ background: var(--bg-soft);
+ border-color: var(--border);
+ color: var(--text-muted);
+ box-shadow: none;
+ pointer-events: none;
+}
+
 
 /* =============================================
    17. 알림 메시지

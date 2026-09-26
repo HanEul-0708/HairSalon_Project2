@@ -1,8 +1,11 @@
 package com.hairsalonproject2.admin.controller;
 
+import com.hairsalonproject2.common.catalog.CatalogConflictException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.hairsalonproject2.designer.dto.request.DesignerCreateRequest;
 import com.hairsalonproject2.designer.dto.request.DesignerUpdateRequest;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -33,12 +36,16 @@ public class AdminDesignerController {
   * POST /admin/designers
   */
  @PostMapping
- public String create(@ModelAttribute("form") DesignerCreateRequest request, BindingResult bindingResult) {
-  if (bindingResult.hasErrors()) {
+ public String create(@Valid @ModelAttribute("form") DesignerCreateRequest request, BindingResult bindingResult) {
+  validateSalon(request.getSalonId(), bindingResult);
+  if (bindingResult.hasErrors()) return "designer/form";
+  try {
+   Integer designerId = designerQueryService.create(request);
+   return "redirect:/designers/" + designerId;
+  } catch (CatalogConflictException exception) {
+   rejectConflict(bindingResult, exception);
    return "designer/form";
   }
-  Integer designerId = designerQueryService.create(request);
-  return "redirect:/designers/" + designerId;
  }
 
  @GetMapping("/new")
@@ -71,13 +78,31 @@ public class AdminDesignerController {
   * POST /admin/designers/{designerId}/edit
   */
  @PostMapping("/{designerId}/edit")
- public String update(@PathVariable Integer designerId, @ModelAttribute("form") DesignerUpdateRequest request, BindingResult bindingResult, Model model) {
+ public String update(@PathVariable Integer designerId, @Valid @ModelAttribute("form") DesignerUpdateRequest request, BindingResult bindingResult, Model model) {
+  validateSalon(request.getSalonId(), bindingResult);
   if (bindingResult.hasErrors()) {
    model.addAttribute("designerId", designerId);
    return "designer/form";
   }
-  designerQueryService.update(designerId, request);
-  return "redirect:/designers/" + designerId;
+  try {
+   designerQueryService.update(designerId, request);
+   return "redirect:/designers/" + designerId;
+  } catch (CatalogConflictException exception) {
+   rejectConflict(bindingResult, exception);
+   model.addAttribute("designerId", designerId);
+   return "designer/form";
+  }
+ }
+
+ private void rejectConflict(BindingResult result, CatalogConflictException exception) {
+  if (exception.getField() == null) result.reject("CatalogConflict", exception.getMessage());
+  else result.rejectValue(exception.getField(), "CatalogConflict", exception.getMessage());
+ }
+
+ private void validateSalon(Integer salonId, BindingResult bindingResult) {
+  if (!bindingResult.hasFieldErrors("salonId") && !designerQueryService.existsSalon(salonId)) {
+   bindingResult.rejectValue("salonId", "NotFound", "존재하는 미용실 ID를 입력해 주세요.");
+  }
  }
 
  /**
@@ -88,8 +113,13 @@ public class AdminDesignerController {
   * - HTML form 에서 처리하기 쉽게 DELETE 대신 POST 사용
   */
  @PostMapping("/{designerId}/delete")
- public String delete(@PathVariable Integer designerId) {
-  designerQueryService.delete(designerId);
-  return "redirect:/designers";
+ public String delete(@PathVariable Integer designerId, RedirectAttributes redirectAttributes) {
+  try {
+   designerQueryService.delete(designerId);
+   return "redirect:/designers";
+  } catch (CatalogConflictException exception) {
+   redirectAttributes.addFlashAttribute("message", exception.getMessage());
+   return "redirect:/designers/" + designerId;
+  }
  }
 }

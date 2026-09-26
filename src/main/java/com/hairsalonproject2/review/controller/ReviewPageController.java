@@ -74,38 +74,28 @@ public class ReviewPageController {
  @GetMapping("/reviews/{reviewId}/edit")
  public String reviewEditPage(@PathVariable Integer reviewId, @AuthenticationPrincipal CustomUserDetails userDetails, HttpServletRequest request, Model model) {
   ReviewDetailResponse review = reviewService.getReviewDetail(reviewId, getLoginMemberId(userDetails), getVisitorToken(request));
-  if (!canManageReview(userDetails, review)) {
-   throw new AccessDeniedException("You can only edit your own review.");
-  }
+  if (!canManageReview(userDetails, review)) throw new AccessDeniedException("You can only edit your own review.");
   model.addAttribute("review", review);
   return "review/edit";
  }
 
  @GetMapping("/reviews/write")
  public String reviewWritePage(@RequestParam Integer reservationId, @AuthenticationPrincipal CustomUserDetails userDetails, Model model) {
-  if (userDetails == null) {
-   return "redirect:/members/login";
-  }
-  if (userDetails.getMember().getRole().name().equals("ADMIN")) {
+  if (userDetails == null) return "redirect:/members/login";
+  if (userDetails.getMember().getRole().name().equals("ADMIN"))
    throw new AccessDeniedException("Admins cannot write reviews for member reservations.");
-  }
   reservationService.validateReservationAccess(reservationId, userDetails.getMember().getMemberId(), false);
   ReservationResponse reservation = reservationService.getReservation(reservationId);
-  if (!isReviewableReservation(reservation)) {
-   throw new IllegalArgumentException("예약 시간 이후에만 리뷰를 작성할 수 있습니다.");
-  }
-  if (reviewRepository.findByReservation_ReservationId(reservationId).isPresent()) {
+  if (!isReviewableReservation(reservation)) throw new IllegalArgumentException("예약 시간 이후에만 리뷰를 작성할 수 있습니다.");
+  if (reviewRepository.findByReservation_ReservationId(reservationId).isPresent())
    throw new IllegalArgumentException("A review has already been written for this reservation.");
-  }
   model.addAttribute("reservationId", reservationId);
   model.addAttribute("reservation", reservation);
   return "review/write";
  }
 
  private boolean canManageReview(CustomUserDetails userDetails, ReviewDetailResponse review) {
-  if (userDetails == null) {
-   return false;
-  }
+  if (userDetails == null) return false;
   return userDetails.getMember().getRole().name().equals("ADMIN") || review.getMemberId().equals(userDetails.getMember().getMemberId());
  }
 
@@ -114,21 +104,14 @@ public class ReviewPageController {
  }
 
  private boolean isReviewableReservation(ReservationResponse reservation) {
-  if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-   return false;
-  }
+  if (reservation.getStatus() == ReservationStatus.CANCELLED) return false;
   return !LocalDateTime.of(reservation.getReservationDate(), reservation.getReservationTime()).isAfter(LocalDateTime.now());
  }
 
  private String getVisitorToken(HttpServletRequest request) {
-  if (request.getCookies() == null) {
-   return null;
-  }
-  for (Cookie cookie : request.getCookies()) {
-   if (REVIEW_VISITOR_COOKIE.equals(cookie.getName())) {
-	return cookie.getValue();
-   }
-  }
+  if (request.getCookies() == null) return null;
+  for (Cookie cookie : request.getCookies())
+   if (REVIEW_VISITOR_COOKIE.equals(cookie.getName())) return cookie.getValue();
   return null;
  }
 }

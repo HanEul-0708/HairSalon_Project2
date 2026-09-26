@@ -70,9 +70,7 @@ public class BoardController {
  @PreAuthorize("isAuthenticated()")
  public String reportQna(@PathVariable Integer boardId, @AuthenticationPrincipal UserDetails userDetails) {
   boolean reported = boardService.reportBoard(boardId, userDetails.getUsername());
-  if (reported) {
-   return "redirect:/boards/qna/" + boardId + "?reported=true";
-  }
+  if (reported) return "redirect:/boards/qna/" + boardId + "?reported=true";
   return "redirect:/boards/qna/" + boardId + "?alreadyReported=true";
  }
 
@@ -98,12 +96,9 @@ public class BoardController {
  @PostMapping("/qna/{boardId}/reply")
  @PreAuthorize("hasRole('ADMIN')")
  public String replyQna(@PathVariable Integer boardId, @Valid BoardReplyRequest request, BindingResult bindingResult, @AuthenticationPrincipal UserDetails userDetails) {
-  if (request.getParentId() == null || boardId.intValue() != request.getParentId().intValue()) {
+  if (request.getParentId() == null || boardId.intValue() != request.getParentId().intValue())
    return "redirect:/boards/qna/" + boardId;
-  }
-  if (bindingResult.hasErrors()) {
-   return "redirect:/boards/qna/" + boardId + "?error=validation";
-  }
+  if (bindingResult.hasErrors()) return "redirect:/boards/qna/" + boardId + "?error=validation";
   boardService.createReply(request, userDetails.getUsername());
   return "redirect:/boards/qna/" + boardId;
  }
@@ -131,9 +126,8 @@ public class BoardController {
  @PreAuthorize("isAuthenticated()")
  public String editForm(@PathVariable Integer boardId, @AuthenticationPrincipal UserDetails userDetails, Model model) {
   BoardType boardType = boardService.getBoardType(boardId);
-  if (!canEditBoard(boardId, boardType, userDetails)) {
+  if (!canEditBoard(boardId, boardType, userDetails))
    return "redirect:" + buildDetailPath(boardId, boardType) + "?error=forbidden";
-  }
   BoardDetailResponse board = boardService.getDetailOnly(boardId);
   BoardUpdateRequest request = new BoardUpdateRequest();
   request.setTitle(board.getTitle());
@@ -176,23 +170,18 @@ public class BoardController {
  }
 
  private List<Integer> getPageNumbers(Page<?> page) {
-  if (page.getTotalPages() <= 0) {
-   return List.of();
-  }
+  if (page.getTotalPages() <= 0) return List.of();
   int current = page.getNumber();
   int start = Math.max(0, current - 2);
   int end = Math.min(page.getTotalPages() - 1, current + 2);
   List<Integer> numbers = new ArrayList<>();
-  for (int i = start; i <= end; i++) {
-   numbers.add(i);
-  }
+  for (int i = start; i <= end; i++) numbers.add(i);
   return numbers;
  }
 
  private BoardDetailResponse getBoardDetailWithViewGuard(Integer boardId, BoardType boardType, HttpServletRequest request, HttpServletResponse response) {
-  if (!boardViewGuard.shouldIncreaseView(boardId, boardType, request, response)) {
+  if (!boardViewGuard.shouldIncreaseView(boardId, boardType, request, response))
    return boardService.getPublicDetail(boardId, boardType);
-  }
   return boardService.getPublicDetailAndIncreaseView(boardId, boardType);
  }
 
@@ -201,9 +190,7 @@ public class BoardController {
  }
 
  private boolean canEditBoard(Integer boardId, BoardType boardType, UserDetails userDetails) {
-  if (boardType == BoardType.NOTICE && isAdmin(userDetails)) {
-   return true;
-  }
+  if (boardType == BoardType.NOTICE && isAdmin(userDetails)) return true;
   return boardService.isMyBoard(boardId, userDetails.getUsername());
  }
 

@@ -32,9 +32,7 @@ public class BoardCommandService {
   String safeContent = HtmlSanitizer.sanitize(request.getContent());
   Board board = Board.builder().member(member).type(boardType).title(request.getTitle()).content(safeContent).viewCount(0).build();
   Board savedBoard = boardRepository.save(board);
-  if (files != null && !files.isEmpty()) {
-   boardAttachmentService.saveFiles(savedBoard, files);
-  }
+  if (files != null && !files.isEmpty()) boardAttachmentService.saveFiles(savedBoard, files);
   boardAttachmentService.syncBoardImages(savedBoard);
   return savedBoard.getBoardId();
  }
@@ -44,9 +42,7 @@ public class BoardCommandService {
   Board parent = findBoard(request.getParentId().intValue());
   validateReplyParent(parent);
   String title = request.getTitle();
-  if (title == null || title.trim().isEmpty()) {
-   title = "Re: " + parent.getTitle();
-  }
+  if (title == null || title.trim().isEmpty()) title = "Re: " + parent.getTitle();
   Board reply = Board.builder().member(member).type(BoardType.QNA).title(title).content(HtmlSanitizer.sanitize(request.getContent())).viewCount(0).parent(parent).build();
   Board savedReply = boardRepository.save(reply);
   boardAttachmentService.syncBoardImages(savedReply);
@@ -56,26 +52,19 @@ public class BoardCommandService {
  public void update(Integer boardId, BoardUpdateRequest request, String memberId, List<MultipartFile> files, boolean isAdmin) {
   Board board = findBoard(boardId);
   boolean canEditNoticeAsAdmin = isAdmin && board.getType() == BoardType.NOTICE;
-  if (!canEditNoticeAsAdmin && !board.getMember().getMemberId().equals(memberId)) {
+  if (!canEditNoticeAsAdmin && !board.getMember().getMemberId().equals(memberId))
    throw new BoardException("수정 권한이 없습니다.");
-  }
-  if (board.isHidden()) {
-   throw new BoardException("숨김 처리된 글은 수정할 수 없습니다.");
-  }
+  if (board.isHidden()) throw new BoardException("숨김 처리된 글은 수정할 수 없습니다.");
   board.updateBoard(request.getTitle(), HtmlSanitizer.sanitize(request.getContent()));
   boardAttachmentService.deleteSelectedFiles(board, request.getDeleteFileIds());
-  if (files != null && !files.isEmpty()) {
-   boardAttachmentService.saveFiles(board, files);
-  }
+  if (files != null && !files.isEmpty()) boardAttachmentService.saveFiles(board, files);
   boardAttachmentService.syncBoardImages(board);
  }
 
  public void delete(Integer boardId, String memberId, boolean isAdmin) {
   Board board = findBoard(boardId);
   boolean isWriter = board.getMember().getMemberId().equals(memberId);
-  if (!isAdmin && !isWriter) {
-   throw new BoardException("삭제 권한이 없습니다.");
-  }
+  if (!isAdmin && !isWriter) throw new BoardException("삭제 권한이 없습니다.");
   deleteBoardRecursively(board);
  }
 
@@ -88,26 +77,16 @@ public class BoardCommandService {
  }
 
  private void validateReplyParent(Board parent) {
-  if (parent.getType() != BoardType.QNA) {
-   throw new BoardException("문의글만 답글을 작성할 수 있습니다.");
-  }
-  if (parent.isReply()) {
-   throw new BoardException("답글에는 다시 답글을 작성할 수 없습니다.");
-  }
-  if (parent.isHidden()) {
-   throw new BoardException("숨김 처리된 글에는 답글을 작성할 수 없습니다.");
-  }
+  if (parent.getType() != BoardType.QNA) throw new BoardException("문의글만 답글을 작성할 수 있습니다.");
+  if (parent.isReply()) throw new BoardException("답글에는 다시 답글을 작성할 수 없습니다.");
+  if (parent.isHidden()) throw new BoardException("숨김 처리된 글에는 답글을 작성할 수 없습니다.");
  }
 
  private void deleteBoardRecursively(Board board) {
   List<Board> children = new ArrayList<>(board.getChildren());
-  for (Board child : children) {
-   deleteBoardRecursively(child);
-  }
+  for (Board child : children) deleteBoardRecursively(child);
   boardAttachmentService.deletePhysicalFiles(board);
-  if (board.getParent() != null) {
-   board.changeParent(null);
-  }
+  if (board.getParent() != null) board.changeParent(null);
   boardRepository.delete(board);
  }
 }

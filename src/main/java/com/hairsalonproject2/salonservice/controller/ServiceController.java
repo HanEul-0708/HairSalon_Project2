@@ -1,9 +1,12 @@
 package com.hairsalonproject2.salonservice.controller;
 
+import com.hairsalonproject2.common.catalog.CatalogConflictException;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceCreateRequest;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceSearchRequest;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceUpdateRequest;
+import com.hairsalonproject2.salonservice.dto.request.ServiceCompareSearchRequest;
 import com.hairsalonproject2.salonservice.service.SalonServiceQueryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -11,12 +14,13 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/salon-services")
 public class ServiceController {
- private static final int SERVICES_PER_PAGE = 8;
+ private static final int SERVICES_PER_PAGE = 15;
 
  private final SalonServiceQueryService salonServiceQueryService;
 
@@ -27,9 +31,11 @@ public class ServiceController {
  }
 
  @GetMapping
- public String list(@ModelAttribute SalonServiceSearchRequest request, @RequestParam(defaultValue = "1") int page, Model model) {
+ public String list(@Valid @ModelAttribute("search") SalonServiceSearchRequest request, BindingResult bindingResult,
+                    Model model) {
   request.setSearched(true);
-  Page<?> resultPage = salonServiceQueryService.list(request, page - 1, SERVICES_PER_PAGE);
+  Page<?> resultPage = bindingResult.hasErrors() ? Page.empty()
+          : salonServiceQueryService.list(request, request.getPage() - 1, SERVICES_PER_PAGE);
   model.addAttribute("services", resultPage.getContent());
   model.addAttribute("search", request);
   model.addAttribute("searched", true);
@@ -41,14 +47,16 @@ public class ServiceController {
  }
 
  @GetMapping("/popular")
- public String popular(@ModelAttribute SalonServiceSearchRequest request) {
+ public String popular(@Valid @ModelAttribute("search") SalonServiceSearchRequest request, BindingResult bindingResult, Model model) {
   if (request.getSortBy() == null || request.getSortBy().isBlank()) request.setSortBy("rating");
+  if (bindingResult.hasErrors()) return list(request, bindingResult, model);
   return buildListRedirect(request);
  }
 
  @GetMapping("/trend")
- public String trend(@ModelAttribute SalonServiceSearchRequest request) {
+ public String trend(@Valid @ModelAttribute("search") SalonServiceSearchRequest request, BindingResult bindingResult, Model model) {
   if (request.getSortBy() == null || request.getSortBy().isBlank()) request.setSortBy("trend");
+  if (bindingResult.hasErrors()) return list(request, bindingResult, model);
   return buildListRedirect(request);
  }
 
@@ -59,18 +67,23 @@ public class ServiceController {
  }
 
  @GetMapping("/compare")
- public String compare(@RequestParam(required = false) String serviceName, @RequestParam(required = false) String region, Model model) {
-  model.addAttribute("comparisons", salonServiceQueryService.compare(serviceName, region));
-  model.addAttribute("serviceName", serviceName);
-  model.addAttribute("region", region);
+ public String compare(@Valid @ModelAttribute("search") ServiceCompareSearchRequest request, BindingResult bindingResult, Model model) {
+  Page<?> comparisons = bindingResult.hasErrors() ? Page.empty()
+          : salonServiceQueryService.compare(request.getServiceName(), request.getRegion(), request.getPage() - 1, SERVICES_PER_PAGE);
+  model.addAttribute("comparisons", comparisons.getContent());
+  model.addAttribute("currentPage", comparisons.isEmpty() ? 1 : comparisons.getNumber() + 1);
+  model.addAttribute("totalPages", comparisons.getTotalPages());
+  model.addAttribute("totalComparisonCount", comparisons.getTotalElements());
+  model.addAttribute("pageNumbers", java.util.stream.IntStream.rangeClosed(1, comparisons.getTotalPages()).boxed().toList());
+  model.addAttribute("serviceName", request.getServiceName());
+  model.addAttribute("region", request.getRegion());
   return "service/compare";
  }
 
  @PostMapping
- public String create(@ModelAttribute("form") SalonServiceCreateRequest request, BindingResult bindingResult) {
-  if (bindingResult.hasErrors()) {
-   return "service/form";
-  }
+ public String create(@Valid @ModelAttribute("form") SalonServiceCreateRequest request, BindingResult bindingResult) {
+  validateSalon(request.getSalonId(), bindingResult);
+  if (bindingResult.hasErrors()) return "service/form";
   Integer serviceId = salonServiceQueryService.create(request);
   return "redirect:/salon-services/" + serviceId;
  }
@@ -90,41 +103,50 @@ public class ServiceController {
  }
 
  @PostMapping("/{serviceId}/edit")
- public String update(@PathVariable Integer serviceId, @ModelAttribute("form") SalonServiceUpdateRequest request, BindingResult bindingResult, Model model) {
+ public String update(@PathVariable Integer serviceId, @Valid @ModelAttribute("form") SalonServiceUpdateRequest request, BindingResult bindingResult, Model model) {
+  validateSalon(request.getSalonId(), bindingResult);
   if (bindingResult.hasErrors()) {
    model.addAttribute("serviceId", serviceId);
    return "service/form";
   }
-  salonServiceQueryService.update(serviceId, request);
+  try {
+   salonServiceQueryService.update(serviceId, request);
+  } catch (CatalogConflictException exception) {
+   if (exception.getField() == null) bindingResult.reject("catalog.conflict", exception.getMessage());
+   else bindingResult.rejectValue(exception.getField(), "catalog.conflict", exception.getMessage());
+   model.addAttribute("serviceId", serviceId);
+   return "service/form";
+  }
   return "redirect:/salon-services/" + serviceId;
  }
 
  @PostMapping("/{serviceId}/delete")
- public String delete(@PathVariable Integer serviceId) {
-  salonServiceQueryService.delete(serviceId);
+ public String delete(@PathVariable Integer serviceId, RedirectAttributes redirectAttributes) {
+  try {
+   salonServiceQueryService.delete(serviceId);
+  } catch (CatalogConflictException exception) {
+   redirectAttributes.addFlashAttribute("message", exception.getMessage());
+   return "redirect:/salon-services/" + serviceId;
+  }
   return "redirect:/salon-services";
  }
 
  private String buildListRedirect(SalonServiceSearchRequest request) {
   UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/salon-services");
-  if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
+  if (request.getKeyword() != null && !request.getKeyword().isBlank())
    builder.queryParam("keyword", request.getKeyword());
-  }
-  if (request.getSalonKeyword() != null && !request.getSalonKeyword().isBlank()) {
+  if (request.getSalonKeyword() != null && !request.getSalonKeyword().isBlank())
    builder.queryParam("salonKeyword", request.getSalonKeyword());
-  }
-  if (request.getRegion() != null && !request.getRegion().isBlank()) {
-   builder.queryParam("region", request.getRegion());
-  }
-  if (request.getMaxPrice() != null) {
-   builder.queryParam("maxPrice", request.getMaxPrice());
-  }
-  if (request.getMaxDuration() != null) {
-   builder.queryParam("maxDuration", request.getMaxDuration());
-  }
-  if (request.getSortBy() != null && !request.getSortBy().isBlank()) {
-   builder.queryParam("sortBy", request.getSortBy());
-  }
+  if (request.getRegion() != null && !request.getRegion().isBlank()) builder.queryParam("region", request.getRegion());
+  if (request.getMaxPrice() != null) builder.queryParam("maxPrice", request.getMaxPrice());
+  if (request.getMaxDuration() != null) builder.queryParam("maxDuration", request.getMaxDuration());
+  if (request.getSortBy() != null && !request.getSortBy().isBlank()) builder.queryParam("sortBy", request.getSortBy());
   return "redirect:" + builder.build().encode().toUriString();
+ }
+
+ private void validateSalon(Integer salonId, BindingResult bindingResult) {
+  if (!bindingResult.hasFieldErrors("salonId") && !salonServiceQueryService.existsSalon(salonId)) {
+   bindingResult.rejectValue("salonId", "salon.notFound", "존재하는 살롱 ID를 입력해주세요.");
+  }
  }
 }

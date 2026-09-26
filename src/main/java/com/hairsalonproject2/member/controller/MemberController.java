@@ -45,9 +45,7 @@ public class MemberController {
 
  @PostMapping("/signup")
  public String signup(@Valid @ModelAttribute MemberSignupRequest memberSignupRequest, BindingResult bindingResult, Model model) {
-  if (bindingResult.hasErrors()) {
-   return "member/signup";
-  }
+  if (bindingResult.hasErrors()) return "member/signup";
   try {
    memberService.signup(memberSignupRequest);
   } catch (BusinessException e) {
@@ -59,12 +57,9 @@ public class MemberController {
 
  @GetMapping("/login")
  public String loginForm(Model model, @AuthenticationPrincipal CustomUserDetails userDetails) {
-  if (userDetails != null) {
-   return "redirect:/members/me";
-  }
-  if (!model.containsAttribute("memberLoginRequest")) {
+  if (userDetails != null) return "redirect:/members/me";
+  if (!model.containsAttribute("memberLoginRequest"))
    model.addAttribute("memberLoginRequest", new MemberLoginRequest());
-  }
   return "member/login";
  }
 

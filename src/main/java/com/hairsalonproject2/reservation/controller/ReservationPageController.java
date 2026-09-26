@@ -69,9 +69,7 @@ public class ReservationPageController {
   List<Integer> likedSalonIds = salonQueryService.getLikedSalonIds(userDetails.getMember().getMemberId());
   List<Integer> likedDesignerIds = designerQueryService.getLikedDesignerIds(userDetails.getMember().getMemberId());
   SalonDetailResponse selectedSalon = null;
-  if (salonId != null) {
-   selectedSalon = salonQueryService.getDetail(salonId);
-  }
+  if (salonId != null) selectedSalon = salonQueryService.getDetail(salonId);
   model.addAttribute("selectedSalon", selectedSalon);
   model.addAttribute("selectedSalonId", salonId);
   model.addAttribute("currentMemberId", userDetails.getMember().getMemberId());
@@ -95,9 +93,7 @@ public class ReservationPageController {
  }
 
  private boolean isReviewableReservation(ReservationResponse reservation, LocalDateTime now) {
-  if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-   return false;
-  }
+  if (reservation.getStatus() == ReservationStatus.CANCELLED) return false;
   return !java.time.LocalDateTime.of(reservation.getReservationDate(), reservation.getReservationTime()).isAfter(now);
  }
 }

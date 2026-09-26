@@ -49,13 +49,9 @@ public class FileController {
  @GetMapping("/images/{storedFilename}")
  public ResponseEntity<Resource> viewImage(@PathVariable String storedFilename) {
   try {
-   if (isQnaAttachment(storedFilename)) {
-	return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-   }
+   if (isQnaAttachment(storedFilename)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
    Resource resource = loadSafeResource(storedFilename);
-   if (resource == null) {
-	return ResponseEntity.notFound().build();
-   }
+   if (resource == null) return ResponseEntity.notFound().build();
    MediaType mediaType = MediaTypeFactory.getMediaType(storedFilename).orElse(MediaType.APPLICATION_OCTET_STREAM);
    return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, mediaType.toString()).body(resource);
 
@@ -67,13 +63,9 @@ public class FileController {
  @GetMapping("/download/{storedFilename}")
  public ResponseEntity<Resource> downloadFile(@PathVariable String storedFilename, @RequestParam String originalFilename) {
   try {
-   if (isQnaAttachment(storedFilename)) {
-	return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-   }
+   if (isQnaAttachment(storedFilename)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
    Resource resource = loadSafeResource(storedFilename);
-   if (resource == null) {
-	return ResponseEntity.notFound().build();
-   }
+   if (resource == null) return ResponseEntity.notFound().build();
    String encodedName = URLEncoder.encode(originalFilename, StandardCharsets.UTF_8).replace("+", "%20");
    return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName).body(resource);
 
@@ -89,13 +81,9 @@ public class FileController {
  private Resource loadSafeResource(String storedFilename) throws MalformedURLException {
   Path basePath = Paths.get(uploadPath).toAbsolutePath().normalize();
   Path filePath = basePath.resolve(storedFilename).normalize();
-  if (!filePath.startsWith(basePath)) {
-   return null;
-  }
+  if (!filePath.startsWith(basePath)) return null;
   Resource resource = new UrlResource(filePath.toUri());
-  if (!resource.exists()) {
-   return null;
-  }
+  if (!resource.exists()) return null;
   return resource;
  }
 }

@@ -14,12 +14,11 @@ public class ReviewLikeSchemaInitializer implements ApplicationRunner {
 
  @Override
  public void run(ApplicationArguments args) {
-  if (!columnExists("review", "like_count")) {
-   jdbcTemplate.execute("""
-		   ALTER TABLE review
+  if (!columnExists("review", "like_count")) jdbcTemplate.execute("""
+
+		  ALTER TABLE review
 		   ADD COLUMN like_count INT NULL
-		   """);
-  }
+		  """);
   jdbcTemplate.execute("""
 		  UPDATE review
 		  SET like_count = 0
@@ -38,22 +37,20 @@ public class ReviewLikeSchemaInitializer implements ApplicationRunner {
 		      CONSTRAINT fk_review_like_member FOREIGN KEY (member_id) REFERENCES member (member_id)
 		  )
 		  """);
-  if (!columnExists("review_like", "visitor_token")) {
-   jdbcTemplate.execute("""
-		   ALTER TABLE review_like
+  if (!columnExists("review_like", "visitor_token")) jdbcTemplate.execute("""
+
+		  ALTER TABLE review_like
 		   ADD COLUMN visitor_token VARCHAR(64) NULL
-		   """);
-  }
+		  """);
   jdbcTemplate.execute("""
 		  ALTER TABLE review_like
 		  MODIFY COLUMN member_id VARCHAR(30) NULL
 		  """);
-  if (!constraintExists("review_like", "uk_review_like_review_visitor")) {
-   jdbcTemplate.execute("""
-		   ALTER TABLE review_like
+  if (!constraintExists("review_like", "uk_review_like_review_visitor")) jdbcTemplate.execute("""
+
+		  ALTER TABLE review_like
 		   ADD CONSTRAINT uk_review_like_review_visitor UNIQUE (review_id, visitor_token)
-		   """);
-  }
+		  """);
  }
 
  private boolean columnExists(String tableName, String columnName) {

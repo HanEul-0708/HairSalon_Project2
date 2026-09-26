@@ -4,7 +4,9 @@
  <title th:text="${pageTitle} ?: '살롱 목록'">살롱 목록</title>
  <th:block th:fragment="headExtra">
   <link rel="stylesheet" th:href="@{/css/salon.css}">
+  <link rel="stylesheet" th:href="@{/css/catalog-select.css}">
   <script th:if="${branchView and kakaoMapConfigured}" th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&autoload=false&libraries=services|" defer></script>
+  <script th:src="@{/js/catalog-select.js}" defer></script>
   <script th:src="@{/js/salon.js}" defer></script>
  </th:block>
 </head>
@@ -15,7 +17,11 @@
    <th:block th:replace="~{salon/list-fragments :: hero(pageTitle=${pageTitle}, pageDescription=${pageDescription}, presetTitle=${presetTitle}, presetDescription=${presetDescription})}"></th:block>
   </div>
 
-  <div id="salon-list-message">
+  <div id="salon-list-message" th:object="${search}">
+   <div class="alert alert-danger" role="alert" th:if="${#fields.hasErrors('*')}">
+    <p th:each="error : ${#fields.detailedErrors()}" th:text="${error.message}">검색 조건을 확인해 주세요.</p>
+    <p th:each="error : ${#vars['org.springframework.validation.BindingResult.search'].fieldErrors}" th:text="|입력값: ${error.rejectedValue}|">입력값</p>
+   </div>
    <div class="alert alert-info" th:if="${message}" th:text="${message}">안내 메시지</div>
   </div>
 

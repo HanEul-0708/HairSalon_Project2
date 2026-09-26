@@ -49,23 +49,17 @@ public class ReservationDummySeeder {
  @Transactional
  public int seedReservations() {
   long existingCount = reservationRepository.count();
-  if (existingCount >= targetReservationCount) {
-   return 0;
-  }
+  if (existingCount >= targetReservationCount) return 0;
   List<Member> members = memberRepository.findByRoleAndStatusOrderByCreatedAtAsc(MemberRole.USER, MemberStatus.ACTIVE);
   List<Designer> designers = designerRepository.findAll().stream().sorted(Comparator.comparing(Designer::getDesignerId)).toList();
   Map<Integer, List<SalonService>> servicesBySalonId = salonServiceRepository.findAll().stream().sorted(Comparator.comparing(SalonService::getServiceId)).collect(Collectors.groupingBy(service -> service.getSalon().getSalonId()));
-  if (members.isEmpty() || designers.isEmpty() || servicesBySalonId.isEmpty()) {
-   return 0;
-  }
+  if (members.isEmpty() || designers.isEmpty() || servicesBySalonId.isEmpty()) return 0;
   int toCreate = (int) (targetReservationCount - existingCount);
   int created = 0;
   for (int index = 0; index < toCreate; index++) {
    Designer designer = designers.get(index % designers.size());
    List<SalonService> salonServices = servicesBySalonId.get(designer.getSalon().getSalonId());
-   if (salonServices == null || salonServices.isEmpty()) {
-	continue;
-   }
+   if (salonServices == null || salonServices.isEmpty()) continue;
    Member member = members.get((index * 2) % members.size());
    SalonService salonService = chooseService(salonServices, designer, index);
    ReservationStatus status = determineStatus(index);
@@ -105,21 +99,15 @@ public class ReservationDummySeeder {
 
  private ReservationStatus determineStatus(int index) {
   int mod = index % 10;
-  if (mod <= 4) {
-   return ReservationStatus.COMPLETED;
-  }
-  if (mod <= 7) {
-   return ReservationStatus.RESERVED;
-  }
+  if (mod <= 4) return ReservationStatus.COMPLETED;
+  if (mod <= 7) return ReservationStatus.RESERVED;
   return ReservationStatus.CANCELLED;
  }
 
  private LocalDate determineDate(int index, ReservationStatus status, Designer designer) {
   int cycle = index / 7;
   int designerOffset = designer.getDesignerId() == null ? 0 : designer.getDesignerId() % 5;
-  if (status == ReservationStatus.RESERVED) {
-   return LocalDate.now().plusDays(1L + ((cycle + designerOffset) % 14));
-  }
+  if (status == ReservationStatus.RESERVED) return LocalDate.now().plusDays(1L + ((cycle + designerOffset) % 14));
   return LocalDate.now().minusDays(1L + ((cycle + designerOffset) % 30));
  }
 
@@ -138,9 +126,7 @@ public class ReservationDummySeeder {
  }
 
  private PaymentMethod determinePaymentMethod(int index, ReservationStatus status) {
-  if (status == ReservationStatus.CANCELLED) {
-   return index % 2 == 0 ? PaymentMethod.CARD : PaymentMethod.KAKAO_PAY;
-  }
+  if (status == ReservationStatus.CANCELLED) return index % 2 == 0 ? PaymentMethod.CARD : PaymentMethod.KAKAO_PAY;
   PaymentMethod[] methods = PaymentMethod.values();
   return methods[index % methods.length];
  }
@@ -164,12 +150,8 @@ public class ReservationDummySeeder {
   java.time.LocalDateTime designerCreatedAt = designer.getCreatedAt();
   java.time.LocalDateTime serviceCreatedAt = salonService.getCreatedAt();
   java.time.LocalDateTime latest = memberCreatedAt;
-  if (latest == null || (designerCreatedAt != null && designerCreatedAt.isAfter(latest))) {
-   latest = designerCreatedAt;
-  }
-  if (latest == null || (serviceCreatedAt != null && serviceCreatedAt.isAfter(latest))) {
-   latest = serviceCreatedAt;
-  }
+  if (latest == null || (designerCreatedAt != null && designerCreatedAt.isAfter(latest))) latest = designerCreatedAt;
+  if (latest == null || (serviceCreatedAt != null && serviceCreatedAt.isAfter(latest))) latest = serviceCreatedAt;
   return latest == null ? java.time.LocalDateTime.now().minusDays(10) : latest;
  }
 }

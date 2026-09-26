@@ -4,6 +4,7 @@ import com.hairsalonproject2.admin.controller.AdminDesignerController;
 import com.hairsalonproject2.common.advice.GlobalPageExceptionHandler;
 import com.hairsalonproject2.common.integration.kakao.KakaoLocalSearchClient;
 import com.hairsalonproject2.designer.controller.DesignerController;
+import com.hairsalonproject2.designer.dto.response.DesignerCatalogPage;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
 import com.hairsalonproject2.salon.dto.response.SalonSummaryResponse;
 import com.hairsalonproject2.salon.service.ExternalSalonSyncService;
@@ -14,6 +15,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,6 +34,9 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -70,10 +76,11 @@ class SalonControllerWebMvcTest {
 
  @BeforeEach
  void setUp() {
-  when(salonQueryService.search(any())).thenReturn(List.of(SalonSummaryResponse.builder().salonId(1).name("Test Salon").address("Seoul Gangnam").reservable(true).build()));
+  when(salonQueryService.search(any(), anyInt(), anyInt())).thenReturn(new PageImpl<>(List.of(SalonSummaryResponse.builder().salonId(1).name("Test Salon").address("Seoul Gangnam").reservable(true).build())));
   when(salonServiceQueryService.list(any())).thenReturn(List.of());
-  when(salonServiceQueryService.list(any(), anyInt(), anyInt())).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 8), 0));
-  when(designerQueryService.search(any(), anyInt(), anyInt())).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 9), 0));
+  when(salonServiceQueryService.list(any(), anyInt(), anyInt())).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 15), 0));
+  when(designerQueryService.searchCatalog(any(), anyInt(), anyInt())).thenReturn(new DesignerCatalogPage(
+   org.springframework.data.domain.Page.empty(), org.springframework.data.domain.Page.empty(), org.springframework.data.domain.Page.empty()));
   when(kakaoLocalSearchClient.isConfigured()).thenReturn(false);
   InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
   viewResolver.setPrefix("/templates/");
@@ -96,9 +103,11 @@ class SalonControllerWebMvcTest {
   mockMvc.perform(get("/salon-services/new").principal(new UsernamePasswordAuthenticationToken("designer", "n/a", List.of(new SimpleGrantedAuthority("ROLE_DESIGNER"))))).andExpect(status().isOk()).andExpect(view().name("service/form"));
  }
 
- @Test
- void designerListLoadsWithoutExplicitSearchFlag() throws Exception {
-  mockMvc.perform(get("/designers")).andExpect(status().isOk()).andExpect(view().name("designer/list")).andExpect(model().attribute("searched", true)).andExpect(model().attributeExists("designersByRating")).andExpect(model().attributeExists("designersByLikes")).andExpect(model().attributeExists("designersByNewest"));
+ @ParameterizedTest
+ @ValueSource(ints = {1, 2})
+ void designerListLoadsFifteenPerPageWithoutExplicitSearchFlag(int page) throws Exception {
+  mockMvc.perform(get("/designers").param("page", String.valueOf(page)).param("size", "100")).andExpect(status().isOk()).andExpect(view().name("designer/list")).andExpect(model().attribute("searched", true)).andExpect(model().attributeExists("designersByRating")).andExpect(model().attributeExists("designersByLikes")).andExpect(model().attributeExists("designersByNewest"));
+  verify(designerQueryService).searchCatalog(argThat(request -> request.getSortBy() == null), eq(page - 1), eq(15));
  }
 
  @Test
@@ -121,9 +130,11 @@ class SalonControllerWebMvcTest {
   mockMvc.perform(get("/designers/new")).andExpect(status().isNotFound());
  }
 
- @Test
- void salonServiceListLoadsWithoutExplicitSearchFlag() throws Exception {
-  mockMvc.perform(get("/salon-services")).andExpect(status().isOk()).andExpect(view().name("service/list")).andExpect(model().attribute("searched", true));
+ @ParameterizedTest
+ @ValueSource(ints = {1, 2})
+ void salonServiceListLoadsFifteenPerPageWithoutExplicitSearchFlag(int page) throws Exception {
+  mockMvc.perform(get("/salon-services").param("page", String.valueOf(page)).param("size", "100")).andExpect(status().isOk()).andExpect(view().name("service/list")).andExpect(model().attribute("searched", true));
+  verify(salonServiceQueryService).list(any(), eq(page - 1), eq(15));
  }
 
  @Test

@@ -3,10 +3,10 @@ package com.hairsalonproject2.designer.llm;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
@@ -15,7 +15,6 @@ import org.springframework.web.client.RestClientException;
 import java.util.*;
 
 @Component
-@RequiredArgsConstructor
 public class OpenAiDesignerAiClient implements DesignerAiClient {
  private static final int MAX_REASON_LENGTH = 240;
  private static final int MAX_TAG_COUNT = 4;
@@ -28,18 +27,29 @@ public class OpenAiDesignerAiClient implements DesignerAiClient {
 		 """;
 
  private final ObjectMapper objectMapper;
+ private final boolean enabled;
+ private final String apiKey;
+ private final String model;
+ private final RestClient restClient;
 
- @Value("${designer.ai.openai.enabled:true}")
- private boolean enabled;
-
- @Value("${designer.ai.openai.api-key:}")
- private String apiKey;
-
- @Value("${designer.ai.openai.base-url:https://api.openai.com/v1}")
- private String baseUrl;
-
- @Value("${designer.ai.openai.model:gpt-4o-mini}")
- private String model;
+ public OpenAiDesignerAiClient(ObjectMapper objectMapper,
+  @Value("${designer.ai.openai.enabled:true}") boolean enabled,
+  @Value("${designer.ai.openai.api-key:}") String apiKey,
+  @Value("${designer.ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
+  @Value("${designer.ai.openai.model:gpt-4o-mini}") String model,
+  @Value("${designer.ai.openai.connect-timeout-ms:2000}") int connectTimeoutMs,
+  @Value("${designer.ai.openai.read-timeout-ms:5000}") int readTimeoutMs) {
+  this.objectMapper = objectMapper;
+  this.enabled = enabled;
+  this.apiKey = apiKey;
+  this.model = model;
+  SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+  factory.setConnectTimeout(Math.max(1, connectTimeoutMs));
+  factory.setReadTimeout(Math.max(1, readTimeoutMs));
+  this.restClient = RestClient.builder().baseUrl(baseUrl).requestFactory(factory)
+   .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+   .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).build();
+ }
 
  @Override
  public Optional<DesignerAiLlmResult> recommend(String query, List<DesignerAiCandidatePrompt> candidates, int limit) {
@@ -49,7 +59,7 @@ public class OpenAiDesignerAiClient implements DesignerAiClient {
    Map<String, Object> requestBody = new LinkedHashMap<>(); requestBody.put("model", model); requestBody.put("temperature", 0.2);
    requestBody.put("response_format", Map.of("type", "json_object"));
    requestBody.put("messages", List.of(Map.of("role", "system", "content", SYSTEM_PROMPT), Map.of("role", "user", "content", "User request and candidates:\n" + payload)));
-   String responseBody = RestClient.builder().baseUrl(baseUrl).defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey).defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).build().post().uri("/chat/completions").body(requestBody).retrieve().body(String.class);
+   String responseBody = restClient.post().uri("/chat/completions").body(requestBody).retrieve().body(String.class);
    Set<Integer> validDesignerIds = new LinkedHashSet<>(candidates.stream().map(DesignerAiCandidatePrompt::designerId).toList());
    return parseResponse(responseBody, validDesignerIds, limit);
   } catch (JsonProcessingException | RestClientException | IllegalArgumentException ex) {
@@ -70,7 +80,8 @@ public class OpenAiDesignerAiClient implements DesignerAiClient {
   Set<Integer> seen = new LinkedHashSet<>();
   for (JsonNode item : recommendationNode) {
    if (recommendations.size() >= limit) break;
-   Integer designerId = item.path("designerId").canConvertToInt() ? item.path("designerId").asInt() : null;
+   JsonNode idNode = item.path("designerId");
+   Integer designerId = idNode.isIntegralNumber() && idNode.canConvertToInt() ? idNode.intValue() : null;
    if (designerId == null || !validDesignerIds.contains(designerId) || !seen.add(designerId)) continue;
    String reason = truncate(trimToNull(item.path("reason").asText(null)), MAX_REASON_LENGTH);
    List<String> tags = parseTags(item.path("tags"));

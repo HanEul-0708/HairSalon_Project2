@@ -149,9 +149,7 @@ public class Review extends BaseCreatedEntity {
  }
 
  public void increaseLikeCount() {
-  if (this.likeCount == null) {
-   this.likeCount = 0;
-  }
+  if (this.likeCount == null) this.likeCount = 0;
   this.likeCount++;
  }
 

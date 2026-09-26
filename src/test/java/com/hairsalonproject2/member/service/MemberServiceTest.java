@@ -1,5 +1,6 @@
 package com.hairsalonproject2.member.service;
 
+import com.hairsalonproject2.common.catalog.CatalogIntegrityService;
 import com.hairsalonproject2.common.constant.MemberRole;
 import com.hairsalonproject2.common.constant.MemberStatus;
 import com.hairsalonproject2.common.exception.BusinessException;
@@ -27,6 +28,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
@@ -39,6 +43,9 @@ class MemberServiceTest {
 
  @Mock
  private PasswordEncoder passwordEncoder;
+
+ @Mock
+ private CatalogIntegrityService catalogIntegrityService;
 
  @InjectMocks
  private MemberService memberService;
@@ -120,9 +127,25 @@ class MemberServiceTest {
  @Test
  void changeMemberRoleByAdminRejectsNonDesignerRoleForLinkedDesignerAccount() {
   Member targetMember = createMember("designer01", MemberRole.DESIGNER, MemberStatus.ACTIVE);
-  when(memberRepository.findById("designer01")).thenReturn(Optional.of(targetMember));
-  when(designerRepository.existsByMember_MemberId("designer01")).thenReturn(true);
+  when(memberRepository.findByIdForUpdate("designer01")).thenReturn(Optional.of(targetMember));
+  doThrow(new BusinessException(ErrorCode.CONNECTED_DESIGNER_ACCOUNT_ROLE_CHANGE_NOT_ALLOWED))
+    .when(catalogIntegrityService).assertDesignerMemberRoleChangeAllowed("designer01", MemberRole.USER);
   assertThatThrownBy(() -> memberService.changeMemberRoleByAdmin("admin01", "designer01", MemberRole.USER)).isInstanceOf(BusinessException.class).extracting("errorCode").isEqualTo(ErrorCode.CONNECTED_DESIGNER_ACCOUNT_ROLE_CHANGE_NOT_ALLOWED);
+  assertThat(targetMember.getRole()).isEqualTo(MemberRole.DESIGNER);
+ }
+
+ @Test
+ void changeMemberRoleLocksMemberBeforeCheckingCurrentDesignerLinks() {
+  Member targetMember = createMember("designer01", MemberRole.DESIGNER, MemberStatus.ACTIVE);
+  when(memberRepository.findByIdForUpdate("designer01")).thenReturn(Optional.of(targetMember));
+
+  memberService.changeMemberRoleByAdmin("admin01", "designer01", MemberRole.USER);
+
+  var calls = inOrder(memberRepository, catalogIntegrityService);
+  calls.verify(memberRepository).findByIdForUpdate("designer01");
+  calls.verify(catalogIntegrityService).assertDesignerMemberRoleChangeAllowed("designer01", MemberRole.USER);
+  verify(memberRepository, never()).findById("designer01");
+  assertThat(targetMember.getRole()).isEqualTo(MemberRole.USER);
  }
 
  @Test
@@ -159,7 +182,7 @@ class MemberServiceTest {
  @Test
  void changeMemberRoleByAdminRejectsChangingLastAdminRole() {
   Member adminMember = createMember("admin01", MemberRole.ADMIN, MemberStatus.ACTIVE);
-  when(memberRepository.findById("admin01")).thenReturn(Optional.of(adminMember));
+  when(memberRepository.findByIdForUpdate("admin01")).thenReturn(Optional.of(adminMember));
   when(memberRepository.countByRole(MemberRole.ADMIN)).thenReturn(1L);
   assertThatThrownBy(() -> memberService.changeMemberRoleByAdmin("root", "admin01", MemberRole.USER)).isInstanceOf(BusinessException.class).extracting("errorCode").isEqualTo(ErrorCode.LAST_ADMIN_ROLE_CANNOT_BE_CHANGED);
  }

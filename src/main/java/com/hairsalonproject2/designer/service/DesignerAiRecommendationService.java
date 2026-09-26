@@ -3,18 +3,13 @@ package com.hairsalonproject2.designer.service;
 import com.hairsalonproject2.designer.dto.request.DesignerAiRecommendationRequest;
 import com.hairsalonproject2.designer.dto.response.DesignerAiRecommendationItemResponse;
 import com.hairsalonproject2.designer.dto.response.DesignerAiRecommendationResponse;
-import com.hairsalonproject2.designer.entity.Designer;
 import com.hairsalonproject2.designer.llm.DesignerAiCandidatePrompt;
 import com.hairsalonproject2.designer.llm.DesignerAiClient;
 import com.hairsalonproject2.designer.llm.DesignerAiLlmRecommendation;
 import com.hairsalonproject2.designer.llm.DesignerAiLlmResult;
-import com.hairsalonproject2.designer.projection.DesignerRatingRow;
-import com.hairsalonproject2.designer.repository.DesignerRepository;
-import com.hairsalonproject2.review.repository.ReviewRepository;
-import com.hairsalonproject2.salonservice.entity.SalonService;
-import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -29,21 +24,17 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
 public class DesignerAiRecommendationService {
  private static final int DEFAULT_LIMIT = 3;
  private static final int MAX_LIMIT = 6;
  private static final int LLM_CANDIDATE_WINDOW = 8;
- private static final int REVIEW_SNIPPET_LIMIT = 3;
- private static final int REVIEW_SNIPPET_LENGTH = 90;
  private static final Pattern CAREER_PATTERN = Pattern.compile("(\\d{1,2})\\s*(년|year|years)");
- private static final Pattern RATING_PATTERN = Pattern.compile("([1-5](?:\\.\\d)?)\\s*(점|star|stars)");
+ private static final Pattern RATING_PATTERN = Pattern.compile("(?<![\\d.])([1-5](?:\\.\\d+)?)\\s*(점|star|stars)");
  private static final Set<String> STOP_WORDS = Set.of("디자이너", "추천", "추천해줘", "추천해주세요", "찾아줘", "찾아주세요", "원해요", "원합니다", "미용실", "살롱", "헤어", "하는", "잘하는", "좋은", "있는", "받고", "싶어", "싶어요", "으로", "에서", "에게", "하고", "해주세요", "해줘", "좀");
  private static final Map<String, List<String>> STYLE_KEYWORDS = Map.of("CUT", List.of("커트", "컷", "단발", "레이어드", "앞머리", "남자", "남성", "숏컷", "헤어컷"), "PERM", List.of("펌", "파마", "볼륨", "매직", "셋팅", "웨이브", "다운펌", "디지털펌"), "COLOR", List.of("염색", "컬러", "탈색", "뿌리", "톤다운", "톤업", "브릿지", "하이라이트"), "STYLING", List.of("스타일링", "드라이", "업스타일", "웨딩", "면접", "행사", "고데기", "손질"));
 
- private final DesignerRepository designerRepository;
- private final SalonServiceRepository salonServiceRepository;
- private final ReviewRepository reviewRepository;
+ private final DesignerAiCandidateService candidateService;
  private final DesignerAiClient designerAiClient;
 
  public DesignerAiRecommendationResponse recommend(DesignerAiRecommendationRequest request) {
@@ -52,14 +43,15 @@ public class DesignerAiRecommendationService {
  }
 
  public DesignerAiRecommendationResponse recommend(String query, Integer limit) {
-  String safeQuery = normalizeQuery(query); int safeLimit = resolveLimit(limit);
+  String safeQuery = normalizeQuery(query);
+  int safeLimit = resolveLimit(limit);
   if (!StringUtils.hasText(safeQuery))
    return emptyResponse(query, "원하는 스타일, 분위기, 경력 조건을 문장으로 입력하면 AI가 디자이너를 추천합니다.");
-  List<DesignerAiCandidatePrompt> candidates = loadCandidates();
+  List<DesignerAiCandidatePrompt> candidates = candidateService.loadCandidates();
   if (candidates.isEmpty())
    return emptyResponse(safeQuery, "추천할 수 있는 디자이너 데이터가 아직 없습니다.");
   DesignerSearchIntent intent = DesignerSearchIntent.from(safeQuery);
-  List<ScoredDesignerCandidate> scoredCandidates = candidates.stream().map(candidate -> new ScoredDesignerCandidate(candidate, calculateScore(candidate, intent))).sorted(Comparator.comparing(ScoredDesignerCandidate::score).reversed().thenComparing(candidate -> candidate.prompt().name(), String.CASE_INSENSITIVE_ORDER)).toList();
+  List<ScoredDesignerCandidate> scoredCandidates = candidates.stream().map(candidate -> new ScoredDesignerCandidate(candidate, calculateScore(candidate, intent))).sorted(Comparator.comparing(ScoredDesignerCandidate::score).reversed().thenComparing(candidate -> candidate.prompt().name(), String.CASE_INSENSITIVE_ORDER).thenComparing(candidate -> candidate.prompt().designerId())).toList();
   List<DesignerAiCandidatePrompt> llmCandidates = scoredCandidates.stream().limit(LLM_CANDIDATE_WINDOW).map(ScoredDesignerCandidate::prompt).toList();
   DesignerAiLlmResult llmResult = designerAiClient.recommend(safeQuery, llmCandidates, safeLimit).orElse(null);
   List<ScoredDesignerCandidate> selected = selectCandidates(scoredCandidates, llmResult, safeLimit);
@@ -67,39 +59,7 @@ public class DesignerAiRecommendationService {
   List<DesignerAiRecommendationItemResponse> items = selected.stream().map(candidate -> toResponseItem(candidate, intent, llmRecommendationByDesignerId.get(candidate.prompt().designerId()))).toList();
   boolean llmUsed = llmResult != null;
   String summary = llmUsed && StringUtils.hasText(llmResult.summary()) ? llmResult.summary() : buildFallbackSummary(safeQuery, items.size(), intent);
-  return DesignerAiRecommendationResponse.builder().query(safeQuery).summary(summary).source(llmUsed ? "LLM" : "LOCAL_RULES").llmUsed(llmUsed).recommendations(items).build();
- }//데이터 분석: 입력받은 query 문자열을 기반으로 AI 모델 또는 벡터 데이터베이스에서 연관 데이터를 탐색합니다. 정렬 및 필터링: 탐색된 추천 항목들을 추천 점수 또는 연관도 순으로 정렬합니다. 수량 제한: 정렬된 데이터 중 상위 항목부터 limit으로 전달받은 정수 크기만큼만 잘라냅니다. 결과 반환: 최종 가공된 추천 목록(List 형태 등)을 호출부로 리턴합니다.
-
- private List<DesignerAiCandidatePrompt> loadCandidates() {
-  Map<Integer, DesignerRatingRow> ratings = designerRepository.findDesignerRatingRows().stream().collect(Collectors.toMap(DesignerRatingRow::getDesignerId, Function.identity(), (first, ignored) -> first));
-  Map<Integer, List<String>> salonServicesCache = new LinkedHashMap<>();
-  List<Designer> designers = designerRepository.findAll();
-  List<DesignerAiCandidatePrompt> candidates = new ArrayList<>();
-  for (Designer designer : designers) {
-   if (designer.getSalon() == null || designer.getDesignerId() == null) continue;
-   Integer salonId = designer.getSalon().getSalonId();
-   List<String> services = salonServicesCache.computeIfAbsent(salonId, this::loadServiceTexts);
-   DesignerRatingRow ratingRow = ratings.get(designer.getDesignerId());
-   List<String> reviewSnippets = loadReviewSnippets(designer.getDesignerId());
-   candidates.add(new DesignerAiCandidatePrompt(designer.getDesignerId(), salonId, nullToEmpty(designer.getName()), nullToEmpty(designer.getSalon().getName()), designer.getSpecialty() == null ? "" : designer.getSpecialty().name(), safeInteger(designer.getCareerYears()), BigDecimal.valueOf(ratingRow == null || ratingRow.getAverageRating() == null ? 0.0 : ratingRow.getAverageRating()).setScale(2, RoundingMode.HALF_UP), ratingRow == null || ratingRow.getReviewCount() == null ? 0L : ratingRow.getReviewCount(), safeInteger(designer.getLikeCount()), nullToEmpty(designer.getIntroduction()), services, reviewSnippets));
-  } return candidates;
- }
-
- private List<String> loadServiceTexts(Integer salonId) {
-  if (salonId == null) return List.of();
-  return salonServiceRepository.findBySalonSalonId(salonId).stream().map(this::serviceText).filter(StringUtils::hasText).distinct().limit(12).toList();
- }
-
- private String serviceText(SalonService service) {
-  if (service == null) return "";
-  String description = StringUtils.hasText(service.getDescription()) ? " - " + service.getDescription() : "";
-  return nullToEmpty(service.getName()) + description;
- }
-
- private List<String> loadReviewSnippets(Integer designerId) {
-  if (designerId == null) return List.of();
-  return reviewRepository.findByDesigner_DesignerId(designerId).stream().map(review -> abbreviate(review.getContent(), REVIEW_SNIPPET_LENGTH)).filter(StringUtils::hasText).limit(REVIEW_SNIPPET_LIMIT).toList();
- }
+  return DesignerAiRecommendationResponse.builder().query(safeQuery).summary(summary).source(llmUsed ? "LLM" : "LOCAL_RULES").llmUsed(llmUsed).recommendations(items).build(); }
 
  private double calculateScore(DesignerAiCandidatePrompt candidate, DesignerSearchIntent intent) {
   double score = 0;
@@ -107,15 +67,16 @@ public class DesignerAiRecommendationService {
   long reviewCount = candidate.reviewCount() == null ? 0L : candidate.reviewCount();
   int careerYears = safeInteger(candidate.careerYears());
   int likeCount = safeInteger(candidate.likeCount());
-  score += averageRating * 12.0; score += Math.log1p(reviewCount) * 5.0; score += Math.min(careerYears, 20) * 1.4; score += Math.log1p(likeCount) * 2.2;
+  score += averageRating * 12.0;
+  score += Math.log1p(reviewCount) * 5.0;
+  score += Math.min(careerYears, 20) * 1.4;
+  score += Math.log1p(likeCount) * 2.2;
   String haystack = normalizeText(String.join(" ", candidate.name(), candidate.salonName(), candidate.specialty(), candidate.introduction(), String.join(" ", candidate.services()), String.join(" ", candidate.reviewSnippets())));
   for (String token : intent.tokens()) {
    if (token.length() < 2) continue;
    if (haystack.contains(token)) score += token.length() >= 4 ? 8.0 : 5.0;
   }
-  for (String style : intent.styles()) {
-   if (matchesStyle(candidate, haystack, style)) score += 18.0;
-  }
+  for (String style : intent.styles()) if (matchesStyle(candidate, haystack, style)) score += 18.0;
   if (intent.minCareerYears() != null && careerYears < intent.minCareerYears()) score -= 25.0;
   if (intent.minRating() != null && averageRating < intent.minRating().doubleValue()) score -= 22.0;
   if (intent.wantsExperienced()) score += Math.min(careerYears, 20) * 1.2;
@@ -138,7 +99,8 @@ public class DesignerAiRecommendationService {
   for (ScoredDesignerCandidate candidate : scoredCandidates) {
    if (seen.add(candidate.prompt().designerId())) selected.add(candidate);
    if (selected.size() >= limit) break;
-  } return selected;
+  }
+  return selected;
  }
 
  private DesignerAiRecommendationItemResponse toResponseItem(ScoredDesignerCandidate scoredCandidate, DesignerSearchIntent intent, DesignerAiLlmRecommendation llmRecommendation) {
@@ -168,9 +130,7 @@ public class DesignerAiRecommendationService {
 
  private List<String> buildFallbackTags(DesignerAiCandidatePrompt candidate, DesignerSearchIntent intent) {
   LinkedHashSet<String> tags = new LinkedHashSet<>();
-  for (String style : intent.styles()) {
-   tags.add(styleLabel(style));
-  }
+  for (String style : intent.styles()) tags.add(styleLabel(style));
   if (candidate.averageRating() != null && candidate.averageRating().compareTo(BigDecimal.ZERO) > 0)
    tags.add("평점 " + candidate.averageRating().stripTrailingZeros().toPlainString());
   if (candidate.reviewCount() != null && candidate.reviewCount() > 0) tags.add("리뷰 " + candidate.reviewCount());
@@ -190,8 +150,13 @@ public class DesignerAiRecommendationService {
  }
 
  private String styleLabel(String style) {
-  return switch (style) {case "CUT" -> "커트"; case "PERM" -> "펌"; case "COLOR" -> "염색"; case "STYLING" -> "스타일링";
-   default -> style;};
+  return switch (style) {
+   case "CUT" -> "커트";
+   case "PERM" -> "펌";
+   case "COLOR" -> "염색";
+   case "STYLING" -> "스타일링";
+   default -> style;
+  };
  }
 
  private DesignerAiRecommendationResponse emptyResponse(String query, String summary) {
@@ -221,22 +186,18 @@ public class DesignerAiRecommendationService {
   return value == null ? 0 : value;
  }
 
- private String abbreviate(String value, int maxLength) {
-  if (!StringUtils.hasText(value)) return "";
-  String trimmed = value.trim().replaceAll("\\s+", " ");
-  if (trimmed.length() <= maxLength) return trimmed;
-  return trimmed.substring(0, maxLength).trim();
- }
-
  private record ScoredDesignerCandidate(DesignerAiCandidatePrompt prompt, double score) {
  }
 
- private record DesignerSearchIntent(String query, List<String> tokens, Set<String> styles, Integer minCareerYears,BigDecimal minRating, boolean wantsExperienced, boolean wantsReviewProven,boolean wantsPopular) {
+ private record DesignerSearchIntent(String query, List<String> tokens, Set<String> styles, Integer minCareerYears,
+                                     BigDecimal minRating, boolean wantsExperienced, boolean wantsReviewProven,
+                                     boolean wantsPopular) {
   private static DesignerSearchIntent from(String query) {
+   String numericText = Normalizer.normalize(nullToEmpty(query), Normalizer.Form.NFKC).toLowerCase(Locale.ROOT);
    String normalized = normalizeText(query);
    List<String> tokens = tokenize(normalized);
    Set<String> styles = detectStyles(normalized);
-   return new DesignerSearchIntent(query, tokens, styles, extractCareerYears(normalized), extractRating(normalized), containsAny(normalized, List.of("경력", "베테랑", "숙련", "전문", "실력")), containsAny(normalized, List.of("리뷰", "후기", "검증", "평점", "만족")), containsAny(normalized, List.of("인기", "좋아요", "유명", "많이")));
+   return new DesignerSearchIntent(query, tokens, styles, extractCareerYears(numericText), extractRating(numericText), containsAny(normalized, List.of("경력", "베테랑", "숙련", "전문", "실력")), containsAny(normalized, List.of("리뷰", "후기", "검증", "평점", "만족")), containsAny(normalized, List.of("인기", "좋아요", "유명", "많이")));
   }
 
   private static List<String> tokenize(String normalized) {

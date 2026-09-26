@@ -1,5 +1,6 @@
 package com.hairsalonproject2.salonservice.service;
 
+import com.hairsalonproject2.common.catalog.CatalogIntegrityService;
 import com.hairsalonproject2.salon.entity.Salon;
 import com.hairsalonproject2.salon.repository.SalonRepository;
 import com.hairsalonproject2.salonservice.dto.request.SalonServiceCreateRequest;
@@ -9,6 +10,7 @@ import com.hairsalonproject2.salonservice.dto.response.SalonServiceDetailRespons
 import com.hairsalonproject2.salonservice.dto.response.SalonServiceSummaryResponse;
 import com.hairsalonproject2.salonservice.dto.response.ServicePriceCompareResponse;
 import com.hairsalonproject2.salonservice.entity.SalonService;
+import com.hairsalonproject2.salonservice.projection.ServicePriceCompareRow;
 import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +20,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,28 +34,66 @@ import java.util.stream.Collectors;
 public class SalonServiceQueryService {
  private final SalonServiceRepository salonServiceRepository;
  private final SalonRepository salonRepository;
+ private final CatalogIntegrityService catalogIntegrityService;
 
  public List<SalonServiceSummaryResponse> list(SalonServiceSearchRequest request) {
   SalonServiceSearchRequest safeRequest = request == null ? new SalonServiceSearchRequest() : request;
-  return list(safeRequest, 0, Integer.MAX_VALUE).getContent();
+  List<SalonServiceSummaryResponse> results = searchServices(safeRequest);
+  return results.stream().sorted(serviceComparator(normalizeSort(safeRequest.getSortBy()), buildTrendFrequency(results))).toList();
  }
 
  public Page<SalonServiceSummaryResponse> list(SalonServiceSearchRequest request, int page, int size) {
   SalonServiceSearchRequest safeRequest = request == null ? new SalonServiceSearchRequest() : request;
+  String sort = normalizeSort(safeRequest.getSortBy());
+  if (!"trend".equals(sort)) {
+   return fetchPage(page, size, pageable -> salonServiceRepository.searchServices(
+           normalizeFilter(safeRequest.getKeyword()), normalizeFilter(safeRequest.getSalonKeyword()),
+           normalizeFilter(safeRequest.getRegion()), safeRequest.getMaxPrice(), safeRequest.getMaxDuration(),
+           sort, pageable)).map(this::toSummary);
+  }
   List<SalonServiceSummaryResponse> searchResults = searchServices(safeRequest);
   Map<String, Long> trendFrequency = buildTrendFrequency(searchResults);
-  List<SalonServiceSummaryResponse> filtered = searchResults.stream().sorted(serviceComparator(safeRequest.getSortBy(), trendFrequency)).toList(); int safeSize = Math.max(size, 1); int maxPage = filtered.isEmpty() ? 0 : (filtered.size() - 1) / safeSize; int safePage = Math.min(Math.max(page, 0), maxPage); int fromIndex = Math.min(safePage * safeSize, filtered.size());
-  int toIndex = Math.min(fromIndex + safeSize, filtered.size());
+  List<SalonServiceSummaryResponse> filtered = searchResults.stream().sorted(serviceComparator(sort, trendFrequency)).toList();
+  int safeSize = Math.max(size, 1);
+  int maxPage = filtered.isEmpty() ? 0 : (filtered.size() - 1) / safeSize;
+  int safePage = Math.min(Math.max(page, 0), maxPage);
+  int fromIndex = Math.min(safePage * safeSize, filtered.size());
+  int toIndex = (int) Math.min((long) fromIndex + safeSize, filtered.size());
   return new PageImpl<>(filtered.subList(fromIndex, toIndex), PageRequest.of(safePage, safeSize), filtered.size());
- }//입력된 검색 파라미터(키워드, 미용실명, 지역, 상한 가격, 상한 시간)를 결합하여 다차원 동적 필터링 조회를 수행합니다. 조회된 결과 내에서 시술명의 출현 빈도를 실시간 계산해 트렌드 점수를 산출하며, 요청된 정렬 기준(가격순, 시간순, 평점순, 이름순, 트렌드순)에 따라 컬렉션을 재정렬합니다. 시작 인덱스와 끝 인덱스의 경계값을 검증 및 보정한 후 가공된 서브리스트를 Spring Data의 페이징 규격 객체(PageImpl)로 캡슐화하여 서빙합니다.
+ }
 
  public SalonServiceDetailResponse getDetail(Integer serviceId) {
-  SalonService service = salonServiceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("SalonService not found: " + serviceId)); return toDetail(service);
- }//다건 조회가 아닌 데이터베이스 내의 단일 프라이머리 키(serviceId) 매칭에만 집중합니다. 엔티티 부재 시 시스템 노이즈를 방지하기 위해 EntityNotFoundException 예외를 명시적으로 발생시키는 단독 예외 처리 방어선 역할을 합니다. 시술에 대한 기본 정보 외에도 연계된 미용실의 고유 ID 및 명칭을 결합한 상세 전송 객체(SalonServiceDetailResponse)를 빌드하여 반환합니다.
+  SalonService service = salonServiceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("SalonService not found: " + serviceId));
+  return toDetail(service);
+ }
+
+ public boolean existsSalon(Integer salonId) {
+  return salonId != null && salonId > 0 && salonRepository.existsById(salonId);
+ }
 
  public List<ServicePriceCompareResponse> compare(String serviceName, String region) {
-  return salonServiceRepository.compareServices(serviceName, region).stream().map(row -> ServicePriceCompareResponse.builder().serviceId(row.getServiceId()).salonId(row.getSalonId()).salonName(row.getSalonName()).address(row.getAddress()).serviceName(row.getServiceName()).price(row.getPrice()).duration(row.getDuration()).averageRating(row.getAverageRating()).build()).toList();
- }//개별 ID가 아닌 텍스트 기반의 시술 명칭(serviceName)과 행정 구역명(region)만을 바인딩 파라미터로 사용하여 리포지토리의 커스텀 집계 메서드를 호출합니다. 목록 조회 메서드와 달리 내부적인 트렌드 빈도수 계산, 별도 조건 분기 정렬 로직 및 페이징 처리를 일절 배제하고 데이터베이스에서 추출된 비교 레코드셋 전체를 일괄 취합합니다. 각 가맹점별 단가(price), 시술 소요 시간(duration), 미용실 평균 평점(averageRating)을 한눈에 대조할 수 있도록 특화된 데이터 구조(ServicePriceCompareResponse)의 플랫 리스트를 서빙합니다.
+  return salonServiceRepository.compareServices(normalizeFilter(serviceName), normalizeFilter(region))
+          .stream().map(this::toComparison).toList();
+ }
+
+ public Page<ServicePriceCompareResponse> compare(String serviceName, String region, int page, int size) {
+  return fetchPage(page, size, pageable -> salonServiceRepository.compareServices(
+          normalizeFilter(serviceName), normalizeFilter(region), pageable)).map(this::toComparison);
+ }
+
+ private ServicePriceCompareResponse toComparison(ServicePriceCompareRow row) {
+  return ServicePriceCompareResponse.builder()
+                  .serviceId(row.getServiceId())
+                  .salonId(row.getSalonId())
+                  .salonName(row.getSalonName())
+                  .address(row.getAddress())
+                  .roadAddress(row.getRoadAddress())
+                  .serviceName(row.getServiceName())
+                  .price(row.getPrice())
+                  .duration(row.getDuration())
+                  .averageRating(row.getAverageRating() == null ? BigDecimal.ZERO : row.getAverageRating())
+                  .build();
+ }
 
  @Transactional
  public Integer create(SalonServiceCreateRequest request) {
@@ -61,6 +104,7 @@ public class SalonServiceQueryService {
 
  @Transactional
  public void update(Integer serviceId, SalonServiceUpdateRequest request) {
+  catalogIntegrityService.assertServiceMoveAllowed(serviceId, request.getSalonId());
   SalonService service = salonServiceRepository.findById(serviceId).orElseThrow(() -> new EntityNotFoundException("SalonService not found: " + serviceId));
   Salon salon = salonRepository.findById(request.getSalonId()).orElseThrow(() -> new EntityNotFoundException("Salon not found: " + request.getSalonId()));
   service.setSalon(salon);
@@ -72,11 +116,12 @@ public class SalonServiceQueryService {
 
  @Transactional
  public void delete(Integer serviceId) {
+  catalogIntegrityService.assertServiceDeletable(serviceId);
   salonServiceRepository.deleteById(serviceId);
  }
 
  private SalonServiceSummaryResponse toSummary(SalonService service) {
-  return SalonServiceSummaryResponse.builder().serviceId(service.getServiceId()).salonId(service.getSalon().getSalonId()).salonName(service.getSalon().getName()).address(service.getSalon().getAddress()).name(service.getName()).price(service.getPrice()).duration(service.getDuration()).averageRating(service.getSalon().getAverageRating() == null ? 0 : service.getSalon().getAverageRating().intValue()).description(service.getDescription()).build();
+  return SalonServiceSummaryResponse.builder().serviceId(service.getServiceId()).salonId(service.getSalon().getSalonId()).salonName(service.getSalon().getName()).address(service.getSalon().getAddress()).name(service.getName()).price(service.getPrice()).duration(service.getDuration()).averageRating(service.getSalon().getAverageRating() == null ? BigDecimal.ZERO : service.getSalon().getAverageRating()).description(service.getDescription()).build();
  }
 
  private SalonServiceDetailResponse toDetail(SalonService service) {
@@ -84,15 +129,19 @@ public class SalonServiceQueryService {
  }
 
  private Comparator<SalonServiceSummaryResponse> serviceComparator(String sortBy, Map<String, Long> trendFrequency) {
-  if ("duration".equalsIgnoreCase(sortBy)) return Comparator.comparing(SalonServiceSummaryResponse::getDuration).thenComparing(SalonServiceSummaryResponse::getPrice).thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
-  if ("rating".equalsIgnoreCase(sortBy)) return Comparator.comparing(SalonServiceSummaryResponse::getAverageRating, Comparator.nullsLast(Comparator.reverseOrder())).thenComparing(SalonServiceSummaryResponse::getPrice).thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
-  if ("name".equalsIgnoreCase(sortBy)) return Comparator.comparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER).thenComparing(SalonServiceSummaryResponse::getPrice);
-  if ("trend".equalsIgnoreCase(sortBy)) return Comparator.comparing((SalonServiceSummaryResponse service) -> trendFrequency.getOrDefault(normalizeServiceName(service.getName()), 0L), Comparator.reverseOrder()).thenComparing(SalonServiceSummaryResponse::getAverageRating, Comparator.nullsLast(Comparator.reverseOrder())).thenComparing(SalonServiceSummaryResponse::getPrice).thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
-  return Comparator.comparing(SalonServiceSummaryResponse::getPrice).thenComparing(SalonServiceSummaryResponse::getDuration).thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER);
+  if ("duration".equalsIgnoreCase(sortBy))
+   return Comparator.comparing(SalonServiceSummaryResponse::getDuration).thenComparing(SalonServiceSummaryResponse::getPrice).thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER).thenComparing(SalonServiceSummaryResponse::getServiceId);
+  if ("rating".equalsIgnoreCase(sortBy))
+   return Comparator.comparing(SalonServiceSummaryResponse::getAverageRating, Comparator.nullsLast(Comparator.reverseOrder())).thenComparing(SalonServiceSummaryResponse::getPrice).thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER).thenComparing(SalonServiceSummaryResponse::getServiceId);
+  if ("name".equalsIgnoreCase(sortBy))
+   return Comparator.comparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER).thenComparing(SalonServiceSummaryResponse::getPrice).thenComparing(SalonServiceSummaryResponse::getServiceId);
+  if ("trend".equalsIgnoreCase(sortBy))
+   return Comparator.comparing((SalonServiceSummaryResponse service) -> trendFrequency.getOrDefault(normalizeServiceName(service.getName()), 0L), Comparator.reverseOrder()).thenComparing(SalonServiceSummaryResponse::getAverageRating, Comparator.nullsLast(Comparator.reverseOrder())).thenComparing(SalonServiceSummaryResponse::getPrice).thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER).thenComparing(SalonServiceSummaryResponse::getServiceId);
+  return Comparator.comparing(SalonServiceSummaryResponse::getPrice).thenComparing(SalonServiceSummaryResponse::getDuration).thenComparing(SalonServiceSummaryResponse::getName, String.CASE_INSENSITIVE_ORDER).thenComparing(SalonServiceSummaryResponse::getServiceId);
  }
 
  private List<SalonServiceSummaryResponse> searchServices(SalonServiceSearchRequest request) {
-  return salonServiceRepository.searchServices(request.getKeyword(), request.getSalonKeyword(), request.getRegion(), request.getMaxPrice(), request.getMaxDuration()).stream().map(this::toSummary).toList();
+  return salonServiceRepository.searchServices(normalizeFilter(request.getKeyword()), normalizeFilter(request.getSalonKeyword()), normalizeFilter(request.getRegion()), request.getMaxPrice(), request.getMaxDuration()).stream().map(this::toSummary).toList();
  }
 
  private Map<String, Long> buildTrendFrequency(List<SalonServiceSummaryResponse> services) {
@@ -100,9 +149,28 @@ public class SalonServiceQueryService {
  }
 
  private String normalizeServiceName(String name) {
-  if (name == null) {
-   return "";
+  if (name == null) return "";
+  return name.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+ }
+
+ private String normalizeFilter(String value) {
+  return value == null || value.isBlank() ? null : value.trim();
+ }
+
+ private String normalizeSort(String sortBy) {
+  String value = sortBy == null ? "price" : sortBy.trim().toLowerCase(Locale.ROOT);
+  return List.of("price", "duration", "rating", "name", "trend").contains(value) ? value : "price";
+ }
+
+ private <T> Page<T> fetchPage(int page, int size, Function<PageRequest, Page<T>> fetcher) {
+  int safeSize = Math.max(size, 1);
+  // JPA's first-result offset is an int, even though Pageable uses a long.
+  int safePage = Math.min(Math.max(page, 0), Integer.MAX_VALUE / safeSize);
+  Page<T> result = fetcher.apply(PageRequest.of(safePage, safeSize));
+  if (safePage > 0 && result.isEmpty()) {
+   int lastPage = Math.max(result.getTotalPages() - 1, 0);
+   if (lastPage < safePage) return fetcher.apply(PageRequest.of(lastPage, safeSize));
   }
-  return name.trim().replaceAll("\\s+", " ").toLowerCase();
+  return result;
  }
 }

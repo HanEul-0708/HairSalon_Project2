@@ -11,6 +11,7 @@
 <body>
 <main>
  <div class="container service-page service-detail-page">
+  <p class="alert alert-warning" role="status" th:if="${message != null}" th:text="${message}"></p>
   <div class="catalog-hero">
    <p class="catalog-hero__eyebrow">Service Detail</p>
    <h1 class="catalog-hero__title" th:text="${serviceItem.name}">시술명</h1>
@@ -39,7 +40,6 @@
 	<a th:href="@{/salon-services/{id}/edit(id=${serviceItem.serviceId})}" class="btn btn-outline" sec:authorize="hasRole('ADMIN')">수정</a>
 
 	<form method="post" th:action="@{/salon-services/{id}/delete(id=${serviceItem.serviceId})}" data-service-delete sec:authorize="hasRole('ADMIN')">
-	 <input type="hidden" name="_method" value="delete">
 	 <button type="submit" class="btn btn-outline">삭제</button>
 	</form>
    </div>

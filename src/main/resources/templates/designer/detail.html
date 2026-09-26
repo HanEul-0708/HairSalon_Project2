@@ -15,6 +15,8 @@
    <p class="catalog-hero__subtitle">소개, 경력, 평점, 연결된 시술 정보를 한눈에 확인하세요.</p>
   </section>
 
+  <p th:if="${message != null}" th:text="${message}" class="alert alert-info" role="status"></p>
+
   <div class="designer-detail">
    <section class="designer-detail__main">
 	<div class="designer-profile">

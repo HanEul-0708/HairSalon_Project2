@@ -20,19 +20,23 @@
    <form method="post" th:action="@{/salon-services/{id}/edit(id=${serviceId})}" th:object="${form}" class="service-form">
 	<div class="form-group">
 	 <label class="form-label" for="salonIdEdit">살롱 ID</label>
-	 <input id="salonIdEdit" class="form-control" th:field="*{salonId}" placeholder="살롱 ID">
+	 <input id="salonIdEdit" class="form-control" th:field="*{salonId}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('salonId')}" aria-describedby="salonIdEditError" inputmode="numeric" placeholder="살롱 ID">
+	 <p id="salonIdEditError" class="invalid-feedback" th:if="${#fields.hasErrors('salonId')}" th:errors="*{salonId}"></p>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="nameEdit">시술명</label>
-	 <input id="nameEdit" class="form-control" th:field="*{name}" placeholder="시술명">
+	 <input id="nameEdit" class="form-control" th:field="*{name}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('name')}" aria-describedby="nameEditError" maxlength="100" placeholder="시술명">
+	 <p id="nameEditError" class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="priceEdit">가격</label>
-	 <input id="priceEdit" class="form-control" th:field="*{price}" placeholder="가격">
+	 <input id="priceEdit" class="form-control" th:field="*{price}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('price')}" aria-describedby="priceEditError" inputmode="numeric" placeholder="가격">
+	 <p id="priceEditError" class="invalid-feedback" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></p>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="durationEdit">소요 시간(분)</label>
-	 <input id="durationEdit" class="form-control" th:field="*{duration}" placeholder="소요 시간(분)">
+	 <input id="durationEdit" class="form-control" th:field="*{duration}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('duration')}" aria-describedby="durationEditError" inputmode="numeric" placeholder="소요 시간(분)">
+	 <p id="durationEditError" class="invalid-feedback" th:if="${#fields.hasErrors('duration')}" th:errors="*{duration}"></p>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="descriptionEdit">설명</label>
@@ -49,19 +53,23 @@
    <form method="post" th:action="@{/salon-services}" th:object="${form}" class="service-form">
 	<div class="form-group">
 	 <label class="form-label" for="salonIdCreate">살롱 ID</label>
-	 <input id="salonIdCreate" class="form-control" th:field="*{salonId}" placeholder="살롱 ID">
+	 <input id="salonIdCreate" class="form-control" th:field="*{salonId}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('salonId')}" aria-describedby="salonIdCreateError" inputmode="numeric" placeholder="살롱 ID">
+	 <p id="salonIdCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('salonId')}" th:errors="*{salonId}"></p>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="nameCreate">시술명</label>
-	 <input id="nameCreate" class="form-control" th:field="*{name}" placeholder="시술명">
+	 <input id="nameCreate" class="form-control" th:field="*{name}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('name')}" aria-describedby="nameCreateError" maxlength="100" placeholder="시술명">
+	 <p id="nameCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="priceCreate">가격</label>
-	 <input id="priceCreate" class="form-control" th:field="*{price}" placeholder="가격">
+	 <input id="priceCreate" class="form-control" th:field="*{price}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('price')}" aria-describedby="priceCreateError" inputmode="numeric" placeholder="가격">
+	 <p id="priceCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></p>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="durationCreate">소요 시간(분)</label>
-	 <input id="durationCreate" class="form-control" th:field="*{duration}" placeholder="소요 시간(분)">
+	 <input id="durationCreate" class="form-control" th:field="*{duration}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('duration')}" aria-describedby="durationCreateError" inputmode="numeric" placeholder="소요 시간(분)">
+	 <p id="durationCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('duration')}" th:errors="*{duration}"></p>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="descriptionCreate">설명</label>

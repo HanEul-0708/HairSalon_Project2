@@ -1,5 +1,6 @@
 package com.hairsalonproject2.salon.controller;
 
+import com.hairsalonproject2.common.catalog.CatalogConflictException;
 import com.hairsalonproject2.common.integration.kakao.KakaoAddressSearchResult;
 import com.hairsalonproject2.common.integration.kakao.KakaoLocalSearchClient;
 import com.hairsalonproject2.common.integration.kakao.KakaoPlaceSearchResult;
@@ -9,9 +10,13 @@ import com.hairsalonproject2.salon.dto.request.SalonUpdateRequest;
 import com.hairsalonproject2.salon.dto.response.SalonBranchMarkerResponse;
 import com.hairsalonproject2.salon.dto.response.SalonSummaryResponse;
 import com.hairsalonproject2.salon.service.ExternalSalonSyncService;
+import com.hairsalonproject2.salon.service.ExternalSalonSyncConflictException;
 import com.hairsalonproject2.salon.service.SalonQueryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,6 +26,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -43,15 +49,15 @@ public class SalonController {
  private String kakaoJavascriptKey;
 
  @GetMapping
- public String list(@RequestParam(required = false) String view, @RequestParam(required = false) String preset, @RequestParam(required = false) String styleKeyword, @RequestParam MultiValueMap<String, String> params, @ModelAttribute("search") SalonSearchRequest request, Model model) {//살롱 검색 요청을 받아 지정된 프리셋 필터를 적용하고, 결과 목록, 지도 마커, 카카오 비교 데이터를 통합하여 목록 화면을 반환합니다.
+ public String list(@RequestParam(required = false) String view, @RequestParam(required = false) String preset, @RequestParam(required = false) String styleKeyword, @RequestParam MultiValueMap<String, String> params, @Valid @ModelAttribute("search") SalonSearchRequest request, BindingResult bindingResult, Model model) {//살롱 검색 요청을 받아 지정된 프리셋 필터를 적용하고, 결과 목록, 지도 마커, 카카오 비교 데이터를 통합하여 목록 화면을 반환합니다.
   if (view != null && !view.isBlank()) {
    LinkedMultiValueMap<String, String> merged = copyParams(params);
    merged.remove("view");
    return redirectTo("/salons", merged);
   } StandardPreset resolvedPreset = StandardPreset.from(preset);
-  applyStandardPreset(request, styleKeyword, resolvedPreset);
-  populateListPage(model, request, createStandardSpec(resolvedPreset));
-  populateKakaoComparison(model, request);
+  if (!bindingResult.hasErrors()) applyStandardPreset(request, styleKeyword, resolvedPreset);
+  populateListPage(model, request, createStandardSpec(resolvedPreset), bindingResult.hasErrors());
+  if (!bindingResult.hasErrors()) populateKakaoComparison(model, request);
   return SALON_LIST_VIEW;
  }
 
@@ -169,7 +175,9 @@ public class SalonController {
    redirectAttributes.addFlashAttribute("message", "카카오 API 키가 설정되지 않아 동기화를 수행할 수 없습니다."); return buildRedirectToSalonList(keyword, region);
   } try { int count = externalSalonSyncService.syncFromKakao(keyword, region).size();
    redirectAttributes.addFlashAttribute("message", count == 0 ? "카카오 검색 결과가 없어 동기화한 미용실이 없습니다." : count + "건의 미용실 데이터를 동기화했습니다.");
-  } catch (IllegalStateException ex) { redirectAttributes.addFlashAttribute("message", "Kakao API 연동에 실패했습니다.");
+  } catch (ExternalSalonSyncConflictException ex) {
+   redirectAttributes.addFlashAttribute("message", ex.getMessage());
+  } catch (RestClientException | IllegalStateException ex) { redirectAttributes.addFlashAttribute("message", "Kakao API 연동에 실패했습니다.");
   } return buildRedirectToSalonList(keyword, region);
  }//관리자 권한을 검증한 뒤, 입력된 키워드와 지역을 바탕으로 카카오 외부 API를 호출하여 살롱 데이터를 로컬 데이터베이스에 수집 및 동기화합니다.
 
@@ -181,9 +189,14 @@ public class SalonController {
   return "redirect:" + builder.toUriString();
  }//시술명과 지역 정보를 매개변수로 삼아 시술 가격 비교 컨트롤러 주소(/salon-services/compare)로 리다이렉트 경로를 생성합니다.
 
- private void populateListPage(Model model, SalonSearchRequest request, SalonListPageSpec spec) {
-  normalizeSearch(request); List<SalonSummaryResponse> salons = salonQueryService.search(request);
-  model.addAttribute("salons", salons); populateBranchMarkers(model, salons);
+ private void populateListPage(Model model, SalonSearchRequest request, SalonListPageSpec spec, boolean invalidSearch) {
+  normalizeSearch(request);
+  int pageNumber = request.getPage() == null ? 0 : Math.max(0, request.getPage() - 1);
+  Page<SalonSummaryResponse> salonPage = invalidSearch ? Page.empty(PageRequest.of(0, 15)) : salonQueryService.search(request, pageNumber, 15);
+  List<SalonSummaryResponse> salons = salonPage.getContent();
+  model.addAttribute("salonPage", salonPage);
+  model.addAttribute("salons", salons);
+  populateBranchMarkers(model, salons);
   model.addAttribute("search", request);
   model.addAttribute("pageTitle", spec.pageTitle());
   model.addAttribute("pageDescription", spec.pageDescription());
@@ -197,13 +210,13 @@ public class SalonController {
   model.addAttribute("showKakaoSyncAction", spec.showKakaoSyncAction());
   model.addAttribute("emptyMessage", spec.emptyMessage());
   model.addAttribute("activePreset", spec.activePreset());
-  model.addAttribute("minRatingSliderActive", hasMinRatingSliderValue(request));
-  model.addAttribute("minRatingSliderValue", getMinRatingSliderValue(request));
-  model.addAttribute("minRatingSliderLabel", getMinRatingSliderLabel(request));
+  model.addAttribute("minRatingSliderActive", !invalidSearch && hasMinRatingSliderValue(request));
+  model.addAttribute("minRatingSliderValue", invalidSearch ? "0" : getMinRatingSliderValue(request));
+  model.addAttribute("minRatingSliderLabel", invalidSearch ? "전체" : getMinRatingSliderLabel(request));
   model.addAttribute("kakaoResults", List.of());
   model.addAttribute("kakaoResultsMessage", null);
   model.addAttribute("kakaoJavascriptKey", kakaoJavascriptKey);
-  model.addAttribute("kakaoMapConfigured", kakaoLocalSearchClient.isJavascriptConfigured());
+  model.addAttribute("kakaoMapConfigured", !invalidSearch && kakaoLocalSearchClient.isJavascriptConfigured());
  }//내부 검색 수행, 지도 마커 바인딩, 프리셋 사양 설정 및 카카오 API 호출 결과를 종합하여 목록 제어용 Model 객체에 적재합니다.
 
  private void populateBranchMarkers(Model model, List<SalonSummaryResponse> salons) {
@@ -240,7 +253,15 @@ public class SalonController {
   if (request.getKeyword() == null || request.getKeyword().isBlank()) {
    model.addAttribute("kakaoResultsMessage", "검색어를 입력하면 내부 살롱과 카카오 외부 결과를 함께 비교할 수 있습니다."); return; } if (!kakaoLocalSearchClient.isConfigured()) {
    model.addAttribute("kakaoResultsMessage", "카카오 API 키가 설정되지 않아 외부 검색을 수행할 수 없습니다."); return;
-  } List<KakaoPlaceSearchResult> kakaoResults = kakaoLocalSearchClient.searchSalons(request.getKeyword(), request.getRegion(), 1, 15);
+  }
+  List<KakaoPlaceSearchResult> kakaoResults;
+  try {
+   kakaoResults = kakaoLocalSearchClient.searchSalons(request.getKeyword(), request.getRegion(), 1, 15);
+  } catch (RestClientException | IllegalStateException ex) {
+   model.addAttribute("kakaoResults", List.of());
+   model.addAttribute("kakaoResultsMessage", "외부 검색을 일시적으로 이용할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+   return;
+  }
   List<KakaoPlaceSearchResult> ratedResults = filterByMinRating(kakaoResults, request.getMinRating());
   model.addAttribute("kakaoResults", ratedResults);
   if (ratedResults.isEmpty() && hasMinRatingSliderValue(request) && kakaoResults != null && !kakaoResults.isEmpty())
@@ -285,7 +306,7 @@ public class SalonController {
  }//HTTP 매핑 및 경로: /salons/new 경로로 들어오는 GET 요청을 처리합니다. 관리자 권한 검증: requireAdmin(authentication) 메서드를 호출하여 요청을 보낸 사용자가 관리자 권한(ROLE_ADMIN)을 보유했는지 확인합니다. 권한이 없거나 비인증 상태인 경우 권한 제어 리다이렉트 경로를 반환하여 접근을 차단합니다. 폼 객체 생성 및 바인딩: 권한 검증을 통과하면 새로운 미용실 등록 요청 생성을 위한 빈 SalonCreateRequest 객체를 뷰 계층으로 전달하기 위해 Model 객체에 "form"이라는 이름의 속성으로 추가합니다. 화면 반환: 미용실 등록 양식 폼을 렌더링하는 뷰 템플릿 파일 경로인 "salon/form"을 반환합니다.
 
  @PostMapping
- public String create(@ModelAttribute("form") SalonCreateRequest request, BindingResult bindingResult, Authentication authentication) { String guard = requireAdmin(authentication);
+ public String create(@Valid @ModelAttribute("form") SalonCreateRequest request, BindingResult bindingResult, Authentication authentication) { String guard = requireAdmin(authentication);
   if (guard != null) return guard; if (bindingResult.hasErrors()) return "salon/form";
   Integer salonId = salonQueryService.create(request); return "redirect:/salons/" + salonId;
  }
@@ -302,7 +323,7 @@ public class SalonController {
  }
 
  @PostMapping("/{salonId:\\d+}/edit")
- public String update(@PathVariable Integer salonId, @ModelAttribute("form") SalonUpdateRequest request, BindingResult bindingResult, Authentication authentication, Model model) {
+ public String update(@PathVariable Integer salonId, @Valid @ModelAttribute("form") SalonUpdateRequest request, BindingResult bindingResult, Authentication authentication, Model model) {
   String guard = requireAdmin(authentication); if (guard != null) return guard;
   if (bindingResult.hasErrors()) { model.addAttribute("salonId", salonId);
    return "salon/form";
@@ -311,9 +332,15 @@ public class SalonController {
  }
 
  @DeleteMapping("/{salonId:\\d+}")
- public String delete(@PathVariable Integer salonId, Authentication authentication) {
+ public String delete(@PathVariable Integer salonId, Authentication authentication, RedirectAttributes redirectAttributes) {
   String guard = requireAdmin(authentication); if (guard != null) return guard;
-  salonQueryService.delete(salonId); return "redirect:/salons";
+  try {
+   salonQueryService.delete(salonId);
+  } catch (CatalogConflictException ex) {
+   redirectAttributes.addFlashAttribute("message", ex.getMessage());
+   return "redirect:/salons/" + salonId;
+  }
+  return "redirect:/salons";
  }
 
  private LinkedMultiValueMap<String, String> copyParams(MultiValueMap<String, String> params) {

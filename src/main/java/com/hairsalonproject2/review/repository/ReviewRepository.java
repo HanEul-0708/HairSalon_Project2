@@ -4,6 +4,7 @@ import com.hairsalonproject2.review.dto.DesignerRankingResponse;
 import com.hairsalonproject2.review.dto.MonthlyReviewStatResponse;
 import com.hairsalonproject2.review.dto.SalonRankingResponse;
 import com.hairsalonproject2.review.entity.Review;
+import com.hairsalonproject2.designer.projection.DesignerReviewSnippetRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -19,6 +20,19 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
  List<Review> findByMember_MemberId(String memberId);
 
  List<Review> findByDesigner_DesignerId(Integer designerId);
+
+ @Query(value = """
+   SELECT ranked.designer_id AS designerId, ranked.content AS content
+   FROM (
+     SELECT designer_id, review_id, content,
+            ROW_NUMBER() OVER (PARTITION BY designer_id ORDER BY review_id ASC) AS position_in_designer
+     FROM review
+     WHERE designer_id IN (:designerIds) AND content REGEXP '[^[:space:]]'
+   ) ranked
+   WHERE ranked.position_in_designer <= 3
+   ORDER BY ranked.designer_id ASC, ranked.review_id ASC
+   """, nativeQuery = true)
+ List<DesignerReviewSnippetRow> findFirstThreeSnippetsByDesignerIds(List<Integer> designerIds);
 
  List<Review> findByDesigner_Salon_SalonId(Integer salonId);
 

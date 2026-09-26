@@ -3,6 +3,8 @@ package com.hairsalonproject2.salonservice.dto.response;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Builder
 public class SalonServiceSummaryResponse {
@@ -13,6 +15,6 @@ public class SalonServiceSummaryResponse {
  private String name;
  private Integer price;
  private Integer duration;
- private Integer averageRating;
+ private BigDecimal averageRating;
  private String description;
 }

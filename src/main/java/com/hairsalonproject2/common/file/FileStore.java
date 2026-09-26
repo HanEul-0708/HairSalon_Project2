@@ -39,9 +39,7 @@ public class FileStore {
   */
  public UploadFile storeFile(MultipartFile multipartFile) throws IOException {
   // 빈 파일이면 null 반환 (파일 첨부 안 한 경우)
-  if (multipartFile == null || multipartFile.isEmpty()) {
-   return null;
-  }
+  if (multipartFile == null || multipartFile.isEmpty()) return null;
   // 원래 파일 이름 (예: 내사진.jpg)
   String originalFilename = multipartFile.getOriginalFilename();
   // 서버 저장용 이름 생성 (UUID + 확장자)
@@ -61,9 +59,7 @@ public class FileStore {
  public void deleteFile(String storedFilename) {
   if (storedFilename == null || storedFilename.isBlank()) return;
   File file = new File(getFullPath(storedFilename));
-  if (file.exists()) {
-   file.delete();
-  }
+  if (file.exists()) file.delete();
  }
 
  /**
@@ -76,9 +72,7 @@ public class FileStore {
 
  private void ensureUploadDirectoryExists() throws IOException {
   Path uploadDirectory = Path.of(uploadPath);
-  if (Files.notExists(uploadDirectory)) {
-   Files.createDirectories(uploadDirectory);
-  }
+  if (Files.notExists(uploadDirectory)) Files.createDirectories(uploadDirectory);
  }
 
  /**

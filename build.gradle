@@ -42,7 +42,22 @@ dependencies {
 }
 
 tasks.named('test') {
- useJUnitPlatform()
+ useJUnitPlatform { excludeTags 'mysql' }
+}
+
+tasks.register('mysqlTest', Test) {
+ description = 'Runs database and full-context tests against an explicitly configured isolated MySQL 8.'
+ group = 'verification'
+ testClassesDirs = sourceSets.test.output.classesDirs
+ classpath = sourceSets.test.runtimeClasspath
+ useJUnitPlatform { includeTags 'mysql' }
+ outputs.upToDateWhen { false }
+ shouldRunAfter tasks.named('test')
+ doFirst {
+  if (!System.getenv('CATALOG_TEST_DB_URL')) {
+   throw new GradleException('Run scripts/test-catalog.ps1, or set CATALOG_TEST_DB_URL to an isolated MySQL database.')
+  }
+ }
 }
 
 // build.gradle

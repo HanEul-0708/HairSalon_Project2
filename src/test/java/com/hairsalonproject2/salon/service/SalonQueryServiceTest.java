@@ -47,7 +47,7 @@ class SalonQueryServiceTest {
   SalonSearchRequest request = new SalonSearchRequest();
   Salon firstSalon = Salon.builder().salonId(1).name("First Salon").address("Seoul Jung-gu").reservable(true).build();
   Salon secondSalon = Salon.builder().salonId(2).name("Second Salon").address("Seoul Gangnam-gu").reservable(true).build();
-  when(salonRepository.findAll(any(Specification.class))).thenReturn(List.of(firstSalon, secondSalon));
+  when(salonRepository.findAll(any(Specification.class), any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(firstSalon, secondSalon));
   List<SalonSummaryResponse> results = salonQueryService.search(request);
   assertThat(results).extracting(SalonSummaryResponse::getSalonId).containsExactly(1, 2);
  }
@@ -59,7 +59,7 @@ class SalonQueryServiceTest {
   request.setServiceKeywordSearchEnabled(true);
   Salon salon = Salon.builder().salonId(10).name("Keyword Salon").address("Seoul Seocho-gu").reservable(true).build();
   when(salonServiceRepository.findDistinctSalonIdsByKeyword("perm")).thenReturn(List.of(10));
-  when(salonRepository.findAll(any(Specification.class))).thenReturn(List.of(salon));
+  when(salonRepository.findAll(any(Specification.class), any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(salon));
   List<SalonSummaryResponse> results = salonQueryService.search(request);
   verify(salonServiceRepository).findDistinctSalonIdsByKeyword("perm");
   assertThat(results).hasSize(1);
@@ -70,7 +70,7 @@ class SalonQueryServiceTest {
   SalonSearchRequest request = new SalonSearchRequest();
   request.setKeyword("gangnam");
   Salon salon = Salon.builder().salonId(20).name("Gangnam Salon").address("Seoul Gangnam-gu").reservable(true).build();
-  when(salonRepository.findAll(any(Specification.class))).thenReturn(List.of(salon));
+  when(salonRepository.findAll(any(Specification.class), any(org.springframework.data.domain.Sort.class))).thenReturn(List.of(salon));
   List<SalonSummaryResponse> results = salonQueryService.search(request);
   verify(salonServiceRepository, never()).findDistinctSalonIdsByKeyword(any());
   assertThat(results).hasSize(1);

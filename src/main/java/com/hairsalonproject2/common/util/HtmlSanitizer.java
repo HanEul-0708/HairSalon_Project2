@@ -32,9 +32,7 @@ public final class HtmlSanitizer {
  }
 
  public static String sanitize(String html) {
-  if (html == null || html.isBlank()) {
-   return "";
-  }
+  if (html == null || html.isBlank()) return "";
   Safelist safelist = Safelist.basicWithImages();
   safelist.addTags("span", "div", "font");
   safelist.addAttributes("a", "href", "title", "target");
@@ -60,15 +58,10 @@ public final class HtmlSanitizer {
   for (Element image : document.body().select("img[class]")) {
    Set<String> allowedClasses = new HashSet<>();
    image.classNames().forEach(className -> {
-	if (ALLOWED_IMAGE_CLASSES.contains(className)) {
-	 allowedClasses.add(className);
-	}
+	if (ALLOWED_IMAGE_CLASSES.contains(className)) allowedClasses.add(className);
    });
-   if (allowedClasses.isEmpty()) {
-	image.removeAttr("class");
-   } else {
-	image.classNames(allowedClasses);
-   }
+   if (allowedClasses.isEmpty()) image.removeAttr("class");
+   else image.classNames(allowedClasses);
   }
   restoreSafeImageSources(sourceDocument, document);
   return document.body().html();
@@ -80,36 +73,24 @@ public final class HtmlSanitizer {
   int count = Math.min(sourceImages.size(), cleanedImages.size());
   for (int i = 0; i < count; i++) {
    Element cleanedImage = cleanedImages.get(i);
-   if (cleanedImage.hasAttr("src") && !cleanedImage.attr("src").isBlank()) {
-	continue;
-   }
+   if (cleanedImage.hasAttr("src") && !cleanedImage.attr("src").isBlank()) continue;
    String source = sourceImages.get(i).attr("src").trim();
-   if (isSafeImageSource(source)) {
-	cleanedImage.attr("src", source);
-   }
+   if (isSafeImageSource(source)) cleanedImage.attr("src", source);
   }
  }
 
  private static boolean isSafeImageSource(String source) {
-  if (source == null || source.isBlank()) {
-   return false;
-  }
+  if (source == null || source.isBlank()) return false;
   return source.startsWith(LOCAL_EDITOR_IMAGE_PREFIX) || source.startsWith("http://") || source.startsWith("https://");
  }
 
  private static String sanitizeStyleDeclaration(String declaration) {
   String[] parts = declaration.split(":", 2);
-  if (parts.length != 2) {
-   return null;
-  }
+  if (parts.length != 2) return null;
   String property = parts[0].trim().toLowerCase(Locale.ROOT);
   String value = parts[1].trim();
-  if (!ALLOWED_STYLE_PROPERTIES.contains(property)) {
-   return null;
-  }
-  if (!isSafeStyleValue(property, value)) {
-   return null;
-  }
+  if (!ALLOWED_STYLE_PROPERTIES.contains(property)) return null;
+  if (!isSafeStyleValue(property, value)) return null;
   return property + ": " + value;
  }
 

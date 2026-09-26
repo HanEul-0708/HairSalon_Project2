@@ -77,13 +77,9 @@ public class FileUploadService {
   */
  private void validateFile(MultipartFile file) {
   validateBasic(file);
-  if (file.getSize() > maxFileSize) {
-   throw new IllegalArgumentException("첨부파일은 최대 10MB까지 업로드할 수 있습니다.");
-  }
+  if (file.getSize() > maxFileSize) throw new IllegalArgumentException("첨부파일은 최대 10MB까지 업로드할 수 있습니다.");
   String extension = extractExtension(file.getOriginalFilename());
-  if (!ALLOWED_FILE_EXTENSIONS.contains(extension)) {
-   throw new IllegalArgumentException("허용되지 않는 첨부파일 형식입니다.");
-  }
+  if (!ALLOWED_FILE_EXTENSIONS.contains(extension)) throw new IllegalArgumentException("허용되지 않는 첨부파일 형식입니다.");
   // 위험 확장자 추가 차단
   validateDangerousExtension(extension);
  }
@@ -93,17 +89,12 @@ public class FileUploadService {
   */
  private void validateEditorImage(MultipartFile file) {
   validateBasic(file);
-  if (file.getSize() > maxImageSize) {
-   throw new IllegalArgumentException("이미지는 최대 5MB까지 업로드할 수 있습니다.");
-  }
+  if (file.getSize() > maxImageSize) throw new IllegalArgumentException("이미지는 최대 5MB까지 업로드할 수 있습니다.");
   String extension = extractExtension(file.getOriginalFilename());
-  if (!ALLOWED_IMAGE_EXTENSIONS.contains(extension)) {
-   throw new IllegalArgumentException("이미지 파일만 업로드할 수 있습니다.");
-  }
+  if (!ALLOWED_IMAGE_EXTENSIONS.contains(extension)) throw new IllegalArgumentException("이미지 파일만 업로드할 수 있습니다.");
   String contentType = file.getContentType();
-  if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+  if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/"))
    throw new IllegalArgumentException("이미지 MIME 형식이 아닙니다.");
-  }
   validateDangerousExtension(extension);
  }
 
@@ -111,16 +102,10 @@ public class FileUploadService {
   * 공통 기본 검증
   */
  private void validateBasic(MultipartFile file) {
-  if (file == null || file.isEmpty()) {
-   throw new IllegalArgumentException("업로드할 파일이 없습니다.");
-  }
+  if (file == null || file.isEmpty()) throw new IllegalArgumentException("업로드할 파일이 없습니다.");
   String originalFilename = file.getOriginalFilename();
-  if (originalFilename == null || originalFilename.isBlank()) {
-   throw new IllegalArgumentException("파일 이름이 올바르지 않습니다.");
-  }
-  if (!originalFilename.contains(".")) {
-   throw new IllegalArgumentException("확장자가 없는 파일은 업로드할 수 없습니다.");
-  }
+  if (originalFilename == null || originalFilename.isBlank()) throw new IllegalArgumentException("파일 이름이 올바르지 않습니다.");
+  if (!originalFilename.contains(".")) throw new IllegalArgumentException("확장자가 없는 파일은 업로드할 수 없습니다.");
  }
 
  /**
@@ -135,8 +120,6 @@ public class FileUploadService {
   */
  private void validateDangerousExtension(String extension) {
   Set<String> blockedExtensions = Set.of("exe", "sh", "bat", "cmd", "com", "msi", "jsp", "php", "asp", "aspx", "js", "html", "htm");
-  if (blockedExtensions.contains(extension)) {
-   throw new IllegalArgumentException("위험한 파일 형식은 업로드할 수 없습니다.");
-  }
+  if (blockedExtensions.contains(extension)) throw new IllegalArgumentException("위험한 파일 형식은 업로드할 수 없습니다.");
  }
 }

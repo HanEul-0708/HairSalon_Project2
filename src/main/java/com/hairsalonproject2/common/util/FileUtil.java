@@ -36,9 +36,7 @@ public class FileUtil {
   * @throws IllegalArgumentException 확장자 없는 파일명일 때
   */
  public static String extractExt(String filename) {
-  if (filename == null || !filename.contains(".")) {
-   throw new IllegalArgumentException("확장자가 없는 파일입니다: " + filename);
-  }
+  if (filename == null || !filename.contains(".")) throw new IllegalArgumentException("확장자가 없는 파일입니다: " + filename);
   return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
  }
 
@@ -83,13 +81,9 @@ public class FileUtil {
   * @return 읽기 쉬운 크기 문자열
   */
  public static String formatFileSize(long bytes) {
-  if (bytes < 1024) {
-   return bytes + " B";
-  } else if (bytes < 1024 * 1024) {
-   return String.format("%.1f KB", bytes / 1024.0);
-  } else {
-   return String.format("%.1f MB", bytes / (1024.0 * 1024));
-  }
+  if (bytes < 1024) return bytes + " B";
+  else if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
+  else return String.format("%.1f MB", bytes / (1024.0 * 1024));
  }
 
  /**
@@ -118,9 +112,7 @@ public class FileUtil {
   * @return 확장자 제외한 파일명
   */
  public static String extractBaseName(String filename) {
-  if (filename == null || !filename.contains(".")) {
-   return filename;
-  }
+  if (filename == null || !filename.contains(".")) return filename;
   return filename.substring(0, filename.lastIndexOf("."));
  }
 }

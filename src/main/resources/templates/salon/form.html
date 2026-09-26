@@ -19,27 +19,33 @@
    <form method="post" th:action="@{/salons/{id}/edit(id=${salonId})}" th:object="${form}" class="service-form">
 	<div class="form-group">
 	 <label class="form-label" for="nameEdit">살롱명</label>
-	 <input id="nameEdit" class="form-control" th:field="*{name}" placeholder="살롱명">
+	 <input id="nameEdit" class="form-control" th:field="*{name}" th:errorclass="is-invalid" maxlength="100" required aria-describedby="nameEditError" th:attr="aria-invalid=${#fields.hasErrors('name')}" placeholder="살롱명">
+	 <div id="nameEditError" class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="addressEdit">주소</label>
-	 <input id="addressEdit" class="form-control" th:field="*{address}" placeholder="지번 주소">
+	 <input id="addressEdit" class="form-control" th:field="*{address}" th:errorclass="is-invalid" maxlength="255" required aria-describedby="addressEditError" th:attr="aria-invalid=${#fields.hasErrors('address')}" placeholder="지번 주소">
+	 <div id="addressEditError" class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="roadAddressEdit">도로명 주소</label>
-	 <input id="roadAddressEdit" class="form-control" th:field="*{roadAddress}" placeholder="도로명 주소">
+	 <input id="roadAddressEdit" class="form-control" th:field="*{roadAddress}" th:errorclass="is-invalid" maxlength="255" aria-describedby="roadAddressEditError" th:attr="aria-invalid=${#fields.hasErrors('roadAddress')}" placeholder="도로명 주소">
+	 <div id="roadAddressEditError" class="invalid-feedback" th:if="${#fields.hasErrors('roadAddress')}" th:errors="*{roadAddress}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="phoneEdit">전화번호</label>
-	 <input id="phoneEdit" class="form-control" th:field="*{phone}" placeholder="전화번호">
+	 <input id="phoneEdit" class="form-control" th:field="*{phone}" th:errorclass="is-invalid" maxlength="20" aria-describedby="phoneEditError" th:attr="aria-invalid=${#fields.hasErrors('phone')}" placeholder="전화번호">
+	 <div id="phoneEditError" class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="imageUrlEdit">이미지 URL</label>
-	 <input id="imageUrlEdit" class="form-control" th:field="*{imageUrl}" placeholder="이미지 URL">
+	 <input id="imageUrlEdit" class="form-control" th:field="*{imageUrl}" th:errorclass="is-invalid" maxlength="255" aria-describedby="imageUrlEditError" th:attr="aria-invalid=${#fields.hasErrors('imageUrl')}" placeholder="이미지 URL">
+	 <div id="imageUrlEditError" class="invalid-feedback" th:if="${#fields.hasErrors('imageUrl')}" th:errors="*{imageUrl}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="placeUrlEdit">외부 상세 URL</label>
-	 <input id="placeUrlEdit" class="form-control" th:field="*{placeUrl}" placeholder="Kakao/Naver 상세 URL">
+	 <input id="placeUrlEdit" class="form-control" th:field="*{placeUrl}" th:errorclass="is-invalid" maxlength="255" aria-describedby="placeUrlEditError" th:attr="aria-invalid=${#fields.hasErrors('placeUrl')}" placeholder="Kakao/Naver 상세 URL">
+	 <div id="placeUrlEditError" class="invalid-feedback" th:if="${#fields.hasErrors('placeUrl')}" th:errors="*{placeUrl}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="descriptionEdit">소개</label>
@@ -47,10 +53,11 @@
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="reservableEdit">예약 가능 여부</label>
-	 <select id="reservableEdit" class="form-control" th:field="*{reservable}">
+	 <select id="reservableEdit" class="form-control" th:field="*{reservable}" th:errorclass="is-invalid" required aria-describedby="reservableEditError" th:attr="aria-invalid=${#fields.hasErrors('reservable')}">
 	  <option th:value="true">예약 가능</option>
 	  <option th:value="false">예약 준비중</option>
 	 </select>
+	 <div id="reservableEditError" class="invalid-feedback" th:if="${#fields.hasErrors('reservable')}" th:errors="*{reservable}"></div>
 	</div>
 	<div class="form-actions">
 	 <button type="submit" class="btn btn-primary">수정 저장</button>
@@ -63,35 +70,43 @@
    <form method="post" th:action="@{/salons}" th:object="${form}" class="service-form">
 	<div class="form-group">
 	 <label class="form-label" for="sourceTypeCreate">출처</label>
-	 <input id="sourceTypeCreate" class="form-control" th:field="*{sourceType}" placeholder="예: MANUAL, KAKAO">
+	 <input id="sourceTypeCreate" class="form-control" th:field="*{sourceType}" th:errorclass="is-invalid" maxlength="30" aria-describedby="sourceTypeCreateError" th:attr="aria-invalid=${#fields.hasErrors('sourceType')}" placeholder="예: MANUAL, KAKAO">
+	 <div id="sourceTypeCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('sourceType')}" th:errors="*{sourceType}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="externalIdCreate">외부 ID</label>
-	 <input id="externalIdCreate" class="form-control" th:field="*{externalId}" placeholder="외부 연동 ID">
+	 <input id="externalIdCreate" class="form-control" th:field="*{externalId}" th:errorclass="is-invalid" maxlength="100" aria-describedby="externalIdCreateError" th:attr="aria-invalid=${#fields.hasErrors('externalId')}" placeholder="외부 연동 ID">
+	 <div id="externalIdCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('externalId')}" th:errors="*{externalId}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="nameCreate">살롱명</label>
-	 <input id="nameCreate" class="form-control" th:field="*{name}" placeholder="살롱명">
+	 <input id="nameCreate" class="form-control" th:field="*{name}" th:errorclass="is-invalid" maxlength="100" required aria-describedby="nameCreateError" th:attr="aria-invalid=${#fields.hasErrors('name')}" placeholder="살롱명">
+	 <div id="nameCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="addressCreate">주소</label>
-	 <input id="addressCreate" class="form-control" th:field="*{address}" placeholder="지번 주소">
+	 <input id="addressCreate" class="form-control" th:field="*{address}" th:errorclass="is-invalid" maxlength="255" required aria-describedby="addressCreateError" th:attr="aria-invalid=${#fields.hasErrors('address')}" placeholder="지번 주소">
+	 <div id="addressCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="roadAddressCreate">도로명 주소</label>
-	 <input id="roadAddressCreate" class="form-control" th:field="*{roadAddress}" placeholder="도로명 주소">
+	 <input id="roadAddressCreate" class="form-control" th:field="*{roadAddress}" th:errorclass="is-invalid" maxlength="255" aria-describedby="roadAddressCreateError" th:attr="aria-invalid=${#fields.hasErrors('roadAddress')}" placeholder="도로명 주소">
+	 <div id="roadAddressCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('roadAddress')}" th:errors="*{roadAddress}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="phoneCreate">전화번호</label>
-	 <input id="phoneCreate" class="form-control" th:field="*{phone}" placeholder="전화번호">
+	 <input id="phoneCreate" class="form-control" th:field="*{phone}" th:errorclass="is-invalid" maxlength="20" aria-describedby="phoneCreateError" th:attr="aria-invalid=${#fields.hasErrors('phone')}" placeholder="전화번호">
+	 <div id="phoneCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="imageUrlCreate">이미지 URL</label>
-	 <input id="imageUrlCreate" class="form-control" th:field="*{imageUrl}" placeholder="이미지 URL">
+	 <input id="imageUrlCreate" class="form-control" th:field="*{imageUrl}" th:errorclass="is-invalid" maxlength="255" aria-describedby="imageUrlCreateError" th:attr="aria-invalid=${#fields.hasErrors('imageUrl')}" placeholder="이미지 URL">
+	 <div id="imageUrlCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('imageUrl')}" th:errors="*{imageUrl}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="placeUrlCreate">외부 상세 URL</label>
-	 <input id="placeUrlCreate" class="form-control" th:field="*{placeUrl}" placeholder="Kakao/Naver 상세 URL">
+	 <input id="placeUrlCreate" class="form-control" th:field="*{placeUrl}" th:errorclass="is-invalid" maxlength="255" aria-describedby="placeUrlCreateError" th:attr="aria-invalid=${#fields.hasErrors('placeUrl')}" placeholder="Kakao/Naver 상세 URL">
+	 <div id="placeUrlCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('placeUrl')}" th:errors="*{placeUrl}"></div>
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="descriptionCreate">소개</label>
@@ -99,10 +114,11 @@
 	</div>
 	<div class="form-group">
 	 <label class="form-label" for="reservableCreate">예약 가능 여부</label>
-	 <select id="reservableCreate" class="form-control" th:field="*{reservable}">
+	 <select id="reservableCreate" class="form-control" th:field="*{reservable}" th:errorclass="is-invalid" required aria-describedby="reservableCreateError" th:attr="aria-invalid=${#fields.hasErrors('reservable')}">
 	  <option th:value="true">예약 가능</option>
 	  <option th:value="false">예약 준비중</option>
 	 </select>
+	 <div id="reservableCreateError" class="invalid-feedback" th:if="${#fields.hasErrors('reservable')}" th:errors="*{reservable}"></div>
 	</div>
 	<div class="form-actions">
 	 <button type="submit" class="btn btn-primary">등록</button>

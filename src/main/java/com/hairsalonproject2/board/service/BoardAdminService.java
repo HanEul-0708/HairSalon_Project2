@@ -48,13 +48,9 @@ public class BoardAdminService {
  public boolean reportBoard(Integer boardId, String reporterId) {
   Board board = findBoard(boardId);
   Member reporter = findMember(reporterId);
-  if (board.getMember().getMemberId().equals(reporterId)) {
-   throw new BoardException("본인 글은 신고할 수 없습니다.");
-  }
+  if (board.getMember().getMemberId().equals(reporterId)) throw new BoardException("본인 글은 신고할 수 없습니다.");
   boolean alreadyReported = boardReportRepository.existsByBoardBoardIdAndMemberMemberId(boardId, reporterId);
-  if (alreadyReported) {
-   return false;
-  }
+  if (alreadyReported) return false;
   BoardReport boardReport = BoardReport.builder().board(board).member(reporter).build();
   boardReportRepository.save(boardReport);
   board.increaseReportCount();
@@ -99,9 +95,7 @@ public class BoardAdminService {
  }
 
  private String normalizeReason(String reason, String defaultValue) {
-  if (reason == null || reason.trim().isEmpty()) {
-   return defaultValue;
-  }
+  if (reason == null || reason.trim().isEmpty()) return defaultValue;
   return reason.trim();
  }
 
@@ -112,13 +106,9 @@ public class BoardAdminService {
 
  private void deleteBoardRecursively(Board board) {
   List<Board> children = new ArrayList<>(board.getChildren());
-  for (Board child : children) {
-   deleteBoardRecursively(child);
-  }
+  for (Board child : children) deleteBoardRecursively(child);
   boardAttachmentService.deletePhysicalFiles(board);
-  if (board.getParent() != null) {
-   board.changeParent(null);
-  }
+  if (board.getParent() != null) board.changeParent(null);
   boardRepository.delete(board);
  }
 }

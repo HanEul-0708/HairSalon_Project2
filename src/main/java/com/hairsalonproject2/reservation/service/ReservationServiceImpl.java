@@ -55,8 +55,8 @@ public class ReservationServiceImpl implements ReservationService {
  @Transactional
  public ReservationResponse createReservation(String loginMemberId, ReservationCreateRequest request) {
   Member member = memberRepository.findById(loginMemberId).orElseThrow(() -> new IllegalArgumentException(MEMBER_NOT_FOUND));
-  Designer designer = designerRepository.findById(request.getDesignerId()).orElseThrow(() -> new IllegalArgumentException(DESIGNER_NOT_FOUND));
-  SalonService salonService = salonServiceRepository.findById(request.getSalonServiceId()).orElseThrow(() -> new IllegalArgumentException(SERVICE_NOT_FOUND));
+  Designer designer = designerRepository.findByIdForReservation(request.getDesignerId()).orElseThrow(() -> new IllegalArgumentException(DESIGNER_NOT_FOUND));
+  SalonService salonService = salonServiceRepository.findByIdForReservation(request.getSalonServiceId()).orElseThrow(() -> new IllegalArgumentException(SERVICE_NOT_FOUND));
   validateDesignerAndServiceSalon(designer, salonService);
   validateReservationSlot(designer.getDesignerId(), request.getReservationDate(), request.getReservationTime(), null);
   Reservation reservation = Reservation.builder().member(member).designer(designer).salonService(salonService).reservationDate(request.getReservationDate()).reservationTime(request.getReservationTime()).status(ReservationStatus.RESERVED).totalPrice(request.getTotalPrice()).paymentMethod(request.getPaymentMethod()).build();
@@ -90,11 +90,10 @@ public class ReservationServiceImpl implements ReservationService {
  @Transactional
  public ReservationResponse updateReservation(Integer reservationId, ReservationUpdateRequest request) {
   Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new IllegalArgumentException(RESERVATION_NOT_FOUND));
-  if (reservation.getStatus() != ReservationStatus.RESERVED) {
+  if (reservation.getStatus() != ReservationStatus.RESERVED)
    throw new IllegalArgumentException(ONLY_RESERVED_CAN_UPDATE);
-  }
-  Designer designer = designerRepository.findById(request.getDesignerId()).orElseThrow(() -> new IllegalArgumentException(DESIGNER_NOT_FOUND));
-  SalonService salonService = salonServiceRepository.findById(request.getSalonServiceId()).orElseThrow(() -> new IllegalArgumentException(SERVICE_NOT_FOUND));
+  Designer designer = designerRepository.findByIdForReservation(request.getDesignerId()).orElseThrow(() -> new IllegalArgumentException(DESIGNER_NOT_FOUND));
+  SalonService salonService = salonServiceRepository.findByIdForReservation(request.getSalonServiceId()).orElseThrow(() -> new IllegalArgumentException(SERVICE_NOT_FOUND));
   validateDesignerAndServiceSalon(designer, salonService);
   validateReservationSlot(designer.getDesignerId(), request.getReservationDate(), request.getReservationTime(), reservationId);
   reservation.updateReservation(designer, salonService, request.getReservationDate(), request.getReservationTime(), request.getTotalPrice(), request.getPaymentMethod());
@@ -106,12 +105,9 @@ public class ReservationServiceImpl implements ReservationService {
  @Transactional
  public void cancelReservation(Integer reservationId) {
   Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new IllegalArgumentException(RESERVATION_NOT_FOUND));
-  if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-   throw new IllegalArgumentException(ALREADY_CANCELLED);
-  }
-  if (reservation.getStatus() == ReservationStatus.COMPLETED) {
+  if (reservation.getStatus() == ReservationStatus.CANCELLED) throw new IllegalArgumentException(ALREADY_CANCELLED);
+  if (reservation.getStatus() == ReservationStatus.COMPLETED)
    throw new IllegalArgumentException(COMPLETED_CANNOT_CANCEL);
-  }
   reservation.changeStatus(ReservationStatus.CANCELLED);
   reservationRepository.save(reservation);
   reservationSlotRepository.deleteByReservation_ReservationId(reservationId);
@@ -122,12 +118,11 @@ public class ReservationServiceImpl implements ReservationService {
  public ReservationResponse updateReservationStatus(Integer reservationId, ReservationStatusUpdateRequest request) {
   Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new IllegalArgumentException(RESERVATION_NOT_FOUND));
   ReservationStatus targetStatus = request.getStatus();
-  if (reservation.getStatus() != ReservationStatus.RESERVED && (targetStatus == ReservationStatus.CANCELLED || targetStatus == ReservationStatus.COMPLETED)) {
+  if (reservation.getStatus() != ReservationStatus.RESERVED && (targetStatus == ReservationStatus.CANCELLED || targetStatus == ReservationStatus.COMPLETED))
    throw new IllegalArgumentException(ONLY_RESERVED_CAN_CHANGE_STATUS);
-  }
-  if (targetStatus == ReservationStatus.CANCELLED) {
+  if (targetStatus == ReservationStatus.CANCELLED)
    reservationSlotRepository.deleteByReservation_ReservationId(reservationId);
-  } else {
+  else {
    validateReservationSlot(reservation.getDesigner().getDesignerId(), reservation.getReservationDate(), reservation.getReservationTime(), reservationId);
    ensureReservationSlot(reservation);
   }
@@ -141,9 +136,8 @@ public class ReservationServiceImpl implements ReservationService {
  }
 
  private void validateReservationSlot(Integer designerId, LocalDate reservationDate, LocalTime reservationTime, Integer reservationId) {
-  if (hasReservationConflict(designerId, reservationDate, reservationTime, reservationId)) {
+  if (hasReservationConflict(designerId, reservationDate, reservationTime, reservationId))
    throw new IllegalArgumentException(RESERVATION_CONFLICT);
-  }
  }
 
  private boolean hasReservationConflict(Integer designerId, LocalDate reservationDate, LocalTime reservationTime, Integer reservationId) {
@@ -155,9 +149,8 @@ public class ReservationServiceImpl implements ReservationService {
  private void validateDesignerAndServiceSalon(Designer designer, SalonService salonService) {
   Integer designerSalonId = designer.getSalon() == null ? null : designer.getSalon().getSalonId();
   Integer serviceSalonId = salonService.getSalon() == null ? null : salonService.getSalon().getSalonId();
-  if (designerSalonId == null || !designerSalonId.equals(serviceSalonId)) {
+  if (designerSalonId == null || !designerSalonId.equals(serviceSalonId))
    throw new IllegalArgumentException(DESIGNER_SERVICE_SALON_MISMATCH);
-  }
  }
 
  private void saveReservationSlot(Reservation reservation) {
@@ -180,9 +173,7 @@ public class ReservationServiceImpl implements ReservationService {
  }
 
  private String getPaymentMethodLabel(PaymentMethod paymentMethod) {
-  if (paymentMethod == null) {
-   return "-";
-  }
+  if (paymentMethod == null) return "-";
   return switch (paymentMethod) {
    case CARD -> "카드";
    case CASH -> "현금";
@@ -194,15 +185,12 @@ public class ReservationServiceImpl implements ReservationService {
  @Override
  public void validateReservationAccess(Integer reservationId, String loginMemberId, boolean isAdmin) {
   Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(() -> new IllegalArgumentException(RESERVATION_NOT_FOUND));
-  if (!isAdmin && !reservation.getMember().getMemberId().equals(loginMemberId)) {
+  if (!isAdmin && !reservation.getMember().getMemberId().equals(loginMemberId))
    throw new AccessDeniedException(RESERVATION_ACCESS_DENIED);
-  }
  }
 
  @Override
  public void validateMemberAccess(String targetMemberId, String loginMemberId, boolean isAdmin) {
-  if (!isAdmin && !targetMemberId.equals(loginMemberId)) {
-   throw new AccessDeniedException(MEMBER_ACCESS_DENIED);
-  }
+  if (!isAdmin && !targetMemberId.equals(loginMemberId)) throw new AccessDeniedException(MEMBER_ACCESS_DENIED);
  }
 }

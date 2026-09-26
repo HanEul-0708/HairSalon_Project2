@@ -1,5 +1,6 @@
 package com.hairsalonproject2.salon.service;
 
+import com.hairsalonproject2.common.catalog.CatalogIntegrityService;
 import com.hairsalonproject2.designer.dto.response.DesignerSummaryResponse;
 import com.hairsalonproject2.designer.projection.DesignerRatingRow;
 import com.hairsalonproject2.designer.repository.DesignerRepository;
@@ -22,7 +23,7 @@ import com.hairsalonproject2.salonservice.repository.SalonServiceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -47,34 +47,36 @@ public class SalonQueryService {
  private final SalonLikeRepository salonLikeRepository;
  private final MemberRepository memberRepository;
  private final ReviewRepository reviewRepository;
+ private final CatalogIntegrityService catalogIntegrityService;
 
  public List<SalonSummaryResponse> search(SalonSearchRequest request) {
-  return search(request, 0, Integer.MAX_VALUE).getContent();
- }//페이징 없이 전체 검색 결과를 List<SalonSummaryResponse> 형태로 반환합니다. 내부적으로 페이지 번호 0, 사이즈는 정수의 최댓값으로 설정하여 페이징 메소드를 호출합니다.
+  SalonSearchRequest safeRequest = request == null ? new SalonSearchRequest() : request;
+  return salonRepository.findAll(SalonSpecifications.bySearch(safeRequest, resolveKeywordMatchedSalonIds(safeRequest)), searchSort(safeRequest))
+          .stream().map(this::toSummary).toList();
+ }
 
  public Page<SalonSummaryResponse> search(SalonSearchRequest request, int page, int size) {
   SalonSearchRequest safeRequest = request == null ? new SalonSearchRequest() : request;
-  List<SalonSummaryResponse> responses = searchInternal(safeRequest);
+  var specification = SalonSpecifications.bySearch(safeRequest, resolveKeywordMatchedSalonIds(safeRequest));
   int safeSize = Math.max(size, 1);
-  int maxPage = responses.isEmpty() ? 0 : (responses.size() - 1) / safeSize;
-  int safePage = Math.min(Math.max(page, 0), maxPage);
-  int fromIndex = Math.min(safePage * safeSize, responses.size());
-  int toIndex = Math.min(fromIndex + safeSize, responses.size());
-  return new PageImpl<>(responses.subList(fromIndex, toIndex), PageRequest.of(safePage, safeSize), responses.size());
- }//요청된 페이지 번호와 사이즈를 기반으로 페이징 처리가 된 Page<SalonSummaryResponse>를 반환합니다. 안전한 인덱스 계산을 통해 범위를 벗어나지 않도록 제어합니다.
+  int safePage = Math.min(Math.max(page, 0), Integer.MAX_VALUE / safeSize);
+  PageRequest pageable = PageRequest.of(safePage, safeSize, searchSort(safeRequest));
+  Page<Salon> salons = salonRepository.findAll(specification, pageable);
+  if (pageable.getPageNumber() > 0 && pageable.getPageNumber() >= salons.getTotalPages()) {
+   pageable = PageRequest.of(Math.max(0, salons.getTotalPages() - 1), pageable.getPageSize(), pageable.getSort());
+   salons = salonRepository.findAll(specification, pageable);
+  }
+  return salons.map(this::toSummary);
+ }
 
- private List<SalonSummaryResponse> searchInternal(SalonSearchRequest request) {
-  List<Integer> keywordMatchedSalonIds = resolveKeywordMatchedSalonIds(request);
-  List<SalonSummaryResponse> responses = salonRepository.findAll(SalonSpecifications.bySearch(request, keywordMatchedSalonIds)).stream().map(this::toSummary).collect(Collectors.toCollection(ArrayList::new));
-  String sort = resolveSort(request);
-  if ("rating".equals(sort))
-   responses.sort(Comparator.comparing(SalonSummaryResponse::getAverageRating, Comparator.nullsLast(Comparator.reverseOrder())).thenComparing(SalonSummaryResponse::getReviewCount, Comparator.nullsLast(Comparator.reverseOrder())));
-  else if ("likes".equals(sort))
-   responses.sort(Comparator.comparing(SalonSummaryResponse::getLikeCount, Comparator.nullsLast(Comparator.reverseOrder())));
-  else
-   responses.sort(Comparator.comparing(SalonSummaryResponse::getAverageRating, Comparator.nullsLast(Comparator.reverseOrder())).thenComparing(SalonSummaryResponse::getReviewCount, Comparator.nullsLast(Comparator.reverseOrder())).thenComparing(SalonSummaryResponse::getLikeCount, Comparator.nullsLast(Comparator.reverseOrder())));
-  return responses;
- }//실제 검색의 핵심 로직을 수행하는 내부 메소드입니다. 키워드 매칭을 통해 미용실 ID 목록을 조회한 후, 조건에 맞는 데이터를 데이터베이스에서 가져옵니다. 요청된 정렬 기준(rating, likes, recommended)에 따라 결과를 정렬합니다.
+ private Sort searchSort(SalonSearchRequest request) {
+  Sort sort = switch (resolveSort(request)) {
+   case "rating" -> Sort.by(Sort.Order.desc("averageRating"), Sort.Order.desc("reviewCount"));
+   case "likes" -> Sort.by(Sort.Order.desc("likeCount"));
+   default -> Sort.by(Sort.Order.desc("averageRating"), Sort.Order.desc("reviewCount"), Sort.Order.desc("likeCount"));
+  };
+  return sort.and(Sort.by("salonId"));
+ }
 
  public SalonDetailResponse getDetail(Integer salonId) {
   Salon salon = salonRepository.findById(salonId).orElseThrow(() -> new EntityNotFoundException("Salon not found: " + salonId));//전달받은 salonId로 미용실을 조회하며, 데이터가 없을 경우 EntityNotFoundException을 발생시킵니다. 해당 미용실에 소속된 디자이너 목록을 조회하여 각 디자이너의 평균 평점 및 리뷰 수를 매핑합니다. 미용실에서 제공하는 서비스 목록을 조회해서 미용실 정보, 디자이너 정보, 서비스 정보를 합산하여 SalonDetailResponse 객체로 최종 반환합니다.
@@ -155,6 +157,7 @@ public class SalonQueryService {
 
  @Transactional
  public void delete(Integer salonId) {
+  catalogIntegrityService.assertSalonDeletable(salonId);
   salonRepository.deleteById(salonId);
  }
 
@@ -162,7 +165,7 @@ public class SalonQueryService {
   if (request == null || !request.isServiceKeywordSearchEnabled()) return List.of();
   String keyword = request.getKeyword();
   if (keyword == null || keyword.isBlank()) return List.of();
-  return salonServiceRepository.findDistinctSalonIdsByKeyword(keyword);
+  return salonServiceRepository.findDistinctSalonIdsByKeyword(keyword.trim());
  }
 
  private String resolveSort(SalonSearchRequest request) {

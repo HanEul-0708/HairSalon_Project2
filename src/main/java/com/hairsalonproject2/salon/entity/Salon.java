@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "salon")
+@Table(name = "salon", uniqueConstraints = @UniqueConstraint(name = "uq_salon_external", columnNames = {"source_type", "external_id"}))
 @Getter
 @Setter
 @Builder
@@ -20,7 +20,7 @@ public class Salon {
  @Column(name = "salon_id")
  private Integer salonId;
 
- @Column(name = "external_id", length = 100, unique = true)
+ @Column(name = "external_id", length = 100)
  private String externalId;
 
  @Column(name = "source_type", length = 30)

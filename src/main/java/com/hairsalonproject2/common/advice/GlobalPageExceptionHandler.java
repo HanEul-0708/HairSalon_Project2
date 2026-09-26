@@ -36,9 +36,7 @@ public class GlobalPageExceptionHandler {
    return "error/common-error";
   }
   String referer = request.getHeader("Referer");
-  if (referer != null) {
-   return "redirect:" + referer;
-  }
+  if (referer != null) return "redirect:" + referer;
   model.addAttribute("errorMessage", e.getErrorCode().getMessage());
   model.addAttribute("requestUri", request.getRequestURI());
   return "error/common-error";
@@ -57,9 +55,7 @@ public class GlobalPageExceptionHandler {
   response.setStatus(e.getStatusCode().value());
   model.addAttribute("errorMessage", e.getReason());
   model.addAttribute("requestUri", request.getRequestURI());
-  if (e.getStatusCode().value() == HttpStatus.FORBIDDEN.value()) {
-   return "error/access-denied";
-  }
+  if (e.getStatusCode().value() == HttpStatus.FORBIDDEN.value()) return "error/access-denied";
   return "error/common-error";
  }
 

@@ -50,9 +50,7 @@ public class ReviewImageServiceImpl implements ReviewImageService {
   // 2️⃣ 파일 저장 (서버 디스크 or S3 등)
   String imageUrl = fileStorageService.storeFile(file);
   // 3️⃣ sortOrder 기본값 처리
-  if (sortOrder == null) {
-   sortOrder = 0;
-  }
+  if (sortOrder == null) sortOrder = 0;
   // 4️⃣ ReviewImage 엔티티 생성
   ReviewImage reviewImage = ReviewImage.builder().review(review).imageUrl(imageUrl).sortOrder(sortOrder).build();
   // 5️⃣ 양방향 연관관계 유지
@@ -83,8 +81,6 @@ public class ReviewImageServiceImpl implements ReviewImageService {
  }
 
  private void validateReviewOwner(String ownerMemberId, String loginMemberId, boolean isAdmin) {
-  if (!isAdmin && !ownerMemberId.equals(loginMemberId)) {
-   throw new AccessDeniedException("본인 리뷰 이미지만 변경할 수 있습니다.");
-  }
+  if (!isAdmin && !ownerMemberId.equals(loginMemberId)) throw new AccessDeniedException("본인 리뷰 이미지만 변경할 수 있습니다.");
  }
 }

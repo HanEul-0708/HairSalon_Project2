@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
  bindSalonSearchForms();
+ bindSalonPagination();
  bindSalonCardFocusEffect();
  bindBranchMap(0);
 });
@@ -22,6 +23,7 @@ function bindAutoSubmitForm(form) {
  if (!form || form.dataset.autoSubmitBound === "true") return;
 
  form.dataset.autoSubmitBound = "true";
+ bindSalonSort(form);
 
  var textInputs = Array.from(form.querySelectorAll("input[type='text']"));
  var controls = Array.from(form.querySelectorAll("select, input[type='checkbox']"));
@@ -80,6 +82,7 @@ function bindAutoSubmitForm(form) {
   syncRatingSlider(form, ratingSliderInput, false);
 
   function beginRatingSliderDrag() {
+   window.clearTimeout(submitTimerId);
    isDraggingRatingSlider = true;
   }
 
@@ -113,6 +116,7 @@ function bindAutoSubmitForm(form) {
  }
 
  if (resetButton) resetButton.addEventListener("click", function () {
+  window.clearTimeout(submitTimerId);
   var resetUrl = form.dataset.resetUrl || form.getAttribute("action") || "/salons";
   loadSalonListUrl(resetUrl);
  }); presetLinks.forEach(function (link) {
@@ -121,6 +125,22 @@ function bindAutoSubmitForm(form) {
    if (!applyPresetMode(form, link.dataset.presetMode || "all")) return;
    form.requestSubmit();
   });//요소 검증: if (resetButton) 구문을 통해 폼 내에 초기화 버튼이 실제로 존재하는지 확인한 후 이벤트를 바인딩합니다. 리셋 URL 결정: 버튼이 클릭되면 초기화할 대상 URL을 결정합니다. 우선순위는 폼의 data-reset-url 속성, 폼의 action 속성 순이며, 둘 다 없을 경우 기본값으로 "/salons"를 사용합니다. 데이터 비동기 요청: 결정된 URL(resetUrl)을 loadSalonListUrl 함수에 전달하여 페이지 전환 없이 미용실 목록 영역을 비동기(AJAX)로 갱신합니다.
+ });
+}
+
+function bindSalonSort(form) {
+ bindCatalogSelect(form.querySelector("[data-salon-sort]"));
+}
+
+function bindSalonPagination() {
+ document.querySelectorAll("[data-salon-page-link]").forEach(function (link) {
+  if (link.dataset.pageBound === "true") return;
+  link.dataset.pageBound = "true";
+  link.addEventListener("click", function (event) {
+   if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+   event.preventDefault();
+   loadSalonListUrl(link.href);
+  });
  });
 }
 
@@ -198,7 +218,8 @@ function updateRatingSliderProgress(sliderInput, ratingValue) {
 
  var sliderValue = Number.parseFloat(ratingValue || sliderInput.value || "0");
  var percent = Math.max(0, Math.min(100, (sliderValue / 5) * 100));
- sliderInput.style.setProperty("--rating-progress", percent + "%");
+ var sliderControl = sliderInput.closest(".salon-rating-slider__control");
+ if (sliderControl) sliderControl.style.setProperty("--rating-progress", percent + "%");
 }
 
 function syncRatingPresetState(form, ratingValue) {
@@ -270,7 +291,7 @@ function buildSalonSearchUrl(form) {
  var params = new URLSearchParams();
 
  formData.forEach(function (value, key) {
-  if (typeof value !== "string" || value === "") return;
+  if (typeof value !== "string" || value === "" || key === "page") return;
   params.append(key, value);
  });
 
@@ -320,6 +341,8 @@ function loadSalonListUrl(url) {
 }
 
 function applySalonListResponse(parsedDocument, url) {
+ var restoreRatingFocus = document.activeElement && document.activeElement.matches("[data-rating-slider-input]");
+ var restoreSortFocus = document.activeElement && document.activeElement.matches(".salon-sort__trigger");
  replaceElementById("salon-list-hero", parsedDocument);
  replaceElementById("salon-list-message", parsedDocument);
  replaceElementById("salon-primary-search-area", parsedDocument);
@@ -332,6 +355,15 @@ function applySalonListResponse(parsedDocument, url) {
 
  window.history.replaceState(null, "", toRelativeSalonUrl(url));
  bindSalonSearchForms();
+ bindSalonPagination();
+ if (restoreRatingFocus) {
+  var ratingSliderInput = document.querySelector("[data-rating-slider-input]");
+  if (ratingSliderInput) ratingSliderInput.focus({preventScroll: true});
+ }
+ if (restoreSortFocus) {
+  var sortTrigger = document.querySelector(".salon-sort__trigger");
+  if (sortTrigger) sortTrigger.focus({preventScroll: true});
+ }
  bindSalonCardFocusEffect();
  bindBranchMap(0);
 }

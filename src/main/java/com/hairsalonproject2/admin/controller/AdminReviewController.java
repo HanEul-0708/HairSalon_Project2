@@ -38,9 +38,7 @@ public class AdminReviewController {
  }
 
  private boolean matchesReviewFilter(ReviewResponse review, String keyword, String filterBy) {
-  if (keyword == null || keyword.isBlank()) {
-   return true;
-  }
+  if (keyword == null || keyword.isBlank()) return true;
   String normalizedKeyword = keyword.trim().toLowerCase(Locale.ROOT);
   return switch (filterBy == null ? "all" : filterBy) {
    case "member" -> contains(review.getMemberName(), normalizedKeyword);

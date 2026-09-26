@@ -35,9 +35,9 @@ class KakaoLocalSearchClientTest {
  }
 
  @Test
- void buildPlaceDedupKeyUsesPlaceNameFirst() {
+ void buildPlaceDedupKeyKeepsSameNameBranchesWithDifferentExternalIds() {
   KakaoPlaceSearchResult first = KakaoPlaceSearchResult.builder().externalId("1").placeName("\uC900\uC624\uBBF8\uC6A9\uC2E4").addressName("\uC11C\uC6B8 \uC6A9\uC0B0\uAD6C").build();
   KakaoPlaceSearchResult second = KakaoPlaceSearchResult.builder().externalId("2").placeName("\uC900\uC624\uBBF8\uC6A9\uC2E4").addressName("\uC804\uBD81 \uC815\uC74D\uC2DC").build();
-  assertThat(client.buildPlaceDedupKey(first)).isEqualTo(client.buildPlaceDedupKey(second));
+  assertThat(client.buildPlaceDedupKey(first)).isNotEqualTo(client.buildPlaceDedupKey(second));
  }
 }

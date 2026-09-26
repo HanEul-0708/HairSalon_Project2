@@ -45,19 +45,10 @@
 	 </strong>
 	</div>
 	<div class="salon-rating-slider__control">
+	 <div class="salon-rating-slider__track" aria-hidden="true"><span class="salon-rating-slider__fill"></span></div>
 	 <input class="salon-search-form__control salon-search-form__control--rating salon-rating-slider__input" type="range" min="0" max="5" step="0.5" value="0" data-rating-slider-input aria-label="최소 평점" th:value="${minRatingSliderValue}">
 	 <div class="salon-rating-slider__ticks" aria-hidden="true">
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--minor"></span>
-	  <span class="salon-rating-slider__tick salon-rating-slider__tick--major"></span>
+	  <span class="salon-rating-slider__tick" th:each="tick : ${#numbers.sequence(0, 10)}" th:classappend="|salon-rating-slider__tick--${tick % 2 == 0 ? 'major' : 'minor'}|" th:style="|--rating-tick-position: ${tick * 10}%;|" th:attr="data-rating-value=${tick / 2.0}"></span>
 	 </div>
 	</div>
    </div>
@@ -76,11 +67,18 @@
    예약 가능
   </label>
 
-  <select class="salon-search-form__control salon-search-form__control--sort" name="sort">
-   <option value="recommended" th:selected="${search.sort == 'recommended' or search.sort == null}">추천순</option>
-   <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
-   <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
-  </select>
+  <div class="salon-sort catalog-select catalog-select--compact" data-salon-sort data-catalog-select>
+   <select class="salon-search-form__control salon-search-form__control--sort" name="sort" aria-label="정렬 기준">
+    <option value="recommended" th:selected="${search.sort == 'recommended' or search.sort == null}">추천순</option>
+    <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
+    <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
+   </select>
+   <button type="button" class="salon-sort__trigger catalog-select__trigger" role="combobox" aria-label="정렬 기준" aria-haspopup="listbox" aria-expanded="false" aria-controls="salon-sort-options" hidden>
+    <span data-salon-sort-label data-catalog-select-label>추천순</span>
+    <svg class="salon-sort__chevron catalog-select__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   </button>
+   <ul class="salon-sort__menu catalog-select__menu" id="salon-sort-options" role="listbox" aria-label="정렬 기준" hidden></ul>
+  </div>
 
   <div class="salon-search-form__actions">
    <button type="button" class="btn btn-primary salon-search-form__submit" data-search-reset>
@@ -95,6 +93,7 @@
 
 <th:block th:fragment="branchMap(branchMarkers, branchMapStatus, kakaoMapConfigured)">
  <section id="salon-branch-map-section">
+  <p>현재 페이지의 내부 살롱(최대 15개)과 외부 검색 결과를 지도에 표시합니다.</p>
   <div class="salon-branch-map-panel">
    <div id="salon-branch-map" class="salon-branch-map" th:attr="data-kakao-enabled=${kakaoMapConfigured}"></div>
 
@@ -174,6 +173,11 @@
 </th:block>
 
 <th:block th:fragment="salonResults(salons, branchView, emptyMessage)">
+ <nav aria-label="살롱 목록 페이지" th:if="${salonPage != null and salonPage.totalPages > 1}">
+  <a class="btn btn-outline" data-salon-page-link th:if="${salonPage.hasPrevious()}" th:href="@{/salons(page=${salonPage.number},keyword=${search.keyword},region=${search.region},minRating=${search.minRating},reservable=${search.reservable},sort=${search.sort},preset=${activePreset})}">이전</a>
+  <span th:text="|${salonPage.number + 1} / ${salonPage.totalPages} 페이지 · 총 ${salonPage.totalElements}개|">페이지</span>
+  <a class="btn btn-outline" data-salon-page-link th:if="${salonPage.hasNext()}" th:href="@{/salons(page=${salonPage.number + 2},keyword=${search.keyword},region=${search.region},minRating=${search.minRating},reservable=${search.reservable},sort=${search.sort},preset=${activePreset})}">다음</a>
+ </nav>
  <div class="empty-state" th:if="${#lists.isEmpty(salons)}">
   <p th:text="${emptyMessage}">조건에 맞는 미용실이 없습니다.</p>
  </div>

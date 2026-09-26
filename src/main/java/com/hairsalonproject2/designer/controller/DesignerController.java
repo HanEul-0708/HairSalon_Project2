@@ -3,6 +3,9 @@ package com.hairsalonproject2.designer.controller;
 import com.hairsalonproject2.designer.dto.request.DesignerAiRecommendationRequest;
 import com.hairsalonproject2.designer.dto.request.DesignerSearchRequest;
 import com.hairsalonproject2.designer.dto.response.DesignerSummaryResponse;
+import com.hairsalonproject2.designer.dto.response.DesignerCatalogPage;
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
 import com.hairsalonproject2.designer.service.DesignerAiRecommendationService;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +36,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequestMapping("/designers")
 public class DesignerController {
 
- private static final int DESIGNERS_PER_PAGE = 9;
+ private static final int DESIGNERS_PER_PAGE = 15;
  private static final String SEARCH_MODE_AI = "ai";
  private static final String SEARCH_MODE_SEARCH = "search";
 
@@ -45,12 +48,15 @@ public class DesignerController {
   * GET /designers
   */
  @GetMapping
- public String list(@ModelAttribute("search") DesignerSearchRequest request, @ModelAttribute("aiRequest") DesignerAiRecommendationRequest aiRequest, @RequestParam(defaultValue = "1") int page, @RequestParam MultiValueMap<String, String> params, @RequestParam(required = false) String mode, Model model) {
+ public String list(@Valid @ModelAttribute("search") DesignerSearchRequest request, BindingResult searchErrors, @Valid @ModelAttribute("aiRequest") DesignerAiRecommendationRequest aiRequest, BindingResult aiErrors, @RequestParam MultiValueMap<String, String> params, @RequestParam(required = false) String mode, Model model) {
   if (StringUtils.hasText(request.getSortBy())) return redirectToCanonicalList(params);
   String searchMode = resolveSearchMode(mode, aiRequest); request.setSearched(true);
-  Page<DesignerSummaryResponse> ratingPage = designerQueryService.search(copySearchRequest(request, null), page - 1, DESIGNERS_PER_PAGE);
-  Page<DesignerSummaryResponse> likesPage = designerQueryService.search(copySearchRequest(request, "likes"), page - 1, DESIGNERS_PER_PAGE);
-  Page<DesignerSummaryResponse> newestPage = designerQueryService.search(copySearchRequest(request, "newest"), page - 1, DESIGNERS_PER_PAGE);
+  boolean invalid = searchErrors.hasErrors() || aiErrors.hasErrors();
+  DesignerCatalogPage catalog = invalid ? new DesignerCatalogPage(Page.empty(), Page.empty(), Page.empty())
+   : designerQueryService.searchCatalog(request, request.getPage() - 1, DESIGNERS_PER_PAGE);
+  Page<DesignerSummaryResponse> ratingPage = catalog.rating();
+  Page<DesignerSummaryResponse> likesPage = catalog.likes();
+  Page<DesignerSummaryResponse> newestPage = catalog.newest();
   model.addAttribute("designers", ratingPage.getContent());
   model.addAttribute("designersByRating", ratingPage.getContent());
   model.addAttribute("designersByLikes", likesPage.getContent());
@@ -63,7 +69,7 @@ public class DesignerController {
   model.addAttribute("pageNumbers", ratingPage.getTotalPages() == 0 ? java.util.Collections.emptyList() : java.util.stream.IntStream.rangeClosed(1, ratingPage.getTotalPages()).boxed().toList());
   model.addAttribute("searchMode", searchMode);
   model.addAttribute("aiRequest", aiRequest);
-  if (SEARCH_MODE_AI.equals(searchMode) && StringUtils.hasText(aiRequest.getQuery()))
+  if (!invalid && SEARCH_MODE_AI.equals(searchMode) && StringUtils.hasText(aiRequest.getQuery()))
    model.addAttribute("aiResult", designerAiRecommendationService.recommend(aiRequest));
   return "designer/list";//디자이너 목록 페이지의 진입점 역할을 하는 매핑 메소드입니다 (GET /designers). 정렬 기준(sortBy) 파라미터가 명시적으로 들어온 경우 정형화된 URL 구조를 유지하기 위해 redirectToCanonicalList로 리다이렉트 처리를 수행합니다. 동일한 검색 조건에 대하여 평점순(ratingPage), 좋아요순(likesPage), 최신순(newestPage) 데이터를 각각 분리하여 조회한 후 모델에 바인딩합니다. 현재 페이지 번호, 전체 페이지 수, 전체 디자이너 수 등의 페이지네이션 속성을 연산하여 뷰 템플릿으로 전달합니다.
  }
@@ -76,14 +82,6 @@ public class DesignerController {
    values.stream().filter(StringUtils::hasText).forEach(value -> builder.queryParam(key, value));
   }); return "redirect:" + builder.build().encode().toUriString();
  }//파라미터 맵에서 sortBy 항목을 제거한 후, 남은 검색 조건들을 쿼리 스트링으로 다시 인코딩하여 표준 주소 형태로 리다이렉트 경로를 생성하는 내부 메소드입니다.
-
- private DesignerSearchRequest copySearchRequest(DesignerSearchRequest source, String sortBy) {
-  DesignerSearchRequest copied = new DesignerSearchRequest(); copied.setKeyword(source.getKeyword());
-  copied.setSalonKeyword(source.getSalonKeyword()); copied.setMinRating(source.getMinRating());
-  copied.setMinCareerYears(source.getMinCareerYears());
-  copied.setMinReviewCount(source.getMinReviewCount()); copied.setSortBy(sortBy);
-  copied.setSearched(source.isSearched()); return copied;
- }//원본 검색 요청 객체의 속성값(키워드, 미용실 키워드, 최소 평점, 최소 경력, 최소 리뷰 수 등)을 유지하면서 정렬 기준(sortBy)만 다르게 적용된 복사본 객체를 생성하여 반환합니다.
 
  private String resolveSearchMode(String mode, DesignerAiRecommendationRequest aiRequest) {
   if (StringUtils.hasText(aiRequest.getQuery())) return SEARCH_MODE_AI;

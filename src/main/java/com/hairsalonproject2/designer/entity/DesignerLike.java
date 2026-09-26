@@ -4,6 +4,8 @@ import com.hairsalonproject2.common.entity.BaseCreatedEntity;
 import com.hairsalonproject2.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "designer_like", uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "designer_id"}))
@@ -23,5 +25,6 @@ public class DesignerLike extends BaseCreatedEntity {
 
  @ManyToOne(fetch = FetchType.LAZY)
  @JoinColumn(name = "designer_id", nullable = false)
+ @OnDelete(action = OnDeleteAction.CASCADE)
  private Designer designer;
 }

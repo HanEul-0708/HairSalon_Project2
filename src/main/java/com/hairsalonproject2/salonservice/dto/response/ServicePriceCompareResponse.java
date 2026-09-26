@@ -12,6 +12,7 @@ public class ServicePriceCompareResponse {
  private Integer salonId;
  private String salonName;
  private String address;
+ private String roadAddress;
  private String serviceName;
  private Integer price;
  private Integer duration;

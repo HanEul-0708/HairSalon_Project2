@@ -402,6 +402,7 @@
  background-size: 6px 6px, 6px 6px;
  background-repeat: no-repeat;
  padding-right: 40px;
+ cursor: pointer;
 }
 
 .salon-search-form__control--sort {
@@ -415,7 +416,7 @@
  outline: none;
  border-color: var(--gold);
  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.14);
- background: var(--white);
+ background-color: var(--white);
 }
 
 .salon-search-form__control--keyword {
@@ -441,9 +442,17 @@
  height: 48px;
 }
 
+.salon-search-form__stack--rating {
+ container: salon-rating / inline-size;
+ grid-template-rows: minmax(48px, auto) 40px;
+}
+
 .salon-rating-slider {
  --salon-rating-header-width: 122px;
  --salon-rating-value-width: 62px;
+ --salon-rating-thumb-size: 18px;
+ --salon-rating-thumb-radius: calc(var(--salon-rating-thumb-size) / 2);
+ --salon-rating-track-height: 5px;
  display: grid;
  grid-template-columns: var(--salon-rating-header-width) minmax(0, 1fr);
  align-items: center;
@@ -494,18 +503,45 @@
 }
 
 .salon-rating-slider__control {
+ position: relative;
  display: grid;
- grid-template-rows: 16px 8px;
+ grid-template-rows: var(--salon-rating-thumb-size) 8px;
  gap: 2px;
  min-width: 0;
  width: 100%;
  align-items: center;
 }
 
+/* The rail and ticks share the native thumb's center-to-center travel. */
+.salon-rating-slider__track {
+ position: absolute;
+ top: calc((var(--salon-rating-thumb-size) - var(--salon-rating-track-height)) / 2);
+ left: var(--salon-rating-thumb-radius);
+ right: var(--salon-rating-thumb-radius);
+ height: var(--salon-rating-track-height);
+ overflow: hidden;
+ border-radius: 999px;
+ background: #e9dfca;
+ pointer-events: none;
+}
+
+.salon-rating-slider__fill {
+ display: block;
+ width: var(--rating-progress, 0%);
+ height: 100%;
+ background: linear-gradient(90deg, #c9a84c 0%, #e8c96d 100%);
+}
+
 .salon-rating-slider__input {
+ position: relative;
+ z-index: 1;
+ display: block;
+ box-sizing: border-box;
  width: 100%;
+ min-width: 0;
  min-height: 0;
- height: 16px;
+ height: var(--salon-rating-thumb-size);
+ margin: 0;
  padding: 0;
  border: none;
  border-radius: 999px;
@@ -523,15 +559,19 @@
 }
 
 .salon-rating-slider__input::-webkit-slider-runnable-track {
- height: 5px;
- border-radius: 999px;
- background: linear-gradient(90deg, #c9a84c 0%, #e8c96d var(--rating-progress, 0%), #e9dfca var(--rating-progress, 0%), #e9dfca 100%);
+ box-sizing: border-box;
+ width: 100%;
+ height: var(--salon-rating-track-height);
+ padding: 0;
+ border: none;
+ background: transparent;
 }
 
 .salon-rating-slider__input::-webkit-slider-thumb {
- width: 18px;
- height: 18px;
- margin-top: -6.5px;
+ box-sizing: border-box;
+ width: var(--salon-rating-thumb-size);
+ height: var(--salon-rating-thumb-size);
+ margin-top: calc((var(--salon-rating-track-height) - var(--salon-rating-thumb-size)) / 2);
  border: 2px solid #fff7e4;
  border-radius: 50%;
  background: linear-gradient(135deg, #2f281d 0%, #5e4c2d 100%);
@@ -541,21 +581,24 @@
 }
 
 .salon-rating-slider__input::-moz-range-track {
- height: 5px;
+ box-sizing: border-box;
+ width: 100%;
+ height: var(--salon-rating-track-height);
+ padding: 0;
  border: none;
- border-radius: 999px;
- background: #e9dfca;
+ background: transparent;
 }
 
 .salon-rating-slider__input::-moz-range-progress {
- height: 5px;
- border-radius: 999px;
- background: linear-gradient(90deg, #c9a84c 0%, #e8c96d 100%);
+ height: var(--salon-rating-track-height);
+ border: none;
+ background: transparent;
 }
 
 .salon-rating-slider__input::-moz-range-thumb {
- width: 18px;
- height: 18px;
+ box-sizing: border-box;
+ width: var(--salon-rating-thumb-size);
+ height: var(--salon-rating-thumb-size);
  border: 2px solid #fff7e4;
  border-radius: 50%;
  background: linear-gradient(135deg, #2f281d 0%, #5e4c2d 100%);
@@ -563,16 +606,18 @@
 }
 
 .salon-rating-slider__ticks {
- display: grid;
- grid-template-columns: repeat(11, minmax(0, 1fr));
- align-items: end;
+ position: relative;
  height: 8px;
- padding: 0 8px;
+ margin: 0 var(--salon-rating-thumb-radius);
+ padding: 0;
  pointer-events: none;
 }
 
 .salon-rating-slider__tick {
- justify-self: center;
+ position: absolute;
+ bottom: 0;
+ left: var(--rating-tick-position);
+ transform: translateX(-50%);
  border-radius: 999px;
  background: rgba(146, 121, 73, 0.7);
 }
@@ -587,6 +632,21 @@
  width: 1px;
  height: 5px;
  background: rgba(174, 152, 111, 0.82);
+}
+
+@container salon-rating (max-width: 257.98px) {
+ .salon-rating-slider {
+  grid-template-columns: minmax(0, 1fr);
+  height: auto;
+  gap: 6px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+ }
+
+ .salon-rating-slider__header {
+  width: 100%;
+  min-width: 0;
+ }
 }
 
 .salon-search-form__shortcut-group--rating {

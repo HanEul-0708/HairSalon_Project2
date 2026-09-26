@@ -139,25 +139,17 @@ public class BoardQueryService {
  }
 
  private void validatePublicBoard(Board board, BoardType type) {
-  if (board.getType() != type) {
-   throw new BoardException("게시판 종류가 올바르지 않습니다.");
-  }
-  if (board.isHidden()) {
-   throw new BoardException("숨김 처리된 게시글입니다.");
-  }
+  if (board.getType() != type) throw new BoardException("게시판 종류가 올바르지 않습니다.");
+  if (board.isHidden()) throw new BoardException("숨김 처리된 게시글입니다.");
  }
 
  private int normalizePageSize(int size) {
-  if (size <= 0) {
-   return 10;
-  }
+  if (size <= 0) return 10;
   return Math.min(size, 50);
  }
 
  private String normalizeKeyword(String keyword) {
-  if (keyword == null) {
-   return null;
-  }
+  if (keyword == null) return null;
   String trimmed = keyword.trim();
   return trimmed.isEmpty() ? null : trimmed;
  }

@@ -81,8 +81,8 @@ class ReservationServiceTest {
   SalonService salonService = SalonService.builder().serviceId(1).name("Cut").price(30000).duration(60).salon(serviceSalon).build();
   ReservationCreateRequest request = reservationCreateRequest();
   when(memberRepository.findById("user01")).thenReturn(Optional.of(member));
-  when(designerRepository.findById(1)).thenReturn(Optional.of(designer));
-  when(salonServiceRepository.findById(1)).thenReturn(Optional.of(salonService));
+  when(designerRepository.findByIdForReservation(1)).thenReturn(Optional.of(designer));
+  when(salonServiceRepository.findByIdForReservation(1)).thenReturn(Optional.of(salonService));
   assertThatThrownBy(() -> reservationService.createReservation("user01", request)).isInstanceOf(IllegalArgumentException.class).hasMessage("Designer and service must belong to the same salon.");
  }
 

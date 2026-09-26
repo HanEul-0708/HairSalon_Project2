@@ -122,9 +122,7 @@ public class Board extends BaseTimeEntity {
    * 단순 대입이 아니라 연결 메서드를 통해
    * 부모-자식 목록도 함께 맞춘다.
    */
-  if (parent != null) {
-   changeParent(parent);
-  }
+  if (parent != null) changeParent(parent);
  }
 
  /**
@@ -180,26 +178,20 @@ public class Board extends BaseTimeEntity {
   /*
    * 기존 부모가 있으면 기존 부모의 자식 목록에서 먼저 제거
    */
-  if (this.parent != null) {
-   this.parent.children.remove(this);
-  }
+  if (this.parent != null) this.parent.children.remove(this);
   this.parent = parent;
 
   /*
    * 새 부모가 있고, 아직 자식 목록에 없으면 추가
    */
-  if (parent != null && !parent.children.contains(this)) {
-   parent.children.add(this);
-  }
+  if (parent != null && !parent.children.contains(this)) parent.children.add(this);
  }
 
  /**
   * 이미지 추가
   */
  public void addBoardImage(BoardImage image) {
-  if (image == null) {
-   return;
-  }
+  if (image == null) return;
   this.boardImages.add(image);
   image.changeBoard(this);
  }
@@ -208,9 +200,7 @@ public class Board extends BaseTimeEntity {
   * 이미지 제거
   */
  public void removeBoardImage(BoardImage image) {
-  if (image == null) {
-   return;
-  }
+  if (image == null) return;
   this.boardImages.remove(image);
   image.changeBoard(null);
  }
@@ -219,9 +209,7 @@ public class Board extends BaseTimeEntity {
   * 첨부파일 추가
   */
  public void addBoardFile(BoardFile file) {
-  if (file == null) {
-   return;
-  }
+  if (file == null) return;
   this.boardFiles.add(file);
   file.changeBoard(this);
  }
@@ -230,9 +218,7 @@ public class Board extends BaseTimeEntity {
   * 첨부파일 제거
   */
  public void removeBoardFile(BoardFile file) {
-  if (file == null) {
-   return;
-  }
+  if (file == null) return;
   this.boardFiles.remove(file);
   file.changeBoard(null);
  }

@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
+ document.querySelectorAll("[data-catalog-select]").forEach(function (root) {
+  bindCatalogSelect(root);
+ });
  bindServiceSearchForm();
  bindServiceDeleteConfirm();
 });
