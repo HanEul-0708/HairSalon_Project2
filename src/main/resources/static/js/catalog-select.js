@@ -96,6 +96,10 @@ function bindCatalogSelect(root) {
   if (!root.contains(event.relatedTarget)) close();
  });
  root.addEventListener("catalog-select-close", close);
+ root.addEventListener("catalog-select-sync", function () {
+  syncSelection();
+  close();
+ });
  select.addEventListener("change", syncSelection);
  syncSelection();
  select.hidden = true;

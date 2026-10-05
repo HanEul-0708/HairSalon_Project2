@@ -268,9 +268,11 @@ async function interaction(browser, base) {
   await browser.viewport(1440);
   await browser.navigate(`${base}/salons?keyword=${encodeURIComponent('테스트 커트')}&region=${encodeURIComponent('서울')}&sort=rating&reservable=true&minRating=2`);
   async function update(action, rating, label, preserve = true) {
-    await browser.evaluate('window.__ratingPreviousForm=document.querySelector(".salon-search-form--primary")');
+    await browser.evaluate('window.__ratingPreviousForm=document.querySelector(".salon-search-form--primary");window.__ratingPreviousResults=document.querySelector("#salon-results-area")');
     await action();
-    await browser.waitFor(`window.__ratingPreviousForm!==document.querySelector('.salon-search-form--primary') && document.querySelector('.salon-search-form--primary')?.dataset.autoSubmitBound==='true' && Number(document.querySelector('[data-rating-slider-input]').value)===${rating}`);
+    await browser.waitFor(`window.__ratingPreviousResults!==document.querySelector('#salon-results-area') && document.querySelector('#salon-search-map-shell')?.dataset.loading!=='true' && document.querySelector('.salon-search-form--primary')?.dataset.autoSubmitBound==='true' && Number(document.querySelector('[data-rating-slider-input]').value)===${rating}`);
+    check(await browser.evaluate('window.__ratingPreviousForm === document.querySelector(".salon-search-form--primary")'),
+      `${browser.name} ${label}: AJAX preserves the existing search form`);
     const data = await browser.evaluate(geometry); validateGeometry(browser, data, label);
     const query = await browser.evaluate('Object.fromEntries(new URL(location.href).searchParams)');
     check((query.minRating || '') === (rating ? String(rating) : ''), `${browser.name} ${label}: actual AJAX URL rating incorrect`);

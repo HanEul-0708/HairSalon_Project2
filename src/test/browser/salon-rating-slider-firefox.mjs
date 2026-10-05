@@ -36,8 +36,8 @@ const server = createServer(async (request, response) => {
       if (request.headers['x-requested-with'] === 'XMLHttpRequest') requests.push(url.toString());
       response.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
       let html = fixtures[Math.max(0, Math.min(10, Math.round(rating * 2)))];
-      // AJAX imports actual form nodes; scripts in parsed responses do not execute.
-      // Echo controller-maintained preset/reset state into attributes, not a script.
+      // AJAX synchronizes the retained form from server markup; scripts do not execute.
+      // Echo controller-maintained preset/reset state into attributes.
       if (preset) {
         html = html.replace(/(<form\b[^>]*class="salon-search-form salon-search-form--primary"[^>]*>)/,
           `$1<input type="hidden" name="preset" value="${preset}">`);
@@ -212,16 +212,16 @@ try {
     const expectedMinRating = Object.hasOwn(expected, 'minRating') ? expected.minRating : value === 0 ? null : String(value);
     assert.equal(url.searchParams.get('minRating'), expectedMinRating, `interaction ${value}: submitted value`);
     if (Object.hasOwn(expected, 'preset')) assert.equal(url.searchParams.get('preset'), expected.preset, `interaction ${value}: submitted preset`);
-    if (expected.focus) assert.ok(await page.evaluate(() => document.activeElement?.matches('[data-rating-slider-input]')), `interaction ${value}: range focus survives AJAX replacement`);
+    if (expected.focus) assert.ok(await page.evaluate(() => document.activeElement?.matches('[data-rating-slider-input]')), `interaction ${value}: range focus survives AJAX`);
     checks++;
   }
   await interact(4, () => page.locator('[data-preset-mode=top-rated]').click(), {preset: 'top-rated'});
   await interact(4.5, () => page.locator('[data-preset-mode=top-rated-4-5]').click(), {preset: 'top-rated-4-5'});
   await interact(4.5, () => page.locator('[data-search-reset]').click(), {minRating: null, preset: 'top-rated-4-5'});
   await interact(5, () => page.locator(inputSelector).press('End'), {preset: null, focus: true});
-  await interact(0, () => page.locator('[data-search-reset]').click(), {preset: ''});
+  await interact(0, () => page.locator('[data-search-reset]').click(), {preset: null});
   await interact(5, () => page.locator(inputSelector).press('End'), {preset: null, focus: true});
-  // Keep using the keyboard without refocusing the newly rendered form after each response.
+  // Keep using the keyboard without refocusing after each response.
   await interact(4.5, () => page.keyboard.press('ArrowLeft'), {focus: true});
   await interact(0, () => page.keyboard.press('Home'), {focus: true});
   await interact(0.5, () => page.keyboard.press('ArrowRight'), {focus: true});

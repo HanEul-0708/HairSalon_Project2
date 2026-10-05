@@ -9,6 +9,10 @@ var CURRENT_LOCATION_STORAGE_KEY = "salonCurrentLocation";
 var CURRENT_LOCATION_MAX_AGE_MS = 5 * 60 * 1000;
 var salonSearchRequestController = null;
 var salonSearchRequestSequence = 0;
+var salonSearchRequestInFlight = false;
+var salonSearchRequestUrl = null;
+var salonSearchResetControlsPending = false;
+var salonSearchPendingUrl = null;
 
 function bindSalonSearchForms() {
  var forms = document.querySelectorAll(".salon-search-form[data-auto-submit='true']");
@@ -37,7 +41,12 @@ function bindAutoSubmitForm(form) {
  form.addEventListener("submit", function (event) {
   event.preventDefault();
   window.clearTimeout(submitTimerId);
+  if (isComposing) return;
   submitSalonSearchForm(form);
+ });
+
+ form.addEventListener("salon-search-cancel-pending", function () {
+  window.clearTimeout(submitTimerId);
  });
 
  function scheduleSubmit(delay) {
@@ -50,19 +59,22 @@ function bindAutoSubmitForm(form) {
  textInputs.forEach(function (input) {
   input.addEventListener("compositionstart", function () {
    isComposing = true;
+   window.clearTimeout(submitTimerId);
+   if (salonSearchResetControlsPending) cancelSalonSearchRequest();
   });
 
   input.addEventListener("compositionend", function () {
    isComposing = false;
-   scheduleSubmit(250);
+   queueSalonSearchForm(form);
   });
 
   input.addEventListener("input", function () {
-   if (isComposing) return;
-   scheduleSubmit(350);
+   window.clearTimeout(submitTimerId);
+   queueSalonSearchForm(form);
   });
 
   input.addEventListener("keydown", function (event) {
+   if (isComposing || event.isComposing || event.keyCode === 229) return;
    if (event.key === "Enter") {
 	event.preventDefault();
 	window.clearTimeout(submitTimerId);
@@ -83,6 +95,7 @@ function bindAutoSubmitForm(form) {
 
   function beginRatingSliderDrag() {
    window.clearTimeout(submitTimerId);
+   cancelSalonSearchRequest();
    isDraggingRatingSlider = true;
   }
 
@@ -101,6 +114,7 @@ function bindAutoSubmitForm(form) {
   ratingSliderInput.addEventListener("blur", endRatingSliderDrag);
 
   ratingSliderInput.addEventListener("input", function () {
+   cancelSalonSearchRequest();
    syncRatingSlider(form, ratingSliderInput, true);
    if (!isDraggingRatingSlider) {
 	scheduleSubmit(180);
@@ -117,14 +131,19 @@ function bindAutoSubmitForm(form) {
 
  if (resetButton) resetButton.addEventListener("click", function () {
   window.clearTimeout(submitTimerId);
-  var resetUrl = form.dataset.resetUrl || form.getAttribute("action") || "/salons";
-  loadSalonListUrl(resetUrl);
- }); presetLinks.forEach(function (link) {
+  var resetUrl = new URL(form.dataset.resetUrl || form.getAttribute("action") || "/salons", window.location.origin);
+  var presetMode = getCurrentPresetMode(form);
+  if (presetMode === "all") resetUrl.searchParams.delete("preset");
+  else resetUrl.searchParams.set("preset", presetMode);
+  loadSalonListUrl(resetUrl.toString(), true);
+ });
+ presetLinks.forEach(function (link) {
   link.addEventListener("click", function (event) {
-   event.preventDefault(); window.clearTimeout(submitTimerId);
+   event.preventDefault();
    if (!applyPresetMode(form, link.dataset.presetMode || "all")) return;
+   window.clearTimeout(submitTimerId);
    form.requestSubmit();
-  });//요소 검증: if (resetButton) 구문을 통해 폼 내에 초기화 버튼이 실제로 존재하는지 확인한 후 이벤트를 바인딩합니다. 리셋 URL 결정: 버튼이 클릭되면 초기화할 대상 URL을 결정합니다. 우선순위는 폼의 data-reset-url 속성, 폼의 action 속성 순이며, 둘 다 없을 경우 기본값으로 "/salons"를 사용합니다. 데이터 비동기 요청: 결정된 URL(resetUrl)을 loadSalonListUrl 함수에 전달하여 페이지 전환 없이 미용실 목록 영역을 비동기(AJAX)로 갱신합니다.
+  });
  });
 }
 
@@ -139,7 +158,15 @@ function bindSalonPagination() {
   link.addEventListener("click", function (event) {
    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
    event.preventDefault();
-   loadSalonListUrl(link.href);
+   var form = document.querySelector(".salon-search-form--primary");
+   var pageUrl = new URL(link.href, window.location.origin);
+   if (form) {
+    form.dispatchEvent(new Event("salon-search-cancel-pending"));
+    var searchUrl = new URL(buildSalonSearchUrl(form));
+    if (pageUrl.searchParams.has("page")) searchUrl.searchParams.set("page", pageUrl.searchParams.get("page"));
+    pageUrl = searchUrl;
+   }
+   loadSalonListUrl(pageUrl.toString());
   });
  });
 }
@@ -281,7 +308,25 @@ function setRatingSliderValue(form, sliderInput, ratingValue, shouldSyncPreset) 
 function submitSalonSearchForm(form) {
  if (!form) return;
 
- loadSalonListUrl(buildSalonSearchUrl(form));
+ var url = buildSalonSearchUrl(form);
+ if (salonSearchRequestInFlight && !salonSearchResetControlsPending && salonSearchRequestUrl === url) {
+  salonSearchPendingUrl = null;
+  return;
+ }
+ loadSalonListUrl(url);
+}
+
+function queueSalonSearchForm(form) {
+ if (!form) return;
+
+ var url = buildSalonSearchUrl(form);
+ // Finish the current search so continuous typing cannot starve result updates.
+ // A reset is superseded instead, because its response would write control values.
+ if (salonSearchRequestInFlight && !salonSearchResetControlsPending) {
+  salonSearchPendingUrl = url === salonSearchRequestUrl ? null : url;
+  return;
+ }
+ loadSalonListUrl(url);
 }
 
 function buildSalonSearchUrl(form) {
@@ -299,17 +344,33 @@ function buildSalonSearchUrl(form) {
  return url.toString();
 }
 
-function loadSalonListUrl(url) {
+function cancelSalonSearchRequest() {
+ // Explicit filter changes supersede both the active request and queued typing.
+ salonSearchRequestSequence += 1;
+ if (salonSearchRequestController) salonSearchRequestController.abort();
+ salonSearchRequestController = null;
+ salonSearchRequestInFlight = false;
+ salonSearchRequestUrl = null;
+ salonSearchResetControlsPending = false;
+ salonSearchPendingUrl = null;
+ setSalonSearchLoadingState(false);
+}
+
+function loadSalonListUrl(url, resetSearchControls) {
  if (!url) return;
 
- if (salonSearchRequestController && typeof salonSearchRequestController.abort === "function") salonSearchRequestController.abort();
+ url = new URL(url, window.location.origin).toString();
+ cancelSalonSearchRequest();
 
- var requestId = ++salonSearchRequestSequence;
+ var requestId = salonSearchRequestSequence;
  var controller = typeof AbortController === "function" ? new AbortController() : null;
  salonSearchRequestController = controller;
+ salonSearchRequestInFlight = true;
+ salonSearchRequestUrl = url;
+ salonSearchResetControlsPending = Boolean(resetSearchControls);
  setSalonSearchLoadingState(true);
 
- fetch(url, {
+ return fetch(url, {
   method: "GET",
   headers: {
    "X-Requested-With": "XMLHttpRequest"
@@ -325,27 +386,35 @@ function loadSalonListUrl(url) {
 
 	  var parsedDocument = new DOMParser().parseFromString(html, "text/html");
 	  if (!parsedDocument.getElementById("salon-primary-search-area")) {
-	   window.location.assign(url);
-	   return;
+	   throw new Error("Missing salon search area");
 	  }
 
-	  applySalonListResponse(parsedDocument, url);
+	  applySalonListResponse(parsedDocument, url, resetSearchControls);
 	 })
 	 .catch(function (error) {
+	  if (requestId !== salonSearchRequestSequence) return;
 	  if (error && error.name === "AbortError") return;
-	  window.location.assign(url);
+	  if (salonSearchPendingUrl) return;
+	  showSalonSearchError();
 	 })
 	 .finally(function () {
-	  if (requestId === salonSearchRequestSequence) setSalonSearchLoadingState(false);
+	  if (requestId === salonSearchRequestSequence) {
+	   var pendingUrl = salonSearchPendingUrl;
+	   salonSearchRequestController = null;
+	   salonSearchRequestInFlight = false;
+	   salonSearchRequestUrl = null;
+	   salonSearchResetControlsPending = false;
+	   salonSearchPendingUrl = null;
+	   if (pendingUrl) loadSalonListUrl(pendingUrl);
+	   else setSalonSearchLoadingState(false);
+	  }
 	 });
 }
 
-function applySalonListResponse(parsedDocument, url) {
- var restoreRatingFocus = document.activeElement && document.activeElement.matches("[data-rating-slider-input]");
- var restoreSortFocus = document.activeElement && document.activeElement.matches(".salon-sort__trigger");
+function applySalonListResponse(parsedDocument, url, resetSearchControls) {
  replaceElementById("salon-list-hero", parsedDocument);
  replaceElementById("salon-list-message", parsedDocument);
- replaceElementById("salon-primary-search-area", parsedDocument);
+ syncSalonSearchForm(parsedDocument, resetSearchControls);
  replaceElementById("salon-kakao-sync-area", parsedDocument);
  replaceElementById("salon-kakao-results-area", parsedDocument);
  replaceElementById("salon-results-area", parsedDocument);
@@ -356,16 +425,76 @@ function applySalonListResponse(parsedDocument, url) {
  window.history.replaceState(null, "", toRelativeSalonUrl(url));
  bindSalonSearchForms();
  bindSalonPagination();
- if (restoreRatingFocus) {
-  var ratingSliderInput = document.querySelector("[data-rating-slider-input]");
-  if (ratingSliderInput) ratingSliderInput.focus({preventScroll: true});
- }
- if (restoreSortFocus) {
-  var sortTrigger = document.querySelector(".salon-sort__trigger");
-  if (sortTrigger) sortTrigger.focus({preventScroll: true});
- }
  bindSalonCardFocusEffect();
  bindBranchMap(0);
+}
+
+function syncSalonSearchForm(parsedDocument, resetSearchControls) {
+ var selector = "#salon-primary-search-area .salon-search-form";
+ var form = document.querySelector(selector);
+ var nextForm = parsedDocument.querySelector(selector);
+ if (!form || !nextForm) return;
+
+ // Keep the actual controls and their listeners, caret, selection and IME state.
+ form.setAttribute("action", nextForm.getAttribute("action") || "/salons");
+ form.dataset.resetUrl = nextForm.dataset.resetUrl || form.getAttribute("action");
+ var keywordInput = form.querySelector("input[name='keyword']");
+ var nextKeywordInput = nextForm.querySelector("input[name='keyword']");
+ if (keywordInput && nextKeywordInput) keywordInput.placeholder = nextKeywordInput.placeholder;
+
+ var presetInput = form.querySelector("input[name='preset']");
+ var nextPresetInput = nextForm.querySelector("input[name='preset']");
+ if (nextPresetInput) {
+  if (!presetInput) {
+   presetInput = document.createElement("input");
+   presetInput.type = "hidden";
+   presetInput.name = "preset";
+   form.prepend(presetInput);
+  }
+  presetInput.value = nextPresetInput.value;
+ } else if (presetInput) presetInput.remove();
+
+ form.querySelectorAll("[data-preset-mode]").forEach(function (link) {
+  var nextLink = nextForm.querySelector("[data-preset-mode='" + link.dataset.presetMode + "']");
+  if (!nextLink) return;
+  link.classList.toggle("is-active", nextLink.classList.contains("is-active"));
+  link.setAttribute("href", nextLink.getAttribute("href"));
+ });
+
+ var locationButton = form.querySelector("[data-current-location-trigger]");
+ var nextLocationButton = nextForm.querySelector("[data-current-location-trigger]");
+ if (locationButton && nextLocationButton && locationButton.dataset.locationPending !== "true") {
+  locationButton.disabled = nextLocationButton.disabled;
+ }
+
+ if (resetSearchControls) {
+  ["keyword", "region", "reservable", "sort"].forEach(function (name) {
+   var control = form.elements.namedItem(name);
+   var nextControl = nextForm.elements.namedItem(name);
+   if (!control || !nextControl) return;
+   if (control.type === "checkbox") control.checked = nextControl.checked;
+   else control.value = nextControl.value;
+  });
+  var sliderInput = form.querySelector("[data-rating-slider-input]");
+  var nextSliderInput = nextForm.querySelector("[data-rating-slider-input]");
+  if (sliderInput && nextSliderInput) setRatingSliderValue(form, sliderInput, nextSliderInput.value, false);
+  var sortRoot = form.querySelector("[data-salon-sort]");
+  if (sortRoot) sortRoot.dispatchEvent(new Event("catalog-select-sync"));
+ }
+
+ var ratingSlider = form.querySelector("[data-rating-slider]");
+ var minRatingInput = form.elements.namedItem("minRating");
+ if (ratingSlider && minRatingInput) ratingSlider.dataset.ratingActive = minRatingInput.value ? "true" : "false";
+}
+
+function showSalonSearchError() {
+ var messageArea = document.getElementById("salon-list-message");
+ if (!messageArea) return;
+ var alert = document.createElement("div");
+ alert.className = "alert alert-danger";
+ alert.setAttribute("role", "alert");
+ alert.textContent = "검색 결과를 불러오지 못했습니다. 검색 조건을 다시 변경하면 재시도합니다.";
+ messageArea.replaceChildren(alert);
 }
 
 function replaceElementById(elementId, parsedDocument) {
@@ -531,6 +660,10 @@ function bindBranchMapControls(branchMapState) {
 	 branchMapState.regionInput,
 	 branchMapState.currentLocationOverlay
  );
+ if (navigator.geolocation && branchMapState.currentLocationButton) setCurrentLocationButtonState(
+	 branchMapState.currentLocationButton,
+	 branchMapState.currentLocationButton.dataset.locationPending === "true"
+ );
 }
 
 function clearBranchMarkers(branchMapState) {
@@ -611,6 +744,8 @@ function refreshBranchMap(branchMapState) {
 
  var persistedCurrentLocation = readPersistedCurrentLocationState();
  var restoredCurrentLocation = null;
+ var isLocationPending = branchMapState.currentLocationButton
+	 && branchMapState.currentLocationButton.dataset.locationPending === "true";
 
  if (!markerEntries.length) {
   if (persistedCurrentLocation) restoredCurrentLocation = renderCurrentLocation(
@@ -620,7 +755,9 @@ function refreshBranchMap(branchMapState) {
 	  true
   );
 
-  if (statusElement) statusElement.textContent = restoredCurrentLocation
+  if (statusElement) statusElement.textContent = isLocationPending
+	  ? "현재 위치를 확인하는 중입니다."
+	  : restoredCurrentLocation
 	  ? buildCurrentLocationStatusMessage(
 		  restoredCurrentLocation.accuracyText,
 		  restoredCurrentLocation.lowAccuracyHint,
@@ -642,7 +779,9 @@ function refreshBranchMap(branchMapState) {
 	 true
  );
 
- if (statusElement) statusElement.textContent = restoredCurrentLocation
+ if (statusElement) statusElement.textContent = isLocationPending
+	 ? "현재 위치를 확인하는 중입니다."
+	 : restoredCurrentLocation
 	 ? buildCurrentLocationStatusMessage(
 		 restoredCurrentLocation.accuracyText,
 		 restoredCurrentLocation.lowAccuracyHint,
@@ -667,10 +806,17 @@ function bindCurrentLocationAction(button, map, statusElement, geocoder, regionI
 
  var currentLocationOverlay = overlayState || createCurrentLocationOverlay();
 
+ function updateCurrentLocationStatus(message) {
+  var currentStatusElement = document.querySelector("[data-branch-map-status]");
+  if (currentStatusElement) currentStatusElement.textContent = message;
+  else if (statusElement && statusElement.isConnected) statusElement.textContent = message;
+ }
+
  button.addEventListener("click", function () {
+  if (button.dataset.locationPending === "true") return;
   setCurrentLocationButtonState(button, true);
 
-  if (statusElement) statusElement.textContent = "현재 위치 권한을 확인하는 중입니다.";
+  updateCurrentLocationStatus("현재 위치 권한을 확인하는 중입니다.");
 
   navigator.geolocation.getCurrentPosition(
 	  function (position) {
@@ -695,19 +841,22 @@ function bindCurrentLocationAction(button, map, statusElement, geocoder, regionI
 	   resolveCurrentRegionKeyword(geocoder, position.coords, function (regionKeyword) {
 		currentLocationState.regionKeyword = regionKeyword;
 		persistCurrentLocationState(currentLocationState);
-		applyCurrentRegionKeyword(regionInput, regionKeyword);
+		applyCurrentRegionKeyword(
+			document.querySelector(".salon-search-form__control--region[name='region']") || regionInput,
+			regionKeyword
+		);
 
-		if (statusElement) statusElement.textContent = buildCurrentLocationStatusMessage(
+		updateCurrentLocationStatus(buildCurrentLocationStatusMessage(
 			renderedCurrentLocation.accuracyText,
 			renderedCurrentLocation.lowAccuracyHint,
 			regionKeyword
-		);
+		));
 
 		setCurrentLocationButtonState(button, false);
 	   });
 	  },
 	  function (error) {
-	   if (statusElement) statusElement.textContent = getGeolocationErrorMessage(error);
+	   updateCurrentLocationStatus(getGeolocationErrorMessage(error));
 	   setCurrentLocationButtonState(button, false);
 	  },
 	  {
@@ -910,7 +1059,7 @@ function applyCurrentRegionKeyword(regionInput, regionKeyword) {
  if (!regionInput || !regionKeyword) return;
 
  regionInput.value = regionKeyword;
- regionInput.dispatchEvent(new Event("change", {bubbles: true}));
+ regionInput.dispatchEvent(new Event("input", {bubbles: true}));
 }
 
 function buildCurrentLocationStatusMessage(accuracyText, lowAccuracyHint, regionKeyword) {
@@ -948,8 +1097,11 @@ function createCurrentLocationMarkerImage() {
 function setCurrentLocationButtonState(button, pending) {
  if (!button) return;
 
- button.disabled = pending;
- button.classList.toggle("is-disabled", pending);
+ button.dataset.locationPending = pending ? "true" : "false";
+ var mapElement = document.getElementById("salon-branch-map");
+ var disabled = pending || !navigator.geolocation || !mapElement || mapElement.dataset.kakaoEnabled !== "true";
+ button.disabled = disabled;
+ button.classList.toggle("is-disabled", disabled);
  button.textContent = pending
 	 ? "위치 확인 중"
 	 : (button.dataset.defaultLabel || "현재 위치 표시");

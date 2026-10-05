@@ -264,17 +264,22 @@ try {
       };
       const choose = async (value, action) => {
         const before = ajaxCount();
-        await page.evaluate(() => { window.__sortPreviousForm = document.querySelector('.salon-search-form--primary'); });
+        await page.evaluate(() => {
+          window.__sortPreviousForm = document.querySelector('.salon-search-form--primary');
+          window.__sortPreviousResults = document.querySelector('#salon-results-area');
+        });
         const response = page.waitForResponse(response => response.url().startsWith(base + '/salons?') && new URL(response.url()).searchParams.get('sort') === value);
         await action();
         equal((await response).status(), 200, `${name}: sort request succeeds`);
         await page.waitForFunction(value => document.querySelector('[data-salon-sort] select')?.value === value
-          && document.querySelector('.salon-search-form--primary') !== window.__sortPreviousForm
+          && document.querySelector('#salon-results-area') !== window.__sortPreviousResults
+          && document.querySelector('#salon-search-map-shell')?.dataset.loading !== 'true'
           && document.querySelector('.salon-sort__trigger')?.getAttribute('aria-expanded') === 'false', value);
         await wait(180);
         equal(ajaxCount() - before, 1, `${name}: exactly one request per changed selection`);
         await assertSelection(value);
-        equal(await page.evaluate(() => document.activeElement?.classList.contains('salon-sort__trigger')), true, `${name}: focus restored after AJAX form replacement`);
+        equal(await page.evaluate(() => document.querySelector('.salon-search-form--primary') === window.__sortPreviousForm), true, `${name}: AJAX retains search form identity`);
+        equal(await page.evaluate(() => document.activeElement?.classList.contains('salon-sort__trigger')), true, `${name}: sort focus survives AJAX`);
         equal(new URL(page.url()).searchParams.get('sort'), value, `${name}: URL tracks selection`);
       };
 
@@ -352,7 +357,7 @@ try {
       await trigger.press('Home');
       await choose('recommended', () => trigger.press('Space'));
       equal(await choices.count(), 3, `${name}: AJAX replacement does not duplicate options`);
-      result.checks.push('Mouse, Enter and Space changes each send one request and restore focus after AJAX replacement');
+      result.checks.push('Mouse, Enter and Space changes each send one request and preserve focus and form identity');
 
       const preservedQuery = new URLSearchParams({keyword: '염색', region: '강남', minRating: '4.5', reservable: 'true', sort: 'rating', page: '2', preset: 'recommend-by-service'});
       await goto('/salons?' + preservedQuery);
@@ -365,7 +370,7 @@ try {
       equal(await page.locator('.salon-search-form--primary [name=region]').inputValue(), '강남', `${name}: region retained after replacement`);
       check(await page.locator('.salon-search-form--primary [name=reservable]').isChecked(), `${name}: reservable retained after replacement`);
 
-      // Reset and preset also replace the complete form and must initialize exactly once.
+      // Reset and preset synchronize the retained form without duplicating listeners.
       await page.locator('[data-search-reset]').click();
       await page.waitForFunction(() => document.querySelector('[data-salon-sort] select')?.value === 'recommended'
         && document.querySelector('.salon-search-form--primary [name=keyword]')?.value === '');
