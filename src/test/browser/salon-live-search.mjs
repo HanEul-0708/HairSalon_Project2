@@ -229,6 +229,70 @@ try {
         await continuousTyping?.catch(() => {});
       }
 
+      const range = form.locator('[data-rating-slider-input]');
+      await range.evaluate(input => {
+        window.__liveRangeEvents = [];
+        for (const type of ['input', 'change']) input.addEventListener(type, () => window.__liveRangeEvents.push(type));
+      });
+      const rangePointerBox = async () => {
+        await range.evaluate(input => input.scrollIntoView({block: 'center', behavior: 'instant'}));
+        const box = await range.boundingBox();
+        assert.ok(box);
+        const value = Number(await range.inputValue());
+        const thumb = {x: box.x + 9 + (box.width - 18) * value / 5, y: box.y + box.height / 2};
+        assert.ok(await page.evaluate(({x, y}) => document.elementFromPoint(x, y)?.matches('[data-rating-slider-input]'), thumb));
+        return {box, thumb};
+      };
+      for (const [pendingQuery, queuedSuffix] of [['thumb single request', ''], ['thumb queued request', ' latest']]) {
+        const held = holdResponse(query => query.keyword === pendingQuery);
+        const finalQuery = pendingQuery + queuedSuffix;
+        await keyword.fill(pendingQuery);
+        await held.received;
+        if (queuedSuffix) {
+          await keyword.press('End');
+          await keyword.pressSequentially(queuedSuffix);
+        }
+        await keyword.evaluate(input => input.setSelectionRange(2, 6, 'backward'));
+        const beforeThumb = await fieldState(keyword);
+        const ratingBefore = await range.inputValue();
+        await page.evaluate(() => { window.__liveRangeEvents = []; });
+        const {thumb} = await rangePointerBox();
+        await page.mouse.move(thumb.x, thumb.y);
+        await page.mouse.down();
+        await page.mouse.up();
+        assert.equal(await range.inputValue(), ratingBefore, `${name}: pressing and releasing the same thumb leaves the rating unchanged`);
+        assert.deepEqual(await page.evaluate(() => window.__liveRangeEvents), [], `${name}: a stationary thumb press emits no input or change`);
+        assert.ok(await range.evaluate(input => input === document.activeElement));
+        held.release();
+        await settled({keyword: finalQuery, minRating: null});
+        assert.deepEqual(await fieldState(keyword), {...beforeThumb, focused: false}, `${name}: a stationary slider interaction preserves text and selection while its search completes`);
+        assert.ok(await range.evaluate(input => input === document.activeElement), `${name}: results do not steal the focus the user moved to the slider`);
+        assert.ok((await page.locator('#salon-results-area [data-fixture-result]').textContent()).startsWith(finalQuery + ' / '));
+        await sameFields();
+      }
+      result.checks.push('A real mouse press and release on the same rating thumb preserves both a pending single search and the newest queued text search without changing text or selection');
+
+      const dragOld = holdResponse(query => query.keyword === 'drag superseded text');
+      const dragStart = report.requests.length;
+      await keyword.fill('drag superseded text');
+      await dragOld.received;
+      await keyword.press('End');
+      await keyword.pressSequentially(' latest');
+      const {box: dragBox, thumb: dragThumb} = await rangePointerBox();
+      await page.mouse.move(dragThumb.x, dragThumb.y);
+      await page.mouse.down();
+      await page.mouse.move(dragBox.x + 9 + (dragBox.width - 18) / 2, dragThumb.y, {steps: 5});
+      await page.mouse.up();
+      await settled({keyword: 'drag superseded text latest', minRating: '2.5'});
+      const draggedMarker = await page.locator('#salon-results-area').getAttribute('data-fixture-query');
+      dragOld.release();
+      await pause(100);
+      assert.equal(await page.locator('#salon-results-area').getAttribute('data-fixture-query'), draggedMarker, `${name}: an actual rating change supersedes the older held search`);
+      assert.equal(report.requests.slice(dragStart).filter(request => request.ajax && request.query.keyword === 'drag superseded text latest' && !request.query.minRating).length, 0, `${name}: changing rating cancels the queued request with the previous rating`);
+      assert.ok(await range.evaluate(input => input === document.activeElement));
+      await sameFields();
+      result.checks.push('A real rating thumb drag still supersedes the active text request and its queued query and retains the newest filters');
+
       await keyword.fill('abcdef');
       await settled({keyword: 'abcdef'});
       const assertFocusedEdit = async (operation, value, start) => {

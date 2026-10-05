@@ -115,6 +115,7 @@ try {
       await page.goto(base + '/salons', {waitUntil: 'networkidle'});
       const button = page.locator('[data-current-location-trigger]');
       const keyword = page.locator('.salon-search-form--primary input[name=keyword]');
+      const region = page.locator('.salon-search-form--primary input[name=region]');
       const status = page.locator('[data-branch-map-status]');
       await page.evaluate(() => {
         window.__originalButton = document.querySelector('[data-current-location-trigger]');
@@ -185,6 +186,99 @@ try {
       check(await button.isDisabled(), 'callback keeps unavailable map action disabled');
       await search('지도 다시 복구 검색');
       check(await button.isEnabled(), 'later valid response restores disabled callback state');
+
+      const regionState = () => region.evaluate(input => ({value: input.value, focused: input === document.activeElement,
+        start: input.selectionStart, end: input.selectionEnd, direction: input.selectionDirection}));
+      const settleRegion = value => page.waitForFunction(expected => new URL(location.href).searchParams.get('region') === expected
+        && document.querySelector('#salon-search-map-shell').dataset.loading !== 'true', value);
+      const startLocation = async () => {
+        const calls = await page.evaluate(() => window.__locationMock.calls.length);
+        await button.click();
+        equal(await page.evaluate(() => window.__locationMock.calls.length), calls + 1, 'each new location click starts one request');
+        return calls;
+      };
+      const locate = async call => {
+        const geocodes = await page.evaluate(() => window.__locationMock.geocodes.length);
+        await page.evaluate(index => window.__locationMock.calls[index].success({coords: {latitude: 37.52, longitude: 127.02, accuracy: 20}}), call);
+        equal(await page.evaluate(() => window.__locationMock.geocodes.length), geocodes + 1, 'each position resolves region once');
+        return geocodes;
+      };
+      const resolveRegion = index => page.evaluate(index => window.__locationMock.geocodes[index]([{region_type: 'H', region_2depth_name: '서초구'}], 'OK'), index);
+      const assertSkippedRegion = async (expected, beforeRequests) => {
+        equal(await regionState(), expected, 'delayed region callback preserves manual value, focus, caret and selection');
+        equal(requests.length, beforeRequests, 'skipped autofill sends no replacement search');
+        check(await button.isEnabled(), 'skipped autofill ends pending location state');
+        check((await status.textContent()).includes('현재 위치를 지도에 표시했습니다.'), 'skipped autofill still displays location status');
+        check(!(await status.textContent()).includes('지역 키워드에'), 'skipped autofill never claims region was entered');
+        const persisted = await page.evaluate(() => JSON.parse(sessionStorage.getItem('salonCurrentLocation')));
+        equal(persisted.regionKeyword, '서초구', 'detected location region still persists');
+        equal(persisted.regionKeywordApplied, false, 'persisted location records skipped autofill');
+        check(await page.evaluate(() => window.__salonBranchMapState.currentLocationOverlay.marker !== null), 'skipped autofill still shows current marker');
+      };
+
+      // Manual typing before GPS and geocoder finish must win, even across AJAX refreshes.
+      const manualCall = await startLocation();
+      await region.fill('부산');
+      await settleRegion('부산');
+      const manualGeocode = await locate(manualCall);
+      await region.press('End');
+      await region.pressSequentially(' 해운대');
+      await settleRegion('부산 해운대');
+      await region.evaluate(input => input.setSelectionRange(1, 4, 'backward'));
+      const manualState = await regionState();
+      const manualRequests = requests.length;
+      await resolveRegion(manualGeocode);
+      await assertSkippedRegion(manualState, manualRequests);
+      await search('수동 지역 유지 후 지도 갱신');
+      equal(await region.inputValue(), '부산 해운대', 'later AJAX refresh retains manual region');
+      check(!(await status.textContent()).includes('지역 키워드에'), 'restored location status preserves skipped metadata');
+
+      // Reverting text to the value at click still counts as a newer manual edit.
+      const revertCall = await startLocation();
+      await region.fill('대구');
+      await settleRegion('대구');
+      await region.fill('부산 해운대');
+      await settleRegion('부산 해운대');
+      await region.evaluate(input => input.setSelectionRange(2, 2));
+      const revertState = await regionState();
+      const revertGeocode = await locate(revertCall);
+      const revertRequests = requests.length;
+      await resolveRegion(revertGeocode);
+      await assertSkippedRegion(revertState, revertRequests);
+
+      // Composition can start before the first composing input event or value change.
+      const composeCall = await startLocation();
+      const composeGeocode = await locate(composeCall);
+      await region.focus();
+      await region.evaluate(input => {
+        input.setSelectionRange(2, 5, 'backward');
+        input.dispatchEvent(new CompositionEvent('compositionstart', {bubbles: true}));
+      });
+      const compositionState = await regionState();
+      const compositionRequests = requests.length;
+      await resolveRegion(composeGeocode);
+      await assertSkippedRegion(compositionState, compositionRequests);
+      await region.evaluate(input => {
+        input.value = '서울';
+        input.setSelectionRange(2, 2);
+        input.dispatchEvent(new InputEvent('input', {bubbles: true, isComposing: true, data: '서울', inputType: 'insertCompositionText'}));
+        input.dispatchEvent(new CompositionEvent('compositionend', {bubbles: true, data: '서울'}));
+      });
+      await settleRegion('서울');
+      equal(await regionState(), {value: '서울', focused: true, start: 2, end: 2, direction: 'forward'}, 'composition continues and committed region searches normally');
+
+      // A fresh intentional location click may autofill once when region stays unchanged.
+      const repeatCall = await startLocation();
+      const repeatGeocode = await locate(repeatCall);
+      await keyword.focus();
+      const repeatRequests = requests.length;
+      await resolveRegion(repeatGeocode);
+      await settleRegion('서초구');
+      equal(requests.length - repeatRequests, 1, 'fresh unchanged location click autofills and searches once');
+      equal(await region.inputValue(), '서초구', 'fresh location click intentionally applies detected region');
+      check(await keyword.evaluate(input => input === document.activeElement), 'intentional location autofill preserves unrelated focused field');
+      equal(await page.evaluate(() => JSON.parse(sessionStorage.getItem('salonCurrentLocation')).regionKeywordApplied), true, 'persisted location records successful autofill');
+      check((await status.textContent()).includes('지역 키워드에 서초구'), 'successful repeat autofill reports actual applied region');
       equal(result.errors, [], 'no runtime or response errors');
     } catch (error) {
       report.failures.push(`${name}: ${error.stack || error.message}`);

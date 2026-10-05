@@ -95,7 +95,6 @@ function bindAutoSubmitForm(form) {
 
   function beginRatingSliderDrag() {
    window.clearTimeout(submitTimerId);
-   cancelSalonSearchRequest();
    isDraggingRatingSlider = true;
   }
 
@@ -761,7 +760,8 @@ function refreshBranchMap(branchMapState) {
 	  ? buildCurrentLocationStatusMessage(
 		  restoredCurrentLocation.accuracyText,
 		  restoredCurrentLocation.lowAccuracyHint,
-		  restoredCurrentLocation.regionKeyword
+		  restoredCurrentLocation.regionKeyword,
+		  restoredCurrentLocation.regionKeywordApplied
 	  )
 	  : "표시할 지점 정보가 없습니다. 현재 위치만 확인할 수 있습니다.";
   return;
@@ -785,14 +785,35 @@ function refreshBranchMap(branchMapState) {
 	 ? buildCurrentLocationStatusMessage(
 		 restoredCurrentLocation.accuracyText,
 		 restoredCurrentLocation.lowAccuracyHint,
-		 restoredCurrentLocation.regionKeyword
+		 restoredCurrentLocation.regionKeyword,
+		 restoredCurrentLocation.regionKeywordApplied
 	 )
 	 : (invalidMarkerCount > 0
 		 ? "일부 지점의 좌표를 찾지 못해 지도에서 제외했습니다."
 		 : "카카오 지도에서 지점 위치를 확인할 수 있습니다.");
 }
 
+function trackCurrentRegionEdits(regionInput) {
+ if (!regionInput) return null;
+ if (regionInput.__salonLocationEditState) return regionInput.__salonLocationEditState;
+
+ var editState = {revision: 0, isComposing: false};
+ regionInput.__salonLocationEditState = editState;
+ regionInput.addEventListener("input", function () {
+  editState.revision += 1;
+ });
+ regionInput.addEventListener("compositionstart", function () {
+  editState.revision += 1;
+  editState.isComposing = true;
+ });
+ regionInput.addEventListener("compositionend", function () {
+  editState.isComposing = false;
+ });
+ return editState;
+}
+
 function bindCurrentLocationAction(button, map, statusElement, geocoder, regionInput, overlayState) {
+ trackCurrentRegionEdits(regionInput);
  if (!button || button.dataset.bound === "true") return;
 
  if (!navigator.geolocation) {
@@ -814,6 +835,14 @@ function bindCurrentLocationAction(button, map, statusElement, geocoder, regionI
 
  button.addEventListener("click", function () {
   if (button.dataset.locationPending === "true") return;
+  var requestedRegionInput = document.querySelector(".salon-search-form__control--region[name='region']") || regionInput;
+  var requestedRegionEdits = trackCurrentRegionEdits(requestedRegionInput);
+  var requestedRegionSnapshot = requestedRegionInput && requestedRegionEdits ? {
+   input: requestedRegionInput,
+   value: requestedRegionInput.value,
+   revision: requestedRegionEdits.revision,
+   isComposing: requestedRegionEdits.isComposing
+  } : null;
   setCurrentLocationButtonState(button, true);
 
   updateCurrentLocationStatus("현재 위치 권한을 확인하는 중입니다.");
@@ -840,16 +869,18 @@ function bindCurrentLocationAction(button, map, statusElement, geocoder, regionI
 
 	   resolveCurrentRegionKeyword(geocoder, position.coords, function (regionKeyword) {
 		currentLocationState.regionKeyword = regionKeyword;
-		persistCurrentLocationState(currentLocationState);
-		applyCurrentRegionKeyword(
+		currentLocationState.regionKeywordApplied = applyCurrentRegionKeyword(
 			document.querySelector(".salon-search-form__control--region[name='region']") || regionInput,
-			regionKeyword
+			regionKeyword,
+			requestedRegionSnapshot
 		);
+		persistCurrentLocationState(currentLocationState);
 
 		updateCurrentLocationStatus(buildCurrentLocationStatusMessage(
 			renderedCurrentLocation.accuracyText,
 			renderedCurrentLocation.lowAccuracyHint,
-			regionKeyword
+			regionKeyword,
+			currentLocationState.regionKeywordApplied
 		));
 
 		setCurrentLocationButtonState(button, false);
@@ -954,7 +985,8 @@ function renderCurrentLocation(map, overlayState, locationState, focusMap) {
   position: currentPosition,
   accuracyText: accuracyText,
   lowAccuracyHint: lowAccuracyHint,
-  regionKeyword: regionKeyword
+  regionKeyword: regionKeyword,
+  regionKeywordApplied: locationState.regionKeywordApplied !== false
  };
 }
 
@@ -975,6 +1007,7 @@ function persistCurrentLocationState(locationState) {
   longitude: locationState.longitude,
   accuracy: locationState.accuracy,
   regionKeyword: normalizeDataValue(locationState.regionKeyword),
+  regionKeywordApplied: locationState.regionKeywordApplied === true,
   savedAt: Date.now(),
   pathname: window.location.pathname
  }));
@@ -1055,16 +1088,28 @@ function extractRegionKeyword(regionResults) {
 	 || "";
 }
 
-function applyCurrentRegionKeyword(regionInput, regionKeyword) {
- if (!regionInput || !regionKeyword) return;
+function applyCurrentRegionKeyword(regionInput, regionKeyword, requestedRegionSnapshot) {
+ if (!regionInput || !regionKeyword || !requestedRegionSnapshot) return false;
+
+ var editState = trackCurrentRegionEdits(regionInput);
+ // A late location response must not replace newer typing, including reverted edits
+ // or composition that has started before its first input event.
+ if (regionInput !== requestedRegionSnapshot.input
+	 || regionInput.value !== requestedRegionSnapshot.value
+	 || editState.revision !== requestedRegionSnapshot.revision
+	 || editState.isComposing
+	 || requestedRegionSnapshot.isComposing) return false;
 
  regionInput.value = regionKeyword;
  regionInput.dispatchEvent(new Event("input", {bubbles: true}));
+ return true;
 }
 
-function buildCurrentLocationStatusMessage(accuracyText, lowAccuracyHint, regionKeyword) {
+function buildCurrentLocationStatusMessage(accuracyText, lowAccuracyHint, regionKeyword, regionKeywordApplied) {
  var regionMessage = regionKeyword
-	 ? " 지역 키워드에 " + regionKeyword + "를 입력했습니다."
+	 ? (regionKeywordApplied === false
+		 ? " 입력한 지역 검색 조건을 유지했습니다."
+		 : " 지역 키워드에 " + regionKeyword + "를 입력했습니다.")
 	 : "";
 
  return lowAccuracyHint
