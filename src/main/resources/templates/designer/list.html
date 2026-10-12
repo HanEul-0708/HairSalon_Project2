@@ -4,6 +4,8 @@
  <meta charset="UTF-8">
  <title>디자이너 목록</title>
  <link rel="stylesheet" th:href="@{/css/designer.css}">
+ <link rel="stylesheet" th:href="@{/css/catalog-select.css}">
+ <script th:src="@{/js/catalog-select.js}" defer></script>
  <script th:src="@{/js/designer.js}" defer></script>
 </head>
 <body>
@@ -101,7 +103,7 @@
 	 <input type="text" inputmode="numeric" th:field="*{minReviewCount}" placeholder="최소 리뷰 수" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('minReviewCount')}">
      <div th:if="${#fields.hasErrors('page')}">
       <label for="page">페이지</label>
-      <input type="text" inputmode="numeric" th:field="*{page}" class="is-invalid" aria-invalid="true" aria-describedby="designerPageError">
+      <input id="page" type="text" inputmode="numeric" th:field="*{page}" class="is-invalid" aria-invalid="true" aria-describedby="designerPageError">
       <p id="designerPageError" class="invalid-feedback" th:errors="*{page}"></p>
      </div>
 	</div>
@@ -122,12 +124,19 @@
 	 <h2>디자이너 <span th:text="${totalDesignerCount}">0</span>명</h2>
 	</div>
 	<div class="designer-results-sort" th:if="${totalDesignerCount > 0}">
-	 <label class="designer-results-sort__label" for="designerResultSort">정렬</label>
-	 <select id="designerResultSort" class="designer-results-sort__control" data-designer-result-sort>
-	  <option value="rating">평점 중심</option>
-	  <option value="likes">좋아요순</option>
-	  <option value="newest">최신 등록순</option>
-	 </select>
+	 <label class="visually-hidden" for="designerResultSort">정렬 기준</label>
+	 <div class="catalog-select catalog-select--compact" data-catalog-select>
+	  <select id="designerResultSort" class="designer-results-sort__control" data-designer-result-sort>
+	   <option value="rating">평점순</option>
+	   <option value="likes">좋아요순</option>
+	   <option value="newest">최신 등록순</option>
+	  </select>
+	  <button type="button" class="catalog-select__trigger" role="combobox" aria-label="정렬 기준" aria-haspopup="listbox" aria-expanded="false" aria-controls="designer-sort-options" hidden>
+	   <span data-catalog-select-label>평점순</span>
+	   <svg class="catalog-select__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+	  </button>
+	  <ul class="catalog-select__menu" id="designer-sort-options" role="listbox" aria-label="정렬 기준" hidden></ul>
+	 </div>
 	</div>
    </div>
    <div class="designer-empty-state" th:if="${totalDesignerCount == 0}">

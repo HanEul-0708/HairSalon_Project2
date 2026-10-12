@@ -195,6 +195,8 @@ function bindDesignerResultSortSwitch() {
  var sortControl = resultsArea.querySelector("[data-designer-result-sort]");
  var panels = resultsArea.querySelectorAll("[data-designer-sort-panel]");
  if (!sortControl || !panels.length) return;
+ var sortWidget = sortControl.closest("[data-catalog-select]");
+ if (sortWidget) bindCatalogSelect(sortWidget);
 
  function normalizeSort(value) {
   return value === "likes" || value === "newest" ? value : DESIGNER_RESULT_SORT_DEFAULT;
@@ -203,6 +205,7 @@ function bindDesignerResultSortSwitch() {
  function applyResultSort(value) {
   var nextSort = normalizeSort(value);
   sortControl.value = nextSort;
+  if (sortWidget) sortWidget.dispatchEvent(new Event("catalog-select-sync"));
 
   panels.forEach(function (panel) {
    panel.hidden = panel.dataset.designerSortPanel !== nextSort;

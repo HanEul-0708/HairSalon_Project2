@@ -2,6 +2,7 @@ package com.hairsalonproject2.designer.controller;
 
 import com.hairsalonproject2.common.config.SecurityConfig;
 import com.hairsalonproject2.designer.dto.response.DesignerCatalogPage;
+import com.hairsalonproject2.designer.dto.response.DesignerSummaryResponse;
 import com.hairsalonproject2.designer.service.DesignerAiRecommendationService;
 import com.hairsalonproject2.designer.service.DesignerQueryService;
 import com.hairsalonproject2.member.service.CustomUserDetailsService;
@@ -14,11 +15,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -145,5 +151,40 @@ class DesignerSearchRenderingTest {
   verify(queryService).searchCatalog(any(), eq(0), eq(15));
   verifyNoMoreInteractions(queryService);
   verifyNoInteractions(aiService);
+  writeBrowserFixture("empty.html", result.getResponse().getContentAsString(StandardCharsets.UTF_8));
+ }
+
+ @Test
+ void populatedResultsRenderSharedSortWidgetAndKeepAllThreePanels() throws Exception {
+  when(queryService.searchCatalog(any(), eq(0), eq(15))).thenReturn(new DesignerCatalogPage(
+   new PageImpl<>(List.of(designer(1))), new PageImpl<>(List.of(designer(2))), new PageImpl<>(List.of(designer(3)))));
+  var result = mvc.perform(get("/designers").param("mode", "search"))
+   .andExpect(status().isOk()).andExpect(view().name("designer/list")).andReturn();
+  String rendered = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+  var html = Jsoup.parse(rendered);
+  var widget = html.selectFirst(".designer-results-sort [data-catalog-select]");
+  assertThat(widget).isNotNull();
+  assertThat(widget.select("select[data-designer-result-sort] option").eachAttr("value"))
+   .containsExactly("rating", "likes", "newest");
+  assertThat(widget.selectFirst(".catalog-select__trigger").attr("aria-controls")).isEqualTo("designer-sort-options");
+  assertThat(widget.selectFirst("#designer-sort-options").attr("role")).isEqualTo("listbox");
+  assertThat(html.select("[data-designer-sort-panel]").eachAttr("data-designer-sort-panel"))
+   .containsExactly("rating", "likes", "newest");
+  assertThat(html.selectFirst("script[src='/js/catalog-select.js']")).isNotNull();
+  assertThat(html.selectFirst("link[href='/css/catalog-select.css']")).isNotNull();
+  verify(queryService).searchCatalog(any(), eq(0), eq(15));
+  verifyNoInteractions(aiService);
+  writeBrowserFixture("list.html", rendered);
+ }
+
+ private DesignerSummaryResponse designer(int id) {
+  return DesignerSummaryResponse.builder().designerId(id).salonId(1).salonName("테스트 살롱")
+   .name("디자이너 " + id).careerYears(5).averageRating(new BigDecimal("4.8")).reviewCount(2L).likeCount(id).build();
+ }
+
+ private void writeBrowserFixture(String name, String html) throws Exception {
+  Path directory = Path.of("build", "designer-select", "fixtures");
+  Files.createDirectories(directory);
+  Files.writeString(directory.resolve(name), html, StandardCharsets.UTF_8);
  }
 }
