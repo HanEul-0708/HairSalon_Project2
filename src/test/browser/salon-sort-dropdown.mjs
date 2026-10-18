@@ -16,6 +16,7 @@ const root = process.cwd();
 const output = resolve(root, 'build/reports/salon-sort');
 const staticRoot = resolve(root, 'src/main/resources/static');
 const fixtureRoot = resolve(root, 'build/rating-slider/fixtures');
+const resultsLayoutFixture = resolve(root, 'build/salon-pagination/fixtures/middle.html');
 const serviceFixtureRoot = resolve(root, 'build/catalog-select/fixtures');
 const toolDir = resolve(root, 'build/rating-slider/firefox-tools');
 process.env.PLAYWRIGHT_BROWSERS_PATH ||= join(toolDir, 'browsers');
@@ -89,11 +90,14 @@ function echoSearchFields(html, url) {
 
 function echoServiceFields(html, url) {
   // Sort comes from the actual rendered fixture; only submitted filter text is echoed.
-  return localVendorAssets(html.replace(/<input\b[^>]*>/g, tag => {
+  html = html.replace(/<input\b[^>]*>/g, tag => {
     const name = /\bname="([^"]+)"/.exec(tag)?.[1];
     if (!['keyword', 'salonKeyword', 'region', 'maxPrice', 'maxDuration'].includes(name)) return tag;
     return tag.replace(/\svalue="[^"]*"/g, '').replace(/\s*\/?>$/, ` value="${escapeAttribute(url.searchParams.get(name) || '')}">`);
-  }));
+  });
+  html = html.replace(/(<div\b[^>]*id="service-results-area"[^>]*>)/,
+    `$1<p data-service-fixture-query="${escapeAttribute(JSON.stringify(Object.fromEntries(url.searchParams)))}">검색 결과</p>`);
+  return localVendorAssets(html);
 }
 
 const server = createServer(async (request, response) => {
@@ -108,7 +112,9 @@ const server = createServer(async (request, response) => {
       report.requests.push({path: url.pathname, method: request.method, query: Object.fromEntries(url.searchParams), ajax: request.headers['x-requested-with'] === 'XMLHttpRequest'});
       const rating = Number(url.searchParams.get('minRating') || 0);
       const index = Math.max(0, Math.min(10, Math.round(rating * 2)));
-      const html = echoSearchFields(await readFile(join(fixtureRoot, `${index}.html`), 'utf8'), url);
+      const fixture = url.searchParams.get('fixture') === 'results-layout'
+        ? resultsLayoutFixture : join(fixtureRoot, `${index}.html`);
+      const html = echoSearchFields(await readFile(fixture, 'utf8'), url);
       response.writeHead(200, {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store'}).end(html);
       return;
     }
@@ -190,10 +196,75 @@ function assertJoinedMenu(geometry, name) {
   check(geometry.noScroll, `${name}: full dropdown fits without a scrollbar`);
 }
 
+async function assertResultsToolbar(page, catalog, name) {
+  const state = await page.locator(`.${catalog}-results-head`).evaluate((toolbar, catalog) => {
+    const form = document.getElementById(`${catalog}-search-form`);
+    const results = document.getElementById(`${catalog}-results-area`);
+    const heading = document.getElementById(`${catalog}-results-heading`);
+    const widget = toolbar.querySelector('[data-catalog-select]');
+    const select = widget.querySelector('select');
+    const rect = node => { const r = node.getBoundingClientRect(); return {x: r.x, y: r.y, right: r.right, bottom: r.bottom}; };
+    const style = getComputedStyle(toolbar), box = rect(toolbar);
+    return {outsideForm: !widget.closest('form'), outsideResults: !results.contains(toolbar), formOwner: select.form === form,
+      explicitForm: select.getAttribute('form'), submitted: new FormData(form).get(select.name), selected: select.value,
+      beforeResults: Boolean(toolbar.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING),
+      toolbar: box, widget: rect(widget), heading: rect(heading), results: rect(results), viewport: innerWidth,
+      contentRight: box.right - parseFloat(style.paddingRight) - parseFloat(style.borderRightWidth), overflow: document.documentElement.scrollWidth - innerWidth};
+  }, catalog);
+  check(state.outsideForm && state.outsideResults, `${name}: ${catalog} sort is outside search form and replaced results`);
+  equal(state.explicitForm, `${catalog}-search-form`, `${name}: external ${catalog} native select explicitly belongs to search form`);
+  check(state.formOwner, `${name}: native browser resolves external ${catalog} form owner`);
+  equal(state.submitted, state.selected, `${name}: external ${catalog} sort appears once in FormData`);
+  check(state.beforeResults && state.toolbar.bottom <= state.results.y + 1, `${name}: ${catalog} toolbar is above the result list`);
+  check(Math.abs(state.widget.right - state.contentRight) <= 1, `${name}: ${catalog} sort is at toolbar's right edge`);
+  check(state.widget.x >= state.toolbar.x && state.widget.right <= state.toolbar.right + 1
+    && state.widget.y >= state.toolbar.y && state.widget.bottom <= state.toolbar.bottom + 1, `${name}: ${catalog} sort fits toolbar`);
+  check(state.heading.right <= state.widget.x + 1 || state.heading.bottom <= state.widget.y + 1, `${name}: ${catalog} heading and sort never overlap`);
+  check(state.widget.x >= 0 && state.widget.right <= state.viewport + 1 && state.overflow <= 1, `${name}: ${catalog} result toolbar fits viewport`);
+  return state;
+}
+
+async function assertSalonCardLayout(page, name, fullFirstRow = false) {
+  const state = await page.locator('#salon-results-area .salon-grid').evaluate(grid => {
+    const rect = node => node.getBoundingClientRect();
+    const nodes = [...grid.querySelectorAll(':scope > .salon-card')];
+    const cards = nodes.map(rect);
+    const firstRow = cards.filter(card => Math.abs(card.top - cards[0].top) <= 1);
+    const lastRow = cards.filter(card => Math.abs(card.top - cards.at(-1).top) <= 1);
+    const sort = rect(document.querySelector('[data-salon-sort]'));
+    const links = nodes.flatMap(card => [...card.querySelectorAll('a')].map(link => ({card: rect(card), link: rect(link)})));
+    return {viewport: innerWidth, cardCount: cards.length,
+      columnWidths: getComputedStyle(grid).gridTemplateColumns.split(/\s+/).map(parseFloat),
+      firstRowCount: firstRow.length, lastRowCount: lastRow.length,
+      firstRowRight: firstRow.length ? Math.max(...firstRow.map(card => card.right)) : null,
+      firstCardWidth: cards[0]?.width ?? null,
+      firstCardTop: cards[0]?.top ?? null, sortRight: sort.right, sortBottom: sort.bottom,
+      gridLeft: rect(grid).left, gridRight: rect(grid).right,
+      cardsFit: nodes.every(card => card.scrollWidth <= card.clientWidth + 1),
+      linkCount: links.length,
+      linksFit: links.every(({card, link}) => link.left >= card.left - 1 && link.right <= card.right + 1
+        && link.top >= card.top - 1 && link.bottom <= card.bottom + 1),
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth};
+  });
+  check(state.overflow <= 1, `${name}: no document overflow`);
+  check(state.columnWidths.length > 0 && state.columnWidths.every(width => width > 0), `${name}: auto-fill keeps positive-width columns`);
+  check(state.cardsFit && state.linksFit, `${name}: card content and links stay inside their cards`);
+  if (state.cardCount) {
+    check(state.linkCount >= state.cardCount, `${name}: result cards retain actionable links`);
+    check(state.sortBottom <= state.firstCardTop + 1, `${name}: sort stays above the cards`);
+  }
+  if (fullFirstRow) {
+    equal(state.firstRowCount, state.columnWidths.length, `${name}: the fixture fills the first row`);
+    // The grid box already filled the container before the fix; measure actual cards.
+    check(Math.abs(state.firstRowRight - state.sortRight) <= 1, `${name}: last actual card and sort have the same right edge`);
+  }
+  return state;
+}
+
 try {
   for (const [name, type, options] of setups) {
     let browser;
-    const result = {browser: name, checks: [], geometry: [], pageErrors: [], failedResponses: []};
+    const result = {browser: name, checks: [], geometry: [], cardLayouts: [], pageErrors: [], failedResponses: []};
     report.results.push(result);
     try {
       browser = await type.launch({...options, headless: true});
@@ -210,6 +281,7 @@ try {
         const response = await page.goto(base + path, {waitUntil: 'networkidle'});
         equal(response.status(), 200, `${name}: HTTP 200`);
         await trigger.waitFor({state: 'visible'});
+        await trigger.evaluate(node => node.scrollIntoView({block: 'center', behavior: 'instant'}));
       };
       const screenshot = async suffix => {
         const target = join(output, `${name}-${suffix}.png`);
@@ -252,9 +324,10 @@ try {
         equal(geometry.menuPadding, '4px', `${label}: compact salon menu padding`);
         equal(geometry.menuShadow, 'rgba(67, 48, 20, 0.1) 0px 2px 4px 0px', `${label}: compact salon menu uses its smaller shadow`);
         equal(geometry.optionSpacing, Array(3).fill({minHeight: '30px', padding: '4px 10px'}), `${label}: compact salon option spacing`);
-        const mapTop = await page.locator('#salon-branch-map').evaluate(node => node.getBoundingClientRect().top);
-        check(mapTop >= geometry.bottom, `${label}: actual map stays below the entire open dropdown`);
-        return {width: geometry.viewport, menuHeight: geometry.height, mapGap: mapTop - geometry.bottom};
+        const mapBottom = await page.locator('#salon-branch-map').evaluate(node => node.getBoundingClientRect().bottom);
+        check(mapBottom <= geometry.triggerTop + 1, `${label}: result-toolbar dropdown remains after the map`);
+        await assertResultsToolbar(page, 'salon', label);
+        return {width: geometry.viewport, menuHeight: geometry.height, mapGap: geometry.triggerTop - mapBottom};
       };
       const mapDocumentTop = () => page.locator('#salon-branch-map').evaluate(node => node.getBoundingClientRect().top + scrollY);
       const assertStationaryMap = async (closedPosition, label) => {
@@ -267,6 +340,8 @@ try {
         await page.evaluate(() => {
           window.__sortPreviousForm = document.querySelector('.salon-search-form--primary');
           window.__sortPreviousResults = document.querySelector('#salon-results-area');
+          window.__sortPreviousToolbar = document.querySelector('.salon-results-head');
+          window.__sortPreviousNodes = [...window.__sortPreviousToolbar.querySelectorAll('[data-catalog-select], select, button, ul')];
         });
         const response = page.waitForResponse(response => response.url().startsWith(base + '/salons?') && new URL(response.url()).searchParams.get('sort') === value);
         await action();
@@ -279,6 +354,8 @@ try {
         equal(ajaxCount() - before, 1, `${name}: exactly one request per changed selection`);
         await assertSelection(value);
         equal(await page.evaluate(() => document.querySelector('.salon-search-form--primary') === window.__sortPreviousForm), true, `${name}: AJAX retains search form identity`);
+        check(await page.evaluate(() => document.querySelector('.salon-results-head') === window.__sortPreviousToolbar
+          && [...window.__sortPreviousToolbar.querySelectorAll('[data-catalog-select], select, button, ul')].every((node, index) => node === window.__sortPreviousNodes[index])), `${name}: salon toolbar/widget/select/trigger/menu nodes survive sort AJAX`);
         equal(await page.evaluate(() => document.activeElement?.classList.contains('salon-sort__trigger')), true, `${name}: sort focus survives AJAX`);
         equal(new URL(page.url()).searchParams.get('sort'), value, `${name}: URL tracks selection`);
       };
@@ -405,8 +482,47 @@ try {
         result.checks.push(`${width}px ${layout} compact joined dropdown, no map overlap, stationary map and selection`);
       }
 
+      // Real rendered cards cover the fixed-track gap that empty sort fixtures cannot expose.
       await page.setViewportSize({width: 1440, height: 1000});
-      const serviceRoot = page.locator('.service-search-form [data-catalog-select]');
+      await goto('/salons?fixture=results-layout&sort=likes');
+      await page.evaluate(() => document.fonts.ready);
+      await page.mouse.move(0, 0);
+      for (const width of [320, 360, 390, 480, 600, 767, 768, 769, 800, 900, 1023, 1024, 1025, 1100, 1200, 1440, 1920]) {
+        await page.setViewportSize({width, height: 1000});
+        await trigger.evaluate(node => node.scrollIntoView({block: 'center', behavior: 'instant'}));
+        const state = await assertSalonCardLayout(page, `${name}: ${width}px results`, true);
+        equal(state.cardCount, 15, `${name}: ${width}px uses all fifteen actual rendered cards`);
+        result.cardLayouts.push({...state, scenario: 'full'});
+        if (name === 'chrome' && [390, 1024, 1200].includes(width)) {
+          const target = join(output, `${name}-results-${width}.png`);
+          await page.screenshot({path: target, fullPage: false});
+          report.screenshots.push(target);
+        }
+      }
+      result.checks.push('Seventeen viewport widths, including both sides of 768px and 1024px, align actual first-row cards with the sort control');
+
+      await page.setViewportSize({width: 900, height: 1000});
+      const complete = await assertSalonCardLayout(page, `${name}: complete rows`, true);
+      for (const [scenario, count] of [['partial', complete.columnWidths.length + 1], ['single', 1], ['empty', 0]]) {
+        await page.locator('#salon-results-area .salon-grid').evaluate((grid, count) => {
+          [...grid.querySelectorAll(':scope > .salon-card')].slice(count).forEach(card => card.remove());
+        }, count);
+        const state = await assertSalonCardLayout(page, `${name}: ${scenario} results`, scenario === 'partial');
+        equal(state.cardCount, count, `${name}: ${scenario} result count`);
+        equal(state.columnWidths.length, complete.columnWidths.length, `${name}: ${scenario} results keep auto-fill columns`);
+        check(state.columnWidths.every((width, index) => Math.abs(width - complete.columnWidths[index]) <= 1), `${name}: ${scenario} results do not stretch or collapse unused columns`);
+        if (count) check(Math.abs(state.firstCardWidth - complete.firstCardWidth) <= 1, `${name}: ${scenario} cards keep the original width`);
+        if (scenario === 'partial') equal(state.lastRowCount, 1, `${name}: incomplete last row keeps one regular-width card`);
+        if (scenario === 'single') check(state.firstRowRight < state.sortRight - 1, `${name}: a single card leaves the unused auto-fill columns`);
+        if (scenario === 'empty') equal(state.linkCount, 0, `${name}: empty results leave no stale card links`);
+        result.cardLayouts.push({...state, scenario});
+      }
+      await goto('/salons?fixture=results-layout&sort=likes');
+      equal((await assertSalonCardLayout(page, `${name}: restored results`, true)).cardCount, 15, `${name}: navigation restores all removed fixture cards`);
+      result.checks.push('Partial rows, one card and no cards retain auto-fill sizing without overflowing links; navigation restores the rendered fixture');
+
+      await page.setViewportSize({width: 1440, height: 1000});
+      const serviceRoot = page.locator('.service-results-head [data-catalog-select]');
       const serviceSelect = serviceRoot.locator('select[name=sortBy]');
       const serviceTrigger = serviceRoot.locator('.catalog-select__trigger');
       const serviceMenu = serviceRoot.locator('.catalog-select__menu');
@@ -415,6 +531,8 @@ try {
       const gotoService = async path => {
         equal((await page.goto(base + path, {waitUntil: 'networkidle'})).status(), 200, `${name}: service fixture HTTP 200`);
         await serviceTrigger.waitFor({state: 'visible'});
+        await serviceTrigger.evaluate(node => node.scrollIntoView({block: 'center', behavior: 'instant'}));
+        await assertResultsToolbar(page, 'service', `${name}: service initial toolbar`);
       };
       const assertServiceSelection = async value => {
         equal(await serviceSelect.inputValue(), value, `${name}: service native value`);
@@ -437,6 +555,31 @@ try {
         equal(geometry.menuPadding, '6px', `${name}: service menu keeps its original spacing`);
         equal(geometry.menuShadow, 'rgba(67, 48, 20, 0.14) 0px 12px 28px 0px, rgba(67, 48, 20, 0.04) 0px 2px 6px 0px', `${name}: service menu keeps its original shadow`);
         equal(geometry.optionSpacing, Array(5).fill({minHeight: '40px', padding: '9px 12px'}), `${name}: service options keep their original spacing`);
+        await assertResultsToolbar(page, 'service', `${name}: service open toolbar`);
+      };
+      const settledService = async expected => {
+        await page.waitForFunction(expected => {
+          const query = JSON.parse(document.querySelector('#service-results-area [data-service-fixture-query]')?.dataset.serviceFixtureQuery || '{}');
+          return document.querySelector('#service-results-area')?.getAttribute('aria-busy') !== 'true'
+            && Object.entries(expected).every(([key, value]) => (query[key] || '') === value);
+        }, expected);
+      };
+      const chooseService = async (value, action) => {
+        const before = serviceRequestCount();
+        await page.evaluate(() => {
+          window.__serviceSortForm = document.querySelector('.service-search-form');
+          window.__serviceSortToolbar = document.querySelector('.service-results-head');
+          window.__serviceSortNodes = [...window.__serviceSortToolbar.querySelectorAll('[data-catalog-select], select, button, ul')];
+        });
+        await action();
+        await settledService({sortBy: value});
+        equal(serviceRequestCount() - before, 1, `${name}: changed service sort sends one automatic request`);
+        equal(report.requests.filter(request => request.path === '/salon-services').at(-1).ajax, true, `${name}: service sort refresh uses AJAX`);
+        check(await page.evaluate(() => document.querySelector('.service-search-form') === window.__serviceSortForm), `${name}: service sort refresh retains form identity`);
+        check(await page.evaluate(() => document.querySelector('.service-results-head') === window.__serviceSortToolbar
+          && [...window.__serviceSortToolbar.querySelectorAll('[data-catalog-select], select, button, ul')].every((node, index) => node === window.__serviceSortNodes[index])), `${name}: service toolbar/widget/select/trigger/menu nodes survive sort AJAX`);
+        check(await serviceTrigger.evaluate(node => node === document.activeElement), `${name}: service sort focus survives refresh`);
+        await assertServiceSelection(value);
       };
       for (const value of Object.keys(serviceLabels)) {
         await gotoService('/salon-services' + (value ? '?sortBy=' + value : ''));
@@ -445,6 +588,7 @@ try {
       result.checks.push('All five actual Thymeleaf service sort fixtures initialize their server-selected values');
 
       await gotoService('/salon-services');
+      equal(await serviceForm.locator('button[type=submit]').count(), 0, `${name}: automatic service search has no submit button`);
       equal(await serviceTrigger.getAttribute('role'), 'combobox', `${name}: service combobox role`);
       equal(await serviceTrigger.getAttribute('aria-label'), '정렬 기준', `${name}: service accessible label`);
       equal(await serviceTrigger.getAttribute('type'), 'button', `${name}: service trigger cannot implicitly submit`);
@@ -454,18 +598,17 @@ try {
       check(!await serviceSelect.isVisible() && await serviceSelect.isEnabled(), `${name}: enhanced service native select is hidden and enabled for submission`);
       await screenshot('service-desktop-closed');
       const serviceBefore = serviceRequestCount();
-      const serviceUrlBefore = page.url();
       await serviceTrigger.click();
       await assertServiceGeometry();
       await assertServiceActive('');
       await screenshot('service-desktop-open');
       equal(await inspectTheme(page), salonTheme, `${name}: service and salon dropdowns share the same rendered theme`);
-      await serviceMenu.locator('[data-value=duration]').click();
-      await assertServiceSelection('duration');
+      await chooseService('duration', () => serviceMenu.locator('[data-value=duration]').click());
       check(await serviceTrigger.evaluate(node => node === document.activeElement), `${name}: service mouse selection retains trigger focus`);
       await serviceTrigger.click();
       await serviceMenu.locator('[data-value=duration]').click();
       await assertServiceSelection('duration');
+      const cancellationBefore = serviceRequestCount();
       await serviceTrigger.press('Space');
       await assertServiceActive('duration');
       await serviceTrigger.press('ArrowDown');
@@ -490,41 +633,41 @@ try {
       await serviceTrigger.focus();
       await serviceTrigger.press('ArrowDown');
       await serviceTrigger.press('End');
-      await serviceTrigger.press('Enter');
-      await assertServiceSelection('trend');
+      equal(serviceRequestCount(), cancellationBefore, `${name}: service navigation/cancellation and unchanged choice do not search`);
+      await chooseService('trend', () => serviceTrigger.press('Enter'));
       await serviceTrigger.press('Space');
       await serviceTrigger.press('Home');
-      await serviceTrigger.press('Space');
-      await assertServiceSelection('');
+      await chooseService('', () => serviceTrigger.press('Space'));
       await wait(300);
-      equal(serviceRequestCount(), serviceBefore, `${name}: service mouse/keyboard choices and cancellation never autosubmit`);
-      equal(page.url(), serviceUrlBefore, `${name}: service selections do not navigate`);
-      result.checks.push('Shared salon/service theme, mouse/keyboard selection and cancellation, no service autosubmit');
+      equal(serviceRequestCount() - serviceBefore, 3, `${name}: only three changed selections refresh service results`);
+      result.checks.push('Shared salon/service theme; mouse/keyboard changes each send one AJAX request with retained form/focus; navigation and cancellation do not search');
 
       const serviceFilters = {keyword: '커트', salonKeyword: '살롱', region: '서울 강남구', maxPrice: '30000', maxDuration: '60'};
-      for (const [field, value] of Object.entries(serviceFilters)) await serviceForm.locator(`[name=${field}]`).fill(value);
+      for (const [field, value] of Object.entries(serviceFilters)) {
+        if (['maxPrice', 'maxDuration'].includes(field)) await serviceForm.locator(`[data-catalog-range="${field}"] [data-catalog-range-input]`).evaluate((input, value) => {
+          input.value = value;
+          input.dispatchEvent(new Event('input', {bubbles: true}));
+          input.dispatchEvent(new Event('change', {bubbles: true}));
+        }, value);
+        else await serviceForm.locator(`[name=${field}]`).fill(value);
+        await settledService({[field]: value});
+      }
       await serviceTrigger.press('Enter');
       await serviceTrigger.press('Home');
       await serviceTrigger.press('ArrowDown');
       await serviceTrigger.press('ArrowDown');
-      await serviceTrigger.press('Enter');
-      await assertServiceSelection('rating');
+      await chooseService('rating', () => serviceTrigger.press('Enter'));
       const expectedServiceQuery = {searched: 'true', ...serviceFilters, sortBy: 'rating'};
       equal(await serviceForm.evaluate(form => Object.fromEntries(new FormData(form))), expectedServiceQuery, `${name}: service FormData keeps every filter and native sortBy`);
-      await wait(300);
-      equal(serviceRequestCount(), serviceBefore, `${name}: entering service filters and choosing rating waits for search`);
-      const serviceResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/salon-services' && new URL(response.url()).searchParams.get('sortBy') === 'rating');
-      await serviceForm.getByRole('button', {name: '검색', exact: true}).click();
-      equal((await serviceResponse).status(), 200, `${name}: service search GET succeeds`);
-      await page.waitForLoadState('networkidle');
+      await settledService(expectedServiceQuery);
       await assertServiceSelection('rating');
-      equal(serviceRequestCount() - serviceBefore, 1, `${name}: one service request on search click`);
       const serviceRequest = report.requests.filter(request => request.path === '/salon-services').at(-1);
       equal(serviceRequest.method, 'GET', `${name}: service search submits GET`);
       equal(serviceRequest.query, expectedServiceQuery, `${name}: service GET sends every filter and selected value`);
       equal(Object.fromEntries(new URL(page.url()).searchParams), expectedServiceQuery, `${name}: service GET appears in URL`);
       equal(await serviceForm.evaluate(form => Object.fromEntries(new FormData(form))), expectedServiceQuery, `${name}: service filters and sort survive rendered response`);
-      result.checks.push('Service native FormData, explicit search GET and all filters survive response');
+      equal(serviceRequest.ajax, true, `${name}: service GET is an automatic AJAX search`);
+      result.checks.push('Service native FormData and automatic GET preserve all filters and sort while results refresh');
 
       for (const width of [390, 320]) {
         await page.setViewportSize({width, height: 1000});
@@ -534,12 +677,11 @@ try {
         await serviceTrigger.click();
         await assertServiceGeometry();
         await screenshot(`service-mobile-${width}-open`);
-        await serviceMenu.locator('[data-value=trend]').click();
-        await assertServiceSelection('trend');
+        await chooseService('trend', () => serviceMenu.locator('[data-value=trend]').click());
         await wait(300);
-        equal(serviceRequestCount(), before, `${name}: ${width}px service choice does not autosubmit`);
+        equal(serviceRequestCount() - before, 1, `${name}: ${width}px changed service choice refreshes once`);
         await screenshot(`service-mobile-${width}-closed`);
-        result.checks.push(`${width}px service dropdown aligned edges, visible options and non-submitting selection`);
+        result.checks.push(`${width}px service dropdown aligned edges, visible options and automatic AJAX selection`);
       }
 
       const fallbackContext = await browser.newContext({javaScriptEnabled: false, viewport: {width: 1440, height: 1000}});
@@ -566,22 +708,19 @@ try {
       }
       const serviceNative = fallback.locator('.catalog-select select[name=sortBy]');
       const serviceFallbackForm = fallback.locator('.service-search-form');
-      for (const [field, value] of Object.entries(serviceFilters)) await serviceFallbackForm.locator(`[name=${field}]`).fill(value);
+      for (const [field, value] of Object.entries(serviceFilters)) {
+        if (['maxPrice', 'maxDuration'].includes(field)) await serviceFallbackForm.locator(`[name=${field}]`).evaluate((input, value) => { input.value = value; }, value);
+        else await serviceFallbackForm.locator(`[name=${field}]`).fill(value);
+      }
       const fallbackBefore = serviceRequestCount();
       await serviceNative.selectOption('name');
       await wait(300);
       equal(serviceRequestCount(), fallbackBefore, `${name}: no-JS service native change waits for search`);
-      await Promise.all([
-        fallback.waitForURL(url => url.pathname === '/salon-services' && url.searchParams.get('sortBy') === 'name'),
-        serviceFallbackForm.getByRole('button', {name: '검색', exact: true}).click(),
-      ]);
-      await fallback.waitForLoadState('networkidle');
-      equal(serviceRequestCount() - fallbackBefore, 1, `${name}: no-JS service search submits once`);
-      equal(Object.fromEntries(new URL(fallback.url()).searchParams), {...expectedServiceQuery, sortBy: 'name'}, `${name}: no-JS service GET preserves filters and native choice`);
-      equal(await serviceNative.inputValue(), 'name', `${name}: no-JS service selection survives GET`);
+      equal(await serviceFallbackForm.evaluate(form => Object.fromEntries(new FormData(form))), {...expectedServiceQuery, sortBy: 'name'}, `${name}: no-JS service native FormData preserves filters and choice`);
+      equal(await serviceNative.inputValue(), 'name', `${name}: no-JS native selection remains chosen`);
       await fallbackContext.close();
       result.checks.push('No-JavaScript native fallback retains initial value and arrow on hover/focus');
-      result.checks.push('No-JavaScript service fallback retains all five initial values and submits filters with native sort');
+      result.checks.push('No-JavaScript service fallback retains all five initial values and native FormData values');
       equal(result.pageErrors, [], `${name}: no JavaScript errors`);
       equal(result.failedResponses, [], `${name}: no failing asset or AJAX responses`);
     } catch (error) {

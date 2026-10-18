@@ -11,7 +11,7 @@
 </th:block>
 
 <th:block th:fragment="primarySearch(search, searchAction, activePreset, keywordPlaceholder, submitLabel, currentLocationActionEnabled)">
- <form method="get" th:action="${searchAction}" class="salon-search-form salon-search-form--primary" data-auto-submit="true" th:attr="data-reset-url=@{/salons(preset=${activePreset != null and activePreset != 'all' ? activePreset : null})}">
+ <form method="get" th:action="${searchAction}" class="salon-search-form salon-search-form--primary" id="salon-search-form" data-auto-submit="true" th:attr="data-reset-url=@{/salons(preset=${activePreset != null and activePreset != 'all' ? activePreset : null})}">
   <input type="hidden" name="preset" th:if="${activePreset != null and activePreset != 'all'}" th:value="${activePreset}">
 
   <div class="salon-search-form__stack salon-search-form__stack--keyword">
@@ -66,19 +66,6 @@
    <input type="checkbox" name="reservable" value="true" th:checked="${search.reservable != null and search.reservable}">
    예약 가능
   </label>
-
-  <div class="salon-sort catalog-select catalog-select--compact" data-salon-sort data-catalog-select>
-   <select class="salon-search-form__control salon-search-form__control--sort" name="sort" aria-label="정렬 기준">
-    <option value="recommended" th:selected="${search.sort == 'recommended' or search.sort == null}">추천순</option>
-    <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
-    <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
-   </select>
-   <button type="button" class="salon-sort__trigger catalog-select__trigger" role="combobox" aria-label="정렬 기준" aria-haspopup="listbox" aria-expanded="false" aria-controls="salon-sort-options" hidden>
-    <span data-salon-sort-label data-catalog-select-label>추천순</span>
-    <svg class="salon-sort__chevron catalog-select__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-   </button>
-   <ul class="salon-sort__menu catalog-select__menu" id="salon-sort-options" role="listbox" aria-label="정렬 기준" hidden></ul>
-  </div>
 
   <div class="salon-search-form__actions">
    <button type="button" class="btn btn-primary salon-search-form__submit" data-search-reset>
@@ -172,12 +159,34 @@
  </section>
 </th:block>
 
-<th:block th:fragment="salonResults(salons, branchView, emptyMessage)">
- <nav aria-label="살롱 목록 페이지" th:if="${salonPage != null and salonPage.totalPages > 1}">
-  <a class="btn btn-outline" data-salon-page-link th:if="${salonPage.hasPrevious()}" th:href="@{/salons(page=${salonPage.number},keyword=${search.keyword},region=${search.region},minRating=${search.minRating},reservable=${search.reservable},sort=${search.sort},preset=${activePreset})}">이전</a>
-  <span th:text="|${salonPage.number + 1} / ${salonPage.totalPages} 페이지 · 총 ${salonPage.totalElements}개|">페이지</span>
-  <a class="btn btn-outline" data-salon-page-link th:if="${salonPage.hasNext()}" th:href="@{/salons(page=${salonPage.number + 2},keyword=${search.keyword},region=${search.region},minRating=${search.minRating},reservable=${search.reservable},sort=${search.sort},preset=${activePreset})}">다음</a>
+<th:block th:fragment="salonPagination">
+ <nav class="salon-pagination" aria-label="살롱 목록 페이지" th:if="${salonPage != null and salonPage.totalPages > 1}">
+  <a class="salon-pagination__button" data-salon-page-link aria-label="이전 페이지" rel="prev" th:if="${salonPage.hasPrevious()}" th:href="@{/salons(page=${salonPage.number},keyword=${search.keyword},region=${search.region},minRating=${search.minRating},reservable=${search.reservable},sort=${search.sort},preset=${activePreset})}">
+   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m10 4-4 4 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   <span class="salon-pagination__button-label">이전</span>
+  </a>
+  <span class="salon-pagination__button is-disabled" role="link" aria-disabled="true" aria-label="이전 페이지 없음" th:unless="${salonPage.hasPrevious()}">
+   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m10 4-4 4 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   <span class="salon-pagination__button-label">이전</span>
+  </span>
+  <span class="salon-pagination__status" th:attr="aria-label=|현재 ${salonPage.number + 1}페이지, 전체 ${salonPage.totalPages}페이지|">
+   <strong class="salon-pagination__current" th:text="${salonPage.number + 1}">1</strong>
+   <span class="salon-pagination__divider" aria-hidden="true">/</span>
+   <span class="salon-pagination__total" th:text="${salonPage.totalPages}">3</span>
+   <span class="salon-pagination__caption">페이지</span>
+  </span>
+  <a class="salon-pagination__button" data-salon-page-link aria-label="다음 페이지" rel="next" th:if="${salonPage.hasNext()}" th:href="@{/salons(page=${salonPage.number + 2},keyword=${search.keyword},region=${search.region},minRating=${search.minRating},reservable=${search.reservable},sort=${search.sort},preset=${activePreset})}">
+   <span class="salon-pagination__button-label">다음</span>
+   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <span class="salon-pagination__button is-disabled" role="link" aria-disabled="true" aria-label="다음 페이지 없음" th:unless="${salonPage.hasNext()}">
+   <span class="salon-pagination__button-label">다음</span>
+   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </span>
  </nav>
+</th:block>
+
+<th:block th:fragment="salonResults(salons, branchView, emptyMessage)">
  <div class="empty-state" th:if="${#lists.isEmpty(salons)}">
   <p th:text="${emptyMessage}">조건에 맞는 미용실이 없습니다.</p>
  </div>

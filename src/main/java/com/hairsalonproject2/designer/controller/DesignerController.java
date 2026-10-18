@@ -48,11 +48,18 @@ public class DesignerController {
   * GET /designers
   */
  @GetMapping
- public String list(@Valid @ModelAttribute("search") DesignerSearchRequest request, BindingResult searchErrors, @Valid @ModelAttribute("aiRequest") DesignerAiRecommendationRequest aiRequest, BindingResult aiErrors, @RequestParam MultiValueMap<String, String> params, @RequestParam(required = false) String mode, Model model) {
+ public String list(@Valid @ModelAttribute("search") DesignerSearchRequest request, BindingResult searchErrors, @Valid @ModelAttribute("aiRequest") DesignerAiRecommendationRequest aiRequest, BindingResult aiErrors, @RequestParam MultiValueMap<String, String> params, @RequestParam(required = false) String mode, @RequestHeader(value = "X-Requested-With", required = false) String requestedWith, Model model) {
+  if (SEARCH_MODE_AI.equalsIgnoreCase(mode) && "XMLHttpRequest".equals(requestedWith)) {
+   model.addAttribute("searchMode", SEARCH_MODE_AI);
+   model.addAttribute("aiRequest", aiRequest);
+   if (!aiErrors.hasErrors() && StringUtils.hasText(aiRequest.getQuery()))
+    model.addAttribute("aiResult", designerAiRecommendationService.recommend(aiRequest));
+   return "designer/list :: designerAiResponse";
+  }
   if (StringUtils.hasText(request.getSortBy())) return redirectToCanonicalList(params);
   String searchMode = resolveSearchMode(mode, aiRequest); request.setSearched(true);
-  boolean invalid = searchErrors.hasErrors() || aiErrors.hasErrors();
-  DesignerCatalogPage catalog = invalid ? new DesignerCatalogPage(Page.empty(), Page.empty(), Page.empty())
+  boolean invalidCatalog = searchErrors.hasErrors() || (SEARCH_MODE_AI.equals(searchMode) && aiErrors.hasErrors());
+  DesignerCatalogPage catalog = invalidCatalog ? new DesignerCatalogPage(Page.empty(), Page.empty(), Page.empty())
    : designerQueryService.searchCatalog(request, request.getPage() - 1, DESIGNERS_PER_PAGE);
   Page<DesignerSummaryResponse> ratingPage = catalog.rating();
   Page<DesignerSummaryResponse> likesPage = catalog.likes();
@@ -66,11 +73,9 @@ public class DesignerController {
   model.addAttribute("currentPage", ratingPage.isEmpty() ? 1 : ratingPage.getNumber() + 1);
   model.addAttribute("totalPages", ratingPage.getTotalPages());
   model.addAttribute("totalDesignerCount", ratingPage.getTotalElements());
-  model.addAttribute("pageNumbers", ratingPage.getTotalPages() == 0 ? java.util.Collections.emptyList() : java.util.stream.IntStream.rangeClosed(1, ratingPage.getTotalPages()).boxed().toList());
   model.addAttribute("searchMode", searchMode);
   model.addAttribute("aiRequest", aiRequest);
-  if (!invalid && SEARCH_MODE_AI.equals(searchMode) && StringUtils.hasText(aiRequest.getQuery()))
-   model.addAttribute("aiResult", designerAiRecommendationService.recommend(aiRequest));
+  // 저장된 화면 모드를 복원하기 전에 불필요한 AI 요청이 발생하지 않도록 전체 페이지에서는 추천을 실행하지 않습니다.
   return "designer/list";//디자이너 목록 페이지의 진입점 역할을 하는 매핑 메소드입니다 (GET /designers). 정렬 기준(sortBy) 파라미터가 명시적으로 들어온 경우 정형화된 URL 구조를 유지하기 위해 redirectToCanonicalList로 리다이렉트 처리를 수행합니다. 동일한 검색 조건에 대하여 평점순(ratingPage), 좋아요순(likesPage), 최신순(newestPage) 데이터를 각각 분리하여 조회한 후 모델에 바인딩합니다. 현재 페이지 번호, 전체 페이지 수, 전체 디자이너 수 등의 페이지네이션 속성을 연산하여 뷰 템플릿으로 전달합니다.
  }
 
@@ -84,9 +89,10 @@ public class DesignerController {
  }//파라미터 맵에서 sortBy 항목을 제거한 후, 남은 검색 조건들을 쿼리 스트링으로 다시 인코딩하여 표준 주소 형태로 리다이렉트 경로를 생성하는 내부 메소드입니다.
 
  private String resolveSearchMode(String mode, DesignerAiRecommendationRequest aiRequest) {
-  if (StringUtils.hasText(aiRequest.getQuery())) return SEARCH_MODE_AI;
-  if (SEARCH_MODE_AI.equalsIgnoreCase(mode)) return SEARCH_MODE_AI; return SEARCH_MODE_SEARCH;
- }//요청 매개변수로 전달된 모드 값이나 AI 추천 요청 객체 내의 질문 텍스트(query) 존재 여부를 확인합니다. 질문 텍스트가 유효하거나 모드가 대소문자 구분 없이 "ai"로 지정된 경우 "ai" 모드로 판별하며, 그렇지 않은 경우에는 일반 검색 모드인 "search"를 반환합니다.
+  if (SEARCH_MODE_AI.equalsIgnoreCase(mode)) return SEARCH_MODE_AI;
+  if (SEARCH_MODE_SEARCH.equalsIgnoreCase(mode)) return SEARCH_MODE_SEARCH;
+  return StringUtils.hasText(aiRequest.getQuery()) ? SEARCH_MODE_AI : SEARCH_MODE_SEARCH;
+ }//명시한 ai/search 모드를 대소문자와 관계없이 우선 적용하고, 모드가 없거나 알 수 없는 값이면 기존 query 유무로 판별합니다.
 
  /**
   * 디자이너 상세 페이지

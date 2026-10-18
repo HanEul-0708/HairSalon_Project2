@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ReviewPageController {
 
- private static final int REVIEWS_PER_PAGE = 6;
+ private static final int REVIEWS_PER_PAGE = 15;
  private static final String REVIEW_VISITOR_COOKIE = "review_visitor_token";
 
  private final ReviewService reviewService;
@@ -37,7 +37,7 @@ public class ReviewPageController {
  private final ReviewRepository reviewRepository;
 
  @GetMapping("/reviews")
- public String reviewListPage(@AuthenticationPrincipal CustomUserDetails userDetails, HttpServletRequest request, @RequestParam(defaultValue = "1") int page, @RequestParam(required = false) Integer designerId, @RequestParam(defaultValue = "latest") String sortBy, Model model) {
+ public String reviewListPage(@AuthenticationPrincipal CustomUserDetails userDetails, HttpServletRequest request, @RequestParam(defaultValue = "false") boolean searched, @RequestParam(defaultValue = "1") int page, @RequestParam(required = false) Integer designerId, @RequestParam(defaultValue = "latest") String sortBy, Model model) {
   String loginMemberId = userDetails == null ? null : userDetails.getMember().getMemberId();
   String visitorToken = getVisitorToken(request);
   List<ReviewResponse> allReviews = reviewService.getAllReviews(loginMemberId, visitorToken, designerId, sortBy);
@@ -50,6 +50,7 @@ public class ReviewPageController {
   Map<Integer, String> designerOptions = reviewService.getAllReviews(loginMemberId, visitorToken, null, "latest").stream().collect(Collectors.toMap(ReviewResponse::getDesignerId, ReviewResponse::getDesignerName, (left, right) -> left));
   Double selectedDesignerAverage = designerId == null ? null : reviewService.getAverageRatingByDesigner(designerId);
   model.addAttribute("reviews", pagedReviews);
+  model.addAttribute("searched", searched);
   model.addAttribute("currentPage", currentPage);
   model.addAttribute("totalPages", totalPages);
   model.addAttribute("pageNumbers", java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList());

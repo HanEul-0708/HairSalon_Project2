@@ -4,8 +4,10 @@
  <meta charset="UTF-8">
  <title>시술 목록</title>
  <link rel="stylesheet" th:href="@{/css/service.css}">
+ <link rel="stylesheet" th:href="@{/css/catalog-range.css}">
  <link rel="stylesheet" th:href="@{/css/catalog-select.css}">
  <script th:src="@{/js/catalog-select.js}" defer></script>
+ <script th:src="@{/js/catalog-range.js}" defer></script>
  <script th:src="@{/js/service.js}" defer></script>
 </head>
 <body>
@@ -13,55 +15,72 @@
  <div class="container service-page service-list-page">
   <div class="catalog-hero"><p class="catalog-hero__eyebrow">Service Directory</p>
    <h1 class="catalog-hero__title">시술 목록</h1>
-   <p class="catalog-hero__subtitle">시술명, 가격, 시간, 지역 기준으로 원하는 시술을 찾아보세요.</p></div>
-  <form method="get" th:action="@{/salon-services}" th:object="${search}" class="service-search-form">
+   <p class="catalog-hero__subtitle">시술명·지역·가격·시간으로 원하는 시술을 찾아 비교해보세요.</p></div>
+  <form method="get" th:action="@{/salon-services}" th:object="${search}" class="service-search-form" id="service-search-form" data-service-live-search="true">
    <input type="hidden" name="searched" value="true">
-   <div class="service-search-form__intro"><p class="service-search-form__eyebrow">Service Search</p>
-	<h2>조건에 맞는 시술을 찾아보세요.</h2>
-	<p>시술명, 가격, 시간, 지역 기준으로 원하는 시술만 빠르게 비교할 수 있습니다.</p></div>
-   <div class="service-search-form__controls">
-	<div class="service-search-form__fields">
+   <div class="service-search-form__controls catalog-form-layout">
+	<div class="service-search-form__field-scroll catalog-form-layout__inputs" role="region" aria-label="시술 검색 조건">
+	<div class="service-search-form__fields catalog-form-layout__fields">
+	 <div class="service-search-form__text-fields catalog-form-layout__text-fields">
 	 <input type="text" name="keyword" placeholder="시술명 또는 설명" aria-label="시술명 또는 설명" th:value="${search.keyword}">
 	 <input type="text" name="salonKeyword" placeholder="미용실명" aria-label="미용실명" th:value="${search.salonKeyword}">
 	 <input type="text" name="region" placeholder="지역" aria-label="지역" th:value="${search.region}">
-	 <input type="text" inputmode="numeric" placeholder="최대 가격" aria-label="최대 가격" th:field="*{maxPrice}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('maxPrice')}" aria-describedby="maxPriceError">
-	 <input type="text" inputmode="numeric" placeholder="최대 시간(분)" aria-label="최대 소요시간(분)" th:field="*{maxDuration}" th:errorclass="is-invalid" th:attr="aria-invalid=${#fields.hasErrors('maxDuration')}" aria-describedby="maxDurationError">
-	 <div class="catalog-select" data-catalog-select>
-	  <select name="sortBy" aria-label="정렬 기준">
-	   <option value="" th:selected="${search.sortBy == null or search.sortBy == ''}">가격순</option>
-	   <option value="duration" th:selected="${search.sortBy == 'duration'}">시간순</option>
-	   <option value="rating" th:selected="${search.sortBy == 'rating'}">평점순</option>
-	   <option value="name" th:selected="${search.sortBy == 'name'}">이름순</option>
-	   <option value="trend" th:selected="${search.sortBy == 'trend'}">트렌드순</option>
-	  </select>
-	  <button type="button" class="catalog-select__trigger" role="combobox" aria-label="정렬 기준" aria-haspopup="listbox" aria-expanded="false" aria-controls="service-sort-options" hidden>
-	   <span data-catalog-select-label>가격순</span>
-	   <svg class="catalog-select__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-	  </button>
-	  <ul class="catalog-select__menu" id="service-sort-options" role="listbox" aria-label="정렬 기준" hidden></ul>
+	 </div>
+	 <fieldset class="service-search-form__ranges catalog-form-layout__ranges catalog-range-group catalog-range-group--salon-spacing">
+	 <legend class="visually-hidden">시술 가격·시간 조건</legend>
+	 <th:block th:replace="~{fragments/catalog-range :: field('maxPrice', '최대 가격', 0, 300000, 1000, '원')}"></th:block>
+	 <th:block th:replace="~{fragments/catalog-range :: field('maxDuration', '최대 시간', 1, 300, 1, '분')}"></th:block>
+	 </fieldset>
+	</div>
+   <div data-service-page-error th:hidden="${!#fields.hasErrors('page')}">
+    <th:block th:if="${#fields.hasErrors('page')}">
+	 <label for="page">페이지</label>
+	 <input id="page" type="text" inputmode="numeric" th:field="*{page}" class="is-invalid" aria-invalid="true" aria-describedby="pageError">
+	 <p id="pageError" class="invalid-feedback" th:errors="*{page}"></p>
+    </th:block>
+   </div>
+	</div>
+	<div class="service-search-form__actions catalog-form-layout__actions">
+	 <div class="catalog-form-layout__reset">
+	  <a th:href="@{/salon-services}" class="btn btn-primary catalog-search-reset" data-service-search-reset>초기화</a>
+	 </div>
+	 <div class="service-search-form__secondary-actions catalog-form-layout__secondary">
+	  <a th:href="@{/salon-services/compare}" class="btn btn-outline-gold">가격 비교</a>
 	 </div>
 	</div>
-	<div class="service-search-form__actions">
-	 <button type="submit" class="btn btn-primary">검색</button>
-	 <a th:href="@{/salon-services}" class="btn btn-outline">초기화</a>
-	 <a th:href="@{/salon-services/compare}" class="btn btn-outline-gold">가격 비교</a>
-	</div>
-   </div>
-   <p id="maxPriceError" class="invalid-feedback" th:if="${#fields.hasErrors('maxPrice')}" th:errors="*{maxPrice}"></p>
-   <p id="maxDurationError" class="invalid-feedback" th:if="${#fields.hasErrors('maxDuration')}" th:errors="*{maxDuration}"></p>
-   <div th:if="${#fields.hasErrors('page')}">
-	<label for="page">페이지</label>
-	<input type="text" inputmode="numeric" th:field="*{page}" class="is-invalid" aria-invalid="true" aria-describedby="pageError">
-	<p id="pageError" class="invalid-feedback" th:errors="*{page}"></p>
    </div>
   </form>
+  <div id="service-search-message" class="alert alert-danger" role="alert" hidden></div>
+  <div class="service-results-head catalog-results-head">
+   <div id="service-results-heading" class="catalog-results-heading">
+    <p class="service-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
+    <div class="catalog-results-heading__row">
+     <h2>시술 <span th:text="${totalServiceCount ?: 0}">0</span>건</h2>
+     <th:block th:replace="~{fragments/catalog-pagination :: pagination('시술 목록 페이지', ${currentPage}, ${totalPages}, @{/salon-services(page=${currentPage - 1}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, region=${search.region}, maxPrice=${search.maxPrice}, maxDuration=${search.maxDuration}, sortBy=${search.sortBy})}, @{/salon-services(page=${currentPage + 1}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, region=${search.region}, maxPrice=${search.maxPrice}, maxDuration=${search.maxDuration}, sortBy=${search.sortBy})}, 'service')}"></th:block>
+    </div>
+   </div>
+   <div class="service-results-sort">
+    <label class="visually-hidden" for="serviceResultSort">정렬 기준</label>
+    <div class="catalog-select" data-catalog-select>
+     <select id="serviceResultSort" class="service-results-sort__control" name="sortBy" form="service-search-form" aria-label="정렬 기준">
+      <option value="" th:selected="${search.sortBy == null or search.sortBy == ''}">가격순</option>
+      <option value="duration" th:selected="${search.sortBy == 'duration'}">시간순</option>
+      <option value="rating" th:selected="${search.sortBy == 'rating'}">평점순</option>
+      <option value="name" th:selected="${search.sortBy == 'name'}">이름순</option>
+      <option value="trend" th:selected="${search.sortBy == 'trend'}">트렌드순</option>
+     </select>
+     <button type="button" class="catalog-select__trigger" role="combobox" aria-label="정렬 기준" aria-haspopup="listbox" aria-expanded="false" aria-controls="service-sort-options" hidden>
+      <span data-catalog-select-label>가격순</span>
+      <svg class="catalog-select__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+     </button>
+     <ul class="catalog-select__menu" id="service-sort-options" role="listbox" aria-label="정렬 기준" hidden></ul>
+    </div>
+   </div>
+  </div>
+  <div id="service-results-area" aria-live="polite" aria-busy="false">
   <div class="service-empty-state service-empty-state--guide" th:if="${!searched}"><h2>검색 조건을 입력하면 결과가 여기에 표시됩니다.</h2>
    <p>시술명, 가격, 지역, 시간을 조합해 원하는 시술만 찾아보세요.</p></div>
   <div th:if="${searched}">
-   <div class="service-results-head catalog-results-head">
-	<div><p class="service-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
-	 <h2>시술 <span th:text="${totalServiceCount}">0</span>건</h2></div>
-   </div>
    <div class="service-grid" th:if="${!#lists.isEmpty(services)}">
 	<article class="service-card" th:each="service : ${services}">
 	 <div class="service-card__body">
@@ -85,11 +104,7 @@
 	<p>검색어를 줄이거나 가격, 시간, 지역 조건을 완화해서 다시 찾아보세요.</p>
 	<a th:href="@{/salon-services}" class="btn btn-primary">검색 다시 하기</a>
    </div>
-   <nav class="pagination pagination--catalog" th:if="${totalPages > 1}" aria-label="시술 목록 페이지">
-	<a class="page-link" th:classappend="${currentPage == 1 ? ' disabled' : ''}" th:attr="aria-disabled=${currentPage == 1},tabindex=${currentPage == 1 ? -1 : null}" th:href="${currentPage > 1} ? @{/salon-services(page=${currentPage - 1}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, region=${search.region}, maxPrice=${search.maxPrice}, maxDuration=${search.maxDuration}, sortBy=${search.sortBy})} : _">이전</a>
-	<a class="page-link" th:each="pageNumber : ${pageNumbers}" th:classappend="${pageNumber == currentPage ? ' active' : ''}" th:attr="aria-current=${pageNumber == currentPage ? 'page' : null}" th:href="@{/salon-services(page=${pageNumber}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, region=${search.region}, maxPrice=${search.maxPrice}, maxDuration=${search.maxDuration}, sortBy=${search.sortBy})}" th:text="${pageNumber}">1</a>
-	<a class="page-link" th:classappend="${currentPage == totalPages ? ' disabled' : ''}" th:attr="aria-disabled=${currentPage == totalPages},tabindex=${currentPage == totalPages ? -1 : null}" th:href="${currentPage < totalPages} ? @{/salon-services(page=${currentPage + 1}, searched=true, keyword=${search.keyword}, salonKeyword=${search.salonKeyword}, region=${search.region}, maxPrice=${search.maxPrice}, maxDuration=${search.maxDuration}, sortBy=${search.sortBy})} : _">다음</a>
-   </nav>
+  </div>
   </div>
  </div>
 </main>

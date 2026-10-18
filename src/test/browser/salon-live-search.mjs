@@ -103,8 +103,10 @@ function render(url) {
   });
   const nextPage = new URL(url);
   nextPage.searchParams.set('page', query.page === '2' ? '1' : '2');
+  html = html.replace(/(<div class="salon-results-heading__row">\s*<h2>[\s\S]*?<\/h2>)/,
+    `$1<nav class="salon-pagination" aria-label="살롱 목록 페이지"><a class="salon-pagination__button" data-salon-page-link href="${escape(nextPage.pathname + nextPage.search)}">다음</a></nav>`);
   html = html.replace('<div id="salon-results-area">',
-    `<div id="salon-results-area" data-fixture-query="${escape(JSON.stringify(query))}"><p data-fixture-result>${escape(query.keyword || '전체')} / ${escape(query.region || '전체')} / ${escape(query.page || '1')}</p><a data-salon-page-link href="${escape(nextPage.pathname + nextPage.search)}">다음</a>`);
+    `<div id="salon-results-area" data-fixture-query="${escape(JSON.stringify(query))}"><p data-fixture-result>${escape(query.keyword || '전체')} / ${escape(query.region || '전체')} / ${escape(query.page || '1')}</p>`);
   return html.replace(/(href|src)="(https:\/\/cdn\.jsdelivr\.net[^" ]+)"/g,
     (_, attribute, asset) => `${attribute}="/__vendor?url=${encodeURIComponent(asset)}"`);
 }
@@ -161,6 +163,7 @@ try {
       const form = page.locator('.salon-search-form--primary');
       const keyword = form.locator('[name=keyword]');
       const region = form.locator('[name=region]');
+      const sortToolbar = page.locator('.salon-results-head');
       const settled = async expected => {
         await page.waitForFunction(expected => {
           const area = document.querySelector('#salon-results-area');
@@ -174,12 +177,19 @@ try {
         window.__liveForm = document.querySelector('.salon-search-form--primary');
         window.__liveKeyword = window.__liveForm.querySelector('[name=keyword]');
         window.__liveRegion = window.__liveForm.querySelector('[name=region]');
+        window.__liveSort = document.querySelector('.salon-results-head [data-salon-sort]');
+        window.__liveSortSelect = window.__liveSort.querySelector('select');
+        window.__liveSortTrigger = window.__liveSort.querySelector('.salon-sort__trigger');
         window.__liveBlurCount = 0;
         window.__liveKeyword.addEventListener('blur', () => window.__liveBlurCount++);
       });
       const sameFields = async () => assert.ok(await page.evaluate(() => window.__liveForm === document.querySelector('.salon-search-form--primary')
         && window.__liveKeyword === document.querySelector('.salon-search-form--primary [name=keyword]')
-        && window.__liveRegion === document.querySelector('.salon-search-form--primary [name=region]')), `${name}: form and text controls retain identity`);
+        && window.__liveRegion === document.querySelector('.salon-search-form--primary [name=region]')
+        && window.__liveSort === document.querySelector('.salon-results-head [data-salon-sort]')
+        && window.__liveSortSelect === window.__liveSort.querySelector('select')
+        && window.__liveSortTrigger === window.__liveSort.querySelector('.salon-sort__trigger')
+        && window.__liveSortSelect.form === window.__liveForm), `${name}: form, text controls and external sort controls retain identity and form association`);
       const goto = async () => {
         assert.equal((await page.goto(base + '/salons', {waitUntil: 'networkidle'})).status(), 200);
         await rememberFields();
@@ -199,7 +209,9 @@ try {
         continuousTyping = keyword.pressSequentially(continuousQuery.slice(1), {delay: 60}).then(() => { typingFinished = true; });
         const immediate = await Promise.race([leading.received, pause(250).then(() => null)]);
         assert.ok(immediate, `${name}: the first input dispatches a search immediately while the focused user continues typing`);
-        await pause(180);
+        // Keep the response pending until several actual keystrokes have accumulated.
+        // A fixed delay can expire before Firefox types them on a busy machine.
+        await page.waitForFunction(() => document.querySelector('.salon-search-form--primary [name=keyword]').value.length >= 4);
         leading.release();
         await followup.received;
         await page.waitForFunction(() => JSON.parse(document.querySelector('#salon-results-area').dataset.fixtureQuery).keyword === 'l');
@@ -438,9 +450,9 @@ try {
 
       await form.locator('[name=reservable]').check();
       await settled({reservable: 'true'});
-      const trigger = form.locator('.salon-sort__trigger');
+      const trigger = sortToolbar.locator('.salon-sort__trigger');
       await trigger.click();
-      await form.locator('[data-salon-sort] [data-value=rating]').click();
+      await sortToolbar.locator('[data-salon-sort] [data-value=rating]').click();
       await settled({sort: 'rating', keyword: '부산', region: 'Seoul', reservable: 'true'});
       assert.ok(await trigger.evaluate(node => node === document.activeElement));
       await form.locator('[data-rating-slider-input]').press('End');
@@ -450,14 +462,14 @@ try {
       await settled({preset: 'top-rated-4-5', minRating: '4.5', keyword: '부산', region: 'Seoul', reservable: 'true', sort: 'rating'});
       assert.equal(await form.getAttribute('data-reset-url'), '/salons?preset=top-rated-4-5');
       await sameFields();
-      await page.locator('#salon-results-area [data-salon-page-link]').click();
+      await page.locator('#salon-results-heading [data-salon-page-link]').click();
       await settled({page: '2', preset: 'top-rated-4-5', minRating: '4.5', keyword: '부산', region: 'Seoul', reservable: 'true', sort: 'rating'});
       await sameFields();
       const pageCount = report.requests.filter(request => request.ajax).length;
       const pendingPageFilter = holdResponse(query => query.region === 'Seoul pending' && !query.page);
       await region.fill('Seoul pending');
       await pendingPageFilter.received;
-      await page.locator('#salon-results-area [data-salon-page-link]').click();
+      await page.locator('#salon-results-heading [data-salon-page-link]').click();
       await settled({page: '1', region: 'Seoul pending', keyword: '부산'});
       pendingPageFilter.release();
       await pause(100);
@@ -481,8 +493,8 @@ try {
       await settled({preset: 'top-rated-4-5', keyword: null, region: null, minRating: null, reservable: null, sort: null});
       assert.equal(await keyword.inputValue(), '');
       assert.equal(await region.inputValue(), '');
-      assert.equal(await form.locator('[name=sort]').inputValue(), 'recommended');
-      assert.equal((await form.locator('[data-salon-sort-label]').textContent()).trim(), '추천순');
+      assert.equal(await sortToolbar.locator('[name=sort]').inputValue(), 'recommended');
+      assert.equal((await sortToolbar.locator('[data-salon-sort-label]').textContent()).trim(), '추천순');
       assert.equal(await form.locator('[name=reservable]').isChecked(), false);
       assert.equal(await form.locator('[data-rating-slider-input]').inputValue(), '4.5');
       await sameFields();

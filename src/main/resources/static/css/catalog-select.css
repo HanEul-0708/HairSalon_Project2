@@ -15,14 +15,14 @@
  justify-content: space-between;
  gap: 10px;
  width: 100%;
- min-height: 48px;
- height: 48px;
+ min-height: var(--catalog-control-height, 48px);
+ height: var(--catalog-control-height, 48px);
  padding: 0 14px;
  border: 1px solid #dacbb0;
  border-radius: 14px;
  background-color: #fffdfa;
  color: #5e4c2d;
- font-size: 0.91rem;
+ font-size: var(--catalog-sort-font-size, 0.91rem);
  font-family: inherit;
  font-weight: 600;
  line-height: 1.2;

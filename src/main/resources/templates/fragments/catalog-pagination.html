@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="pagination(label, currentPage, totalPages, previousUrl, nextUrl, domain)">
+ <nav class="catalog-pagination" th:if="${totalPages > 1}" th:attr="aria-label=${label}">
+  <a class="catalog-pagination__button" aria-label="이전 페이지" rel="prev" th:if="${currentPage > 1}" th:href="${previousUrl}" th:attr="data-designer-page-link=${domain == 'designer' ? 'true' : null},data-service-page-link=${domain == 'service' ? 'true' : null}">
+   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m10 4-4 4 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   <span class="catalog-pagination__button-label">이전</span>
+  </a>
+  <span class="catalog-pagination__button is-disabled" role="link" aria-disabled="true" aria-label="이전 페이지 없음" th:unless="${currentPage > 1}">
+   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m10 4-4 4 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   <span class="catalog-pagination__button-label">이전</span>
+  </span>
+  <span class="catalog-pagination__status" th:attr="aria-label=|현재 ${currentPage}페이지, 전체 ${totalPages}페이지|">
+   <strong class="catalog-pagination__current" aria-current="page" th:text="${currentPage}">1</strong>
+   <span class="catalog-pagination__divider" aria-hidden="true">/</span>
+   <span class="catalog-pagination__total" th:text="${totalPages}">3</span>
+   <span class="catalog-pagination__caption">페이지</span>
+  </span>
+  <a class="catalog-pagination__button" aria-label="다음 페이지" rel="next" th:if="${currentPage < totalPages}" th:href="${nextUrl}" th:attr="data-designer-page-link=${domain == 'designer' ? 'true' : null},data-service-page-link=${domain == 'service' ? 'true' : null}">
+   <span class="catalog-pagination__button-label">다음</span>
+   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <span class="catalog-pagination__button is-disabled" role="link" aria-disabled="true" aria-label="다음 페이지 없음" th:unless="${currentPage < totalPages}">
+   <span class="catalog-pagination__button-label">다음</span>
+   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </span>
+ </nav>
+</th:block>
+</html>

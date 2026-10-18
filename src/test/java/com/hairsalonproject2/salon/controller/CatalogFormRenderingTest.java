@@ -100,6 +100,8 @@ class CatalogFormRenderingTest {
   assertThat(select.selectFirst("option[selected]").val()).isEqualTo(sortBy);
   assertThat(html.selectFirst(".catalog-select__trigger").attr("type")).isEqualTo("button");
   assertThat(html.selectFirst(".service-search-form").attr("method")).isEqualTo("get");
+  assertServiceLiveSearchShell(html);
+  assertThat(html.selectFirst("[data-service-page-error]").children()).isEmpty();
 
   Path fixtureDirectory = Path.of("build", "catalog-select", "fixtures");
   Files.createDirectories(fixtureDirectory);
@@ -120,6 +122,13 @@ class CatalogFormRenderingTest {
   Document html = Jsoup.parse(result.getResponse().getContentAsString(StandardCharsets.UTF_8));
   assertThat(html.select(".service-compare-table tbody tr td:last-child").eachText())
           .containsExactly("4.90", "4.10", "0.00");
+  var form = html.selectFirst(".service-search-form--compare");
+  assertThat(form.attr("method")).isEqualToIgnoringCase("get");
+  assertThat(form.attr("action")).isEqualTo("/salon-services/compare");
+  assertThat(form.hasAttr("data-service-live-search")).isFalse();
+  assertThat(form.select("button[type=submit]").text()).isEqualTo("비교하기");
+  assertThat(html.select("#service-search-form, #service-results-area, [data-service-page-link]")).isEmpty();
+  writeLiveSearchFixture("compare.html", result.getResponse().getContentAsString(StandardCharsets.UTF_8));
  }
 
  @ParameterizedTest
@@ -140,6 +149,15 @@ class CatalogFormRenderingTest {
   assertThat(form.selectFirst("input[name=" + field + "]").val()).isEqualTo(value);
   assertThat(form.selectFirst("input[name=region]").val()).isEqualTo("서울 강남구");
   assertThat(form.select(".invalid-feedback").text()).contains(message).doesNotContain("Failed to convert", "java.lang");
+  if ("/salon-services".equals(path)) {
+   assertServiceLiveSearchShell(html);
+   if ("page".equals(field)) {
+    assertThat(form.selectFirst("[data-service-page-error] input[name=page]").val()).isEqualTo(value);
+    assertThat(form.selectFirst("[data-service-page-error] #pageError").text()).contains(message);
+   }
+   writeLiveSearchFixture("invalid-" + field + "-" + value + ".html",
+           result.getResponse().getContentAsString(StandardCharsets.UTF_8));
+  }
   verifyNoInteractions(salonServiceQueryService);
  }
 
@@ -152,11 +170,67 @@ class CatalogFormRenderingTest {
                   .param("sortBy", "rating").param("page", "2"))
           .andExpect(status().isOk()).andReturn();
   Document html = Jsoup.parse(result.getResponse().getContentAsString(StandardCharsets.UTF_8));
-  var href = html.select(".pagination a").getLast().attr("href");
+  var href = html.select(".catalog-pagination a").getLast().attr("href");
   String decoded = java.net.URLDecoder.decode(href, StandardCharsets.UTF_8);
   assertThat(decoded).contains("page=3", "keyword=커트", "salonKeyword=살롱", "region=서울", "maxPrice=30000", "maxDuration=60", "sortBy=rating");
-  assertThat(html.select(".pagination [aria-current=page]").text()).isEqualTo("2");
+  assertThat(html.select(".catalog-pagination [aria-current=page]").text()).isEqualTo("2");
   assertThat(html.select("input[name=page]")).isEmpty();
+  assertServiceLiveSearchShell(html);
+  assertThat(html.select("#service-results-heading .catalog-pagination a:not([data-service-page-link])")).isEmpty();
+  assertThat(html.select("#service-results-heading [data-service-page-link]")).hasSize(2);
+  assertThat(html.select("#service-results-area .catalog-pagination, #service-results-area [data-service-page-link]")).isEmpty();
+  writeLiveSearchFixture("page-2.html", result.getResponse().getContentAsString(StandardCharsets.UTF_8));
+ }
+
+ @ParameterizedTest
+ @CsvSource({"45,1,first", "45,2,middle", "45,3,last", "1,1,single", "0,1,empty"})
+ void serviceCatalogPaginationMatchesSalonsAcrossEveryPageState(int total, int pageNumber, String fixture) throws Exception {
+  var rows = java.util.stream.IntStream.range(0, Math.min(15, total))
+   .mapToObj(index -> service((pageNumber - 1) * 15 + index + 1, new BigDecimal("4.9"))).toList();
+  when(salonServiceQueryService.list(any(), anyInt(), anyInt()))
+   .thenReturn(new PageImpl<>(rows, PageRequest.of(pageNumber - 1, 15), total));
+  var result = mockMvc.perform(get("/salon-services").param("searched", "true").param("page", Integer.toString(pageNumber))
+    .param("keyword", "커트").param("salonKeyword", "스타일").param("region", "서울")
+    .param("maxPrice", "50000").param("maxDuration", "60").param("sortBy", "rating"))
+   .andExpect(status().isOk()).andExpect(view().name("service/list")).andReturn();
+  String rendered = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+  var html = Jsoup.parse(rendered);
+  var heading = html.select("#service-results-heading.catalog-results-heading");
+  assertThat(heading).hasSize(1);
+  assertThat(heading.select(".catalog-results-heading__row > h2")).hasSize(1);
+  assertThat(heading.first().closest("#service-results-area")).isNull();
+  assertThat(html.select("#service-results-area .catalog-pagination, .catalog-pagination-wrap")).isEmpty();
+  assertThat(html.select(".catalog-pagination")).hasSize(total > 15 ? 1 : 0);
+  var pagination = heading.select(".catalog-results-heading__row > nav.catalog-pagination[aria-label='시술 목록 페이지']");
+  if (total <= 15) {
+   assertThat(pagination).isEmpty();
+   assertThat(html.select("[data-service-page-link]")).isEmpty();
+  } else {
+   assertThat(pagination).hasSize(1);
+   assertThat(pagination.first().previousElementSibling().normalName()).isEqualTo("h2");
+   assertThat(html.getAllElements().indexOf(pagination.first()))
+    .isLessThan(html.getAllElements().indexOf(html.selectFirst("#service-results-area")));
+   assertThat(pagination.select(".catalog-pagination__current[aria-current=page]").text()).isEqualTo(Integer.toString(pageNumber));
+   assertThat(pagination.select(".catalog-pagination__total").text()).isEqualTo("3");
+   assertThat(pagination.select(".catalog-pagination__button")).hasSize(2);
+   assertThat(pagination.select(".catalog-pagination__status").attr("aria-label"))
+    .isEqualTo("현재 " + pageNumber + "페이지, 전체 3페이지");
+   assertThat(pagination.select("[aria-disabled=true]")).hasSize(pageNumber == 2 ? 0 : 1);
+   assertThat(pagination.select("[aria-disabled=true][href], [aria-disabled=true][tabindex], .page-link, [data-designer-page-link]")).isEmpty();
+   var links = pagination.select("a[data-service-page-link]");
+   assertThat(links).hasSize(pageNumber == 2 ? 2 : 1);
+   links.forEach(link -> {
+    int target = "prev".equals(link.attr("rel")) ? pageNumber - 1 : pageNumber + 1;
+    String decoded = java.net.URLDecoder.decode(link.attr("href"), StandardCharsets.UTF_8);
+    assertThat(decoded).startsWith("/salon-services?").contains("page=" + target, "searched=true",
+     "keyword=커트", "salonKeyword=스타일", "region=서울", "maxPrice=50000", "maxDuration=60", "sortBy=rating");
+    assertThat(link.select("svg[aria-hidden=true][focusable=false]")).hasSize(1);
+   });
+  }
+  verify(salonServiceQueryService).list(any(), org.mockito.ArgumentMatchers.eq(pageNumber - 1), org.mockito.ArgumentMatchers.eq(15));
+  Path directory = Path.of("build", "catalog-pagination", "fixtures");
+  Files.createDirectories(directory);
+  Files.writeString(directory.resolve("service-" + fixture + ".html"), rendered, StandardCharsets.UTF_8);
  }
 
  @Test
@@ -173,8 +247,78 @@ class CatalogFormRenderingTest {
   Document html = Jsoup.parse(result.getResponse().getContentAsString(StandardCharsets.UTF_8));
   assertThat(html.select(".service-compare-table tbody tr td:nth-child(2)").eachText())
           .containsExactly("서울 도로명 주소", "서울 지번 주소");
-  String next = java.net.URLDecoder.decode(html.select(".pagination a").getLast().attr("href"), StandardCharsets.UTF_8);
+  String next = java.net.URLDecoder.decode(html.select(".catalog-pagination a[rel=next]").attr("href"), StandardCharsets.UTF_8);
   assertThat(next).contains("page=2", "serviceName=커트", "region=서울");
+ }
+
+ @ParameterizedTest
+ @CsvSource({"45,1,first", "45,2,middle", "45,3,last", "1,1,single", "0,1,empty"})
+ void comparisonPaginationUsesSharedHeadingAndNativeLinksAcrossEveryPageState(int total, int pageNumber, String fixture) throws Exception {
+  String serviceName = "커트 & 펌";
+  String region = "서울 성동구";
+  var rows = java.util.stream.IntStream.range(0, Math.min(15, total))
+          .mapToObj(index -> comparison((pageNumber - 1) * 15 + index + 1, new BigDecimal("4.9"))).toList();
+  when(salonServiceQueryService.compare(serviceName, region, pageNumber - 1, 15))
+          .thenReturn(new PageImpl<>(rows, PageRequest.of(pageNumber - 1, 15), total));
+  var result = mockMvc.perform(get("/salon-services/compare").param("page", Integer.toString(pageNumber))
+          .param("serviceName", serviceName).param("region", region))
+          .andExpect(status().isOk()).andExpect(view().name("service/compare")).andExpect(model().hasNoErrors()).andReturn();
+  String rendered = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+  var html = Jsoup.parse(rendered);
+  var heading = html.select(".service-results-head .catalog-results-heading");
+  assertThat(heading).hasSize(1);
+  assertThat(heading.select(".catalog-results-heading__row > h2").text()).isEqualTo("비교 결과 " + total + "건");
+  assertThat(html.select(".pagination, .page-link, .catalog-pagination-wrap")).isEmpty();
+  assertThat(html.select("[data-service-page-link], [data-designer-page-link], [data-salon-page-link]")).isEmpty();
+  assertThat(html.select("input[name=serviceName]").val()).isEqualTo(serviceName);
+  assertThat(html.select("input[name=region]").val()).isEqualTo(region);
+  assertThat(html.select(".service-compare-table tbody tr")).hasSize(total == 0 ? 1 : Math.min(15, total));
+  var pager = heading.select(".catalog-results-heading__row > nav.catalog-pagination[aria-label='시술 가격 비교 페이지']");
+  assertThat(html.select(".catalog-pagination")).hasSize(total > 15 ? 1 : 0);
+  if (total > 15) {
+   assertThat(pager).hasSize(1);
+   assertThat(pager.first().previousElementSibling().normalName()).isEqualTo("h2");
+   assertThat(pager.first().closest("form")).isNull();
+   assertThat(html.getAllElements().indexOf(pager.first()))
+           .isLessThan(html.getAllElements().indexOf(html.selectFirst(".service-compare-table")));
+   assertThat(pager.select(".catalog-pagination__current[aria-current=page]").text()).isEqualTo(Integer.toString(pageNumber));
+   assertThat(pager.select(".catalog-pagination__total").text()).isEqualTo("3");
+   assertThat(pager.select(".catalog-pagination__status").attr("aria-label"))
+           .isEqualTo("현재 " + pageNumber + "페이지, 전체 3페이지");
+   assertThat(pager.select(".catalog-pagination__button")).hasSize(2);
+   assertThat(pager.select("[aria-disabled=true]")).hasSize(pageNumber == 2 ? 0 : 1);
+   assertThat(pager.select("[aria-disabled=true][href], [aria-disabled=true][tabindex]")).isEmpty();
+   var links = pager.select("a[href]");
+   assertThat(links).hasSize(pageNumber == 2 ? 2 : 1);
+   links.forEach(link -> {
+    int target = "prev".equals(link.attr("rel")) ? pageNumber - 1 : pageNumber + 1;
+    String decoded = java.net.URLDecoder.decode(link.attr("href"), StandardCharsets.UTF_8);
+    assertThat(decoded).startsWith("/salon-services/compare?")
+            .contains("page=" + target, "serviceName=" + serviceName, "region=" + region);
+    assertThat(link.hasAttr("onclick")).isFalse();
+    assertThat(link.select("svg[aria-hidden=true][focusable=false]")).hasSize(1);
+   });
+  } else assertThat(pager).isEmpty();
+  verify(salonServiceQueryService).compare(serviceName, region, pageNumber - 1, 15);
+  writeComparisonPaginationFixture(fixture, rendered);
+ }
+
+ @Test
+ void invalidComparisonPagePreservesRejectedInputWithoutQueryOrPager() throws Exception {
+  var result = mockMvc.perform(get("/salon-services/compare").param("page", "0")
+          .param("serviceName", "커트 & 펌").param("region", "서울 성동구"))
+          .andExpect(status().isOk()).andExpect(view().name("service/compare"))
+          .andExpect(model().attributeHasFieldErrors("search", "page")).andReturn();
+  String rendered = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
+  var html = Jsoup.parse(rendered);
+  assertThat(html.select("input[name=page]").val()).isEqualTo("0");
+  assertThat(html.select("input[name=page][aria-invalid=true][aria-describedby=pageError]")).hasSize(1);
+  assertThat(html.select("#pageError").text()).isEqualTo("페이지는 1 이상으로 입력해 주세요.");
+  assertThat(html.select("input[name=serviceName]").val()).isEqualTo("커트 & 펌");
+  assertThat(html.select("input[name=region]").val()).isEqualTo("서울 성동구");
+  assertThat(html.select(".catalog-pagination, .pagination")).isEmpty();
+  verifyNoInteractions(salonServiceQueryService);
+  writeComparisonPaginationFixture("invalid", rendered);
  }
 
  @Test
@@ -245,6 +389,69 @@ class CatalogFormRenderingTest {
   mockMvc.perform(post(path).with(user("admin").roles("ADMIN")))
           .andExpect(status().isForbidden());
   verifyNoInteractions(salonQueryService, salonServiceQueryService, designerQueryService);
+ }
+
+ private void assertServiceLiveSearchShell(Document html) {
+  assertThat(html.select("#service-search-form")).hasSize(1);
+  var form = html.selectFirst("#service-search-form");
+  assertThat(form.tagName()).isEqualTo("form");
+  assertThat(form.attr("data-service-live-search")).isEqualTo("true");
+  assertThat(form.attr("action")).isEqualTo("/salon-services");
+  assertThat(form.select("button[type=submit], button:not([type]), input[type=submit]")).isEmpty();
+  assertThat(form.select("[data-service-page-error]")).hasSize(1);
+  var layout = form.selectFirst(".catalog-form-layout");
+  assertThat(layout.children()).hasSize(2);
+  var inputs = layout.selectFirst(".catalog-form-layout__inputs");
+  assertThat(inputs.select(".catalog-form-layout__text-fields > input").eachAttr("name"))
+          .containsExactly("keyword", "salonKeyword", "region");
+  var rangeGroup = inputs.selectFirst("fieldset.catalog-range-group");
+  assertThat(rangeGroup.select("legend").text()).isNotBlank();
+  assertThat(rangeGroup.select("[data-catalog-range]").eachAttr("data-catalog-range"))
+          .containsExactly("maxPrice", "maxDuration");
+  assertThat(inputs.select("[data-service-page-error]")).hasSize(1);
+  var actions = layout.selectFirst(".catalog-form-layout__actions");
+  assertThat(actions.select(".catalog-form-layout__reset [data-service-search-reset]")).hasSize(1);
+  assertThat(actions.selectFirst(".catalog-form-layout__secondary a").attr("href"))
+          .isEqualTo("/salon-services/compare");
+  assertThat(form.selectFirst("a[data-service-search-reset]").attr("href")).isEqualTo("/salon-services");
+  assertThat(html.select("#service-results-area")).hasSize(1);
+  var results = html.selectFirst("#service-results-area");
+  assertThat(results.attr("aria-live")).isEqualTo("polite");
+  assertThat(results.attr("aria-busy")).isEqualTo("false");
+  assertThat(results.closest("form")).isNull();
+  assertThat(html.select(".service-results-head.catalog-results-head")).hasSize(1);
+  var toolbar = html.selectFirst(".service-results-head.catalog-results-head");
+  assertThat(toolbar.closest("form")).isNull();
+  assertThat(toolbar.closest("#service-results-area")).isNull();
+  assertThat(toolbar.select("#service-results-heading")).hasSize(1);
+  assertThat(toolbar.select("#service-results-area")).isEmpty();
+  assertThat(html.getAllElements().indexOf(toolbar)).isLessThan(html.getAllElements().indexOf(results));
+  assertThat(toolbar.hasAttr("hidden")).isFalse();
+  assertThat(toolbar.parents()).noneMatch(parent -> parent.hasAttr("hidden"));
+  assertThat(html.select("select[name=sortBy]")).hasSize(1);
+  var sort = toolbar.selectFirst("[data-catalog-select] select[name=sortBy]");
+  assertThat(sort).isNotNull();
+  assertThat(sort.attr("form")).isEqualTo(form.id());
+  assertThat(sort.closest("form")).isNull();
+  assertThat(form.select("select[name=sortBy]")).isEmpty();
+  assertThat(html.select("#service-search-message")).hasSize(1);
+  var message = html.selectFirst("#service-search-message");
+  assertThat(message.attr("role")).isEqualTo("alert");
+  assertThat(message.hasAttr("hidden")).isTrue();
+  assertThat(message.closest("form")).isNull();
+  assertThat(html.select("script[src='/js/service.js']")).hasSize(1);
+ }
+
+ private void writeLiveSearchFixture(String name, String html) throws Exception {
+  Path directory = Path.of("build", "service-live-search", "fixtures");
+  Files.createDirectories(directory);
+  Files.writeString(directory.resolve(name), html, StandardCharsets.UTF_8);
+ }
+
+ private void writeComparisonPaginationFixture(String name, String html) throws Exception {
+  Path directory = Path.of("build", "service-compare-pagination", "fixtures");
+  Files.createDirectories(directory);
+  Files.writeString(directory.resolve(name + ".html"), html, StandardCharsets.UTF_8);
  }
 
  private SalonServiceSummaryResponse service(int id, BigDecimal rating) {

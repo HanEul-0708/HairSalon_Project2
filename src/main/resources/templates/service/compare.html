@@ -15,16 +15,10 @@
   <div class="catalog-hero">
    <p class="catalog-hero__eyebrow">Price Compare</p>
    <h1 class="catalog-hero__title">시술 가격 비교</h1>
-   <p class="catalog-hero__subtitle">지역과 시술명을 기준으로 여러 미용실의 가격과 시간, 평점을 한 화면에서 비교해보세요.</p>
+   <p class="catalog-hero__subtitle">시술명·지역으로 미용실별 가격·시간·평점을 비교해보세요.</p>
   </div>
 
   <form method="get" th:action="@{/salon-services/compare}" th:object="${search}" class="service-search-form service-search-form--compare">
-   <div class="service-search-form__intro">
-	<p class="service-search-form__eyebrow">Comparison Search</p>
-	<h2>비슷한 시술을 한 번에 나란히 비교하세요.</h2>
-	<p>미용실별 가격 차이와 소요 시간, 평점까지 같이 보면서 더 쉽게 선택할 수 있습니다.</p>
-   </div>
-
    <div>
 	<div class="service-search-form__fields service-search-form__fields--compare">
 	 <input type="text" th:field="*{serviceName}" placeholder="시술명" aria-label="시술명">
@@ -33,7 +27,7 @@
 
 	<div class="service-search-form__actions">
 	 <button type="submit" class="btn btn-primary">비교하기</button>
-	 <a th:href="@{/salon-services/compare}" class="btn btn-outline">초기화</a>
+	 <a th:href="@{/salon-services/compare}" class="btn btn-primary catalog-search-reset">초기화</a>
 	</div>
    </div>
    <div th:if="${#fields.hasErrors('page')}">
@@ -44,9 +38,12 @@
   </form>
 
   <div class="service-results-head catalog-results-head">
-   <div>
+   <div class="catalog-results-heading">
 	<p class="service-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
+    <div class="catalog-results-heading__row">
 	<h2>비교 결과 <span th:text="${totalComparisonCount}">0</span>건</h2>
+     <th:block th:replace="~{fragments/catalog-pagination :: pagination('시술 가격 비교 페이지', ${currentPage}, ${totalPages}, @{/salon-services/compare(page=${currentPage - 1},serviceName=${serviceName},region=${region})}, @{/salon-services/compare(page=${currentPage + 1},serviceName=${serviceName},region=${region})}, 'service-compare')}"></th:block>
+    </div>
    </div>
   </div>
 
@@ -79,11 +76,6 @@
 	</tbody>
    </table>
   </div>
-  <nav class="pagination pagination--catalog" th:if="${totalPages > 1}" aria-label="시술 가격 비교 페이지">
-   <a class="page-link" th:classappend="${currentPage == 1 ? ' disabled' : ''}" th:attr="aria-disabled=${currentPage == 1},tabindex=${currentPage == 1 ? -1 : null}" th:href="${currentPage > 1} ? @{/salon-services/compare(page=${currentPage - 1},serviceName=${serviceName},region=${region})} : _">이전</a>
-   <a class="page-link" th:each="pageNumber : ${pageNumbers}" th:classappend="${pageNumber == currentPage ? ' active' : ''}" th:attr="aria-current=${pageNumber == currentPage ? 'page' : null}" th:href="@{/salon-services/compare(page=${pageNumber},serviceName=${serviceName},region=${region})}" th:text="${pageNumber}">1</a>
-   <a class="page-link" th:classappend="${currentPage == totalPages ? ' disabled' : ''}" th:attr="aria-disabled=${currentPage == totalPages},tabindex=${currentPage == totalPages ? -1 : null}" th:href="${currentPage < totalPages} ? @{/salon-services/compare(page=${currentPage + 1},serviceName=${serviceName},region=${region})} : _">다음</a>
-  </nav>
  </div>
 </main>
 </body>

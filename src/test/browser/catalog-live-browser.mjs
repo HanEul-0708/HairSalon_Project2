@@ -32,7 +32,7 @@ const setups = [
   ['edge', chromium, {executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'}],
   ['firefox', firefox, {}],
 ];
-const invalidLimits = ['bad', '문자', '2147483648', '1.5', '0', '7', '-1', ''];
+const invalidLimits = ['bad', '문자', '2147483648', '1.5', '0', '-1'];
 
 for (const [name, type, options] of setups) {
   let browser;
@@ -41,6 +41,11 @@ for (const [name, type, options] of setups) {
   try {
     browser = await type.launch({...options, headless: true});
     const context = await browser.newContext({viewport: {width: 1440, height: 1000}});
+    let designerRequestCount = 0;
+    context.on('request', request => {
+      const url = new URL(request.url());
+      if (url.origin === base && url.pathname === '/designers') designerRequestCount++;
+    });
     await context.route('**/*', async route => {
       const request = route.request();
       const url = new URL(request.url());
@@ -65,21 +70,15 @@ for (const [name, type, options] of setups) {
       assert.equal(response.status(), 200, path + ' HTTP status');
     };
     const links = selector => page.locator(selector).evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
-    const checkLimitSelection = async (value, checkMarkup = true) => {
-      const select = page.locator('#aiLimit');
-      assert.equal(await select.inputValue(), value, 'visible AI limit preserves supplied value');
-      const selectedValues = await select.locator('option').evaluateAll(nodes => nodes.filter(node => node.selected).map(node => node.value));
-      assert.deepEqual(selectedValues, [value], 'exactly one DOM option is selected');
-      if (checkMarkup) {
-        const markedValues = await select.locator('option[selected]').evaluateAll(nodes => nodes.map(node => node.value));
-        assert.deepEqual(markedValues, [value], 'exactly one rendered option has the selected attribute');
-      }
-      assert.equal(await page.locator('#aiQuery').inputValue(), '', 'AI query must stay empty');
+    const checkNaturalCountForm = async (value = '') => {
+      assert.equal(await page.locator('#aiLimit, .designer-ai-inline-form [name=limit]').count(), 0, 'recommendation count has no separate input');
+      assert.equal(await page.locator('#aiQuery').inputValue(), value, 'AI query must stay blank');
+      assert.equal(await page.locator('#aiQuery').getAttribute('placeholder'), '스타일·조건과 추천 인원(예: 2명, 생략 시 조건에 맞는 전원)을 입력하세요.');
       assert.equal(await page.locator('#designer-ai-panel').isVisible(), true);
     };
-    const checkValidLimit = async value => {
-      await checkLimitSelection(value);
-      assert.equal(await page.locator('#aiLimit').getAttribute('aria-invalid'), 'false');
+    const checkValidLegacyLimit = async () => {
+      await checkNaturalCountForm();
+      assert.equal(await page.locator('#aiQuery').getAttribute('aria-invalid'), 'false');
       assert.equal(await page.locator('.designer-ai-inline-form .invalid-feedback').count(), 0);
     };
 
@@ -100,7 +99,7 @@ for (const [name, type, options] of setups) {
     const salonSecond = await links(salonSelector);
     assert.equal(salonSecond.length, 15, 'salons second-page size');
     assert.equal(salonSecond.some(value => salonFirst.includes(value)), false, 'salons no overlap');
-    assert.match(await page.locator('#salon-results-area nav').innerText(), /2\s*\/\s*\d+/);
+    assert.match(await page.locator('nav.salon-pagination').innerText(), /2\s*\/\s*\d+/);
     result.checks.push({feature: 'salons AJAX pagination', firstCount: salonFirst.length, secondCount: salonSecond.length, page: 2, noOverlap: true, xhr: true});
 
     for (const config of [
@@ -110,57 +109,57 @@ for (const [name, type, options] of setups) {
       await goto(config.path);
       const first = await links(config.selector);
       assert.equal(first.length, 15, config.path + ' first-page size');
+      const entryAddress = page.url();
       const [response] = await Promise.all([
         page.waitForResponse(response => {
           const url = new URL(response.url());
           return url.origin === base && url.pathname === config.path && url.searchParams.get('page') === '2';
         }),
-        page.waitForURL(url => url.pathname === config.path && url.searchParams.get('page') === '2'),
-        page.locator('nav.pagination a').filter({hasText: /^2$/}).click(),
+        page.locator('nav.catalog-pagination a[rel=next]').click(),
       ]);
       assert.equal(response.status(), 200, config.path + ' second-page HTTP status');
+      assert.equal(response.request().headers()['x-requested-with'], 'XMLHttpRequest');
+      if (config.path === '/designers') assert.equal(page.url(), entryAddress, 'designer pagination preserves the entry address');
+      else await page.waitForURL(url => url.pathname === config.path && url.searchParams.get('page') === '2');
       await page.waitForFunction(({selector, previous}) => document.querySelector(selector)?.getAttribute('href') !== previous, {selector: config.selector, previous: first[0]});
       const second = await links(config.selector);
       assert.equal(second.length, 15, config.path + ' second-page size');
       assert.equal(second.some(value => first.includes(value)), false, config.path + ' no overlap');
-      assert.equal(await page.locator('nav.pagination [aria-current="page"]').innerText(), '2');
+      assert.equal(await page.locator('nav.catalog-pagination [aria-current="page"]').innerText(), '2');
       result.checks.push({feature: config.path + ' pagination', firstCount: first.length, secondCount: second.length, page: 2, noOverlap: true});
     }
 
     for (const value of invalidLimits) {
       await goto('/designers?' + new URLSearchParams({mode: 'ai', limit: value}));
-      await checkLimitSelection(value);
+      await checkNaturalCountForm();
       const aiError = await page.locator('.designer-ai-inline-form .invalid-feedback').allTextContents();
       assert.ok(aiError.length > 0, 'invalid AI limit has an error message');
       assert.match(aiError.join(' '), /[가-힣]/, 'AI limit validation uses Korean');
-      assert.equal(await page.locator('#aiLimit').getAttribute('aria-invalid'), 'true');
+      assert.equal(await page.locator('#aiQuery').getAttribute('aria-invalid'), 'true');
       assert.equal((await page.locator('body').innerText()).includes('Failed to convert'), false);
-      result.checks.push({feature: 'invalid AI limit', rejectedValue: value, koreanError: aiError, selectedOptions: 1, status: 200});
+      result.checks.push({feature: 'invalid legacy AI limit highlights query', rejectedValue: value, koreanError: aiError, status: 200});
 
-      await page.locator('#aiLimit').selectOption('6');
-      await checkLimitSelection('6', false);
-      const [response] = await Promise.all([
-        page.waitForNavigation({waitUntil: 'load'}),
-        page.locator('.designer-ai-inline-form button[type="submit"]').click(),
-      ]);
-      assert.ok(response, 'corrected AI form navigation response');
-      assert.equal(response.status(), 200, 'corrected AI form HTTP status');
-      const correctedUrl = new URL(page.url());
-      assert.equal(correctedUrl.origin, base);
-      assert.equal(correctedUrl.pathname, '/designers');
-      assert.equal(correctedUrl.searchParams.get('limit'), '6');
-      assert.equal(correctedUrl.searchParams.get('query'), '');
-      await checkValidLimit('6');
-      result.checks.push({feature: 'corrected AI limit', rejectedValue: value, correctedValue: '6', selectedOptions: 1, status: 200});
+      const requestsBeforeCorrection = designerRequestCount;
+      await page.evaluate(() => { window.__aiLimitCorrectionDocument = document; });
+      await page.locator('#aiQuery').fill(' ');
+      await checkNaturalCountForm(' ');
+      await page.waitForFunction(() => document.querySelector('#aiQuery')?.getAttribute('aria-invalid') !== 'true'
+        && !document.querySelector('.designer-ai-inline-form .invalid-feedback'));
+      await checkNaturalCountForm(' ');
+      assert.equal(await page.evaluate(() => window.__aiLimitCorrectionDocument === document), true, 'empty-query correction preserves the current document');
+      assert.equal(designerRequestCount, requestsBeforeCorrection, 'empty-query correction performs no request');
+      assert.equal(await page.locator('.designer-ai-inline-form button[type="submit"]').count(), 0);
+      assert.equal(new URL(page.url()).pathname, '/designers');
+      result.checks.push({feature: 'legacy limit validation cleared by blank query edit', rejectedValue: value, noSubmitButton: true, noRecommendationRequest: true});
     }
-    for (const value of ['1', '2', '3', '4', '5', '6']) {
+    for (const value of ['1', '2', '3', '4', '5', '6', '7', '2147483647', '']) {
       await goto('/designers?' + new URLSearchParams({mode: 'ai', limit: value}));
-      await checkValidLimit(value);
-      result.checks.push({feature: 'valid AI limit', selectedValue: value, selectedOptions: 1, status: 200});
+      await checkValidLegacyLimit();
+      result.checks.push({feature: 'valid optional legacy AI limit without a separate control', suppliedValue: value, status: 200});
     }
     await goto('/designers?mode=ai');
-    await checkValidLimit('3');
-    result.checks.push({feature: 'default AI limit', selectedValue: '3', selectedOptions: 1, status: 200});
+    await checkValidLegacyLimit();
+    result.checks.push({feature: 'omitted AI count has no implicit form limit', status: 200});
     assert.deepEqual(result.pageErrors, []);
     assert.deepEqual(result.disallowedRequests, []);
     result.passed = true;

@@ -42,7 +42,6 @@ public class ServiceController {
   model.addAttribute("currentPage", resultPage.isEmpty() ? 1 : resultPage.getNumber() + 1);
   model.addAttribute("totalPages", resultPage.getTotalPages());
   model.addAttribute("totalServiceCount", resultPage.getTotalElements());
-  model.addAttribute("pageNumbers", resultPage.getTotalPages() == 0 ? java.util.Collections.emptyList() : java.util.stream.IntStream.rangeClosed(1, resultPage.getTotalPages()).boxed().toList());
   return "service/list";
  }
 

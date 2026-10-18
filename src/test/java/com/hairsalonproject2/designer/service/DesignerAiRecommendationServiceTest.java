@@ -61,7 +61,7 @@ class DesignerAiRecommendationServiceTest {
   when(salonServiceRepository.findBySalonSalonIdInOrderByServiceIdAsc(anyList())).thenReturn(List.of(
    service(colorSalon, "프리미엄 염색", "톤다운, 톤업, 브릿지 컬러"), service(cutSalon, "남성 커트", "깔끔한 비즈니스 커트")));
   when(reviewRepository.findFirstThreeSnippetsByDesignerIds(anyList())).thenReturn(List.of());
-  when(designerAiClient.recommend(anyString(), anyList(), eq(3))).thenReturn(Optional.empty());
+  when(designerAiClient.recommend(anyString(), anyList(), eq(1))).thenReturn(Optional.empty());
   DesignerAiRecommendationResponse response = service.recommend("톤다운 염색 잘하는 디자이너", 3);
   assertThat(response.isLlmUsed()).isFalse();
   assertThat(response.getSource()).isEqualTo("LOCAL_RULES");
@@ -74,7 +74,7 @@ class DesignerAiRecommendationServiceTest {
  void appliesLlmOrderingAndReasonWhenAvailable() {
   Salon firstSalon = salon(1, "First Salon");
   Salon secondSalon = salon(2, "Second Salon");
-  Designer firstDesigner = designer(1, firstSalon, "First Designer", "커트 전문", 6, DesignerSpecialty.CUT, 4);
+  Designer firstDesigner = designer(1, firstSalon, "First Designer", "커트와 드라이 전문", 6, DesignerSpecialty.CUT, 4);
   Designer secondDesigner = designer(2, secondSalon, "Second Designer", "스타일링과 드라이 전문", 4, DesignerSpecialty.STYLING, 15);
   when(designerRepository.findAll()).thenReturn(List.of(firstDesigner, secondDesigner));
   when(designerRepository.findDesignerRatingRowsByIds(anyList())).thenReturn(List.of(ratingRow(1, 4.8, 10L), ratingRow(2, 4.5, 8L)));
@@ -100,13 +100,10 @@ class DesignerAiRecommendationServiceTest {
   "평점 4.9점 이상, 4.8, 평점 1점 이상, -22.0",
   "평점 4점 이상, 4.6, 평점 5점 이상, 22.0"
  })
- void appliesRatingPenaltyUsingOriginalDecimalThreshold(String query, double rating, String baselineQuery, double expectedDifference) {
+ void filtersUsingOriginalDecimalRatingThreshold(String query, double rating, String baselineQuery, double expectedDifference) {
   stubSingleCandidate(5, rating);
 
-  double baselineScore = service.recommend(baselineQuery, 1).getRecommendations().getFirst().getScore();
-  double actualScore = service.recommend(query, 1).getRecommendations().getFirst().getScore();
-
-  assertThat(actualScore - baselineScore).isCloseTo(expectedDifference, org.assertj.core.data.Offset.offset(0.001));
+  assertThat(service.recommend(query, 1).getRecommendations()).hasSize(expectedDifference > 0 ? 1 : 0);
  }
 
  @ParameterizedTest
@@ -114,10 +111,8 @@ class DesignerAiRecommendationServiceTest {
  void continuesToApplyIntegerCareerThresholds(String query, String baselineQuery) {
   stubSingleCandidate(5, 4.6);
 
-  double baselineScore = service.recommend(baselineQuery, 1).getRecommendations().getFirst().getScore();
-  double actualScore = service.recommend(query, 1).getRecommendations().getFirst().getScore();
-
-  assertThat(actualScore - baselineScore).isCloseTo(25.0, org.assertj.core.data.Offset.offset(0.001));
+  assertThat(service.recommend(baselineQuery, 1).getRecommendations()).isEmpty();
+  assertThat(service.recommend(query, 1).getRecommendations()).hasSize(1);
  }
 
  private void stubSingleCandidate(int careerYears, double rating) {
@@ -127,11 +122,11 @@ class DesignerAiRecommendationServiceTest {
   when(designerRepository.findDesignerRatingRowsByIds(anyList())).thenReturn(List.of(ratingRow(1, rating, 0L)));
   when(salonServiceRepository.findBySalonSalonIdInOrderByServiceIdAsc(anyList())).thenReturn(List.of());
   when(reviewRepository.findFirstThreeSnippetsByDesignerIds(anyList())).thenReturn(List.of());
-  when(designerAiClient.recommend(anyString(), anyList(), eq(1))).thenReturn(Optional.empty());
+  org.mockito.Mockito.lenient().when(designerAiClient.recommend(anyString(), anyList(), eq(1))).thenReturn(Optional.empty());
  }
 
  @Test
- void scoresEveryCandidateBeforeSendingTopEightAndCapsRecommendationsAtSix() {
+ void scoresEveryCandidateBeforeSendingTopEightWithoutCappingFinalRecommendationsAtSix() {
   Salon salon = salon(1, "Salon");
   var designers = java.util.stream.IntStream.rangeClosed(1, 12)
    .mapToObj(id -> designer(id, salon, "Designer " + id, "", id, DesignerSpecialty.CUT, 0)).toList();
@@ -139,7 +134,7 @@ class DesignerAiRecommendationServiceTest {
   when(designerRepository.findDesignerRatingRowsByIds(anyList())).thenReturn(List.of());
   when(salonServiceRepository.findBySalonSalonIdInOrderByServiceIdAsc(anyList())).thenReturn(List.of());
   when(reviewRepository.findFirstThreeSnippetsByDesignerIds(anyList())).thenReturn(List.of());
-  when(designerAiClient.recommend(eq("경력 있는 디자이너"), anyList(), eq(6))).thenAnswer(invocation -> {
+  when(designerAiClient.recommend(eq("경력 있는 디자이너"), anyList(), eq(8))).thenAnswer(invocation -> {
    List<com.hairsalonproject2.designer.llm.DesignerAiCandidatePrompt> candidates = invocation.getArgument(1);
    assertThat(candidates).extracting(com.hairsalonproject2.designer.llm.DesignerAiCandidatePrompt::designerId)
     .containsExactly(12, 11, 10, 9, 8, 7, 6, 5);
@@ -148,8 +143,8 @@ class DesignerAiRecommendationServiceTest {
 
   var response = service.recommend("경력 있는 디자이너", 100);
 
-  assertThat(response.getRecommendations()).extracting(item -> item.getDesignerId()).containsExactly(12, 11, 10, 9, 8, 7);
-  verify(designerAiClient).recommend(eq("경력 있는 디자이너"), anyList(), eq(6));
+  assertThat(response.getRecommendations()).extracting(item -> item.getDesignerId()).containsExactly(12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1);
+  verify(designerAiClient).recommend(eq("경력 있는 디자이너"), anyList(), eq(8));
   verify(designerRepository).findAll();
  }
 

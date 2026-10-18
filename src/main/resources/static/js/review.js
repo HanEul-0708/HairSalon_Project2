@@ -1,10 +1,21 @@
 document.addEventListener("DOMContentLoaded", function () {
+ bindReviewCatalogSearch();
  bindReviewRatingStars();
  bindReviewContentCounter();
  bindReviewFormSubmit();
  bindReviewDeleteButton();
  bindReviewLikeButtons();
 });
+
+function bindReviewCatalogSearch() {
+ var form = document.getElementById("review-search-form");
+ if (!form) return;
+ document.querySelectorAll("[data-catalog-select]").forEach(function (root) { bindCatalogSelect(root); });
+ [form.elements.namedItem("designerId"), form.elements.namedItem("sortBy")].forEach(function (select) {
+  if (!select) return;
+  select.addEventListener("change", function () { form.requestSubmit(); });
+ });
+}
 
 function bindReviewRatingStars() {
  var stars = document.querySelectorAll(".review-rating__star");
@@ -15,6 +26,8 @@ function bindReviewRatingStars() {
  function renderStars(value) {
   stars.forEach(function (star, index) {
    star.classList.toggle("is-active", index < value);
+   star.setAttribute("aria-label", star.getAttribute("data-value") + "점");
+   star.setAttribute("aria-pressed", String(parseInt(star.getAttribute("data-value"), 10) === value));
   });
  }
 
@@ -239,6 +252,7 @@ function bindReviewLikeButtons() {
 
 	var result = await response.json();
 	button.classList.toggle("is-liked", result.liked);
+	button.setAttribute("aria-pressed", String(result.liked));
 
 	var count = button.querySelector(".review-like-button__count");
 	if (count) {

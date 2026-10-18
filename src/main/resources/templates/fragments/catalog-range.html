@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="field(fieldName, label, min, max, step, unit)">
+ <div class="catalog-range" th:with="invalid=${#fields.hasErrors(fieldName)},
+      selectedValue=*{__${fieldName}__},
+      emptyValue=${fieldName == 'maxPrice' or min > 0 ? min - step : min},
+      currentValue=${invalid or selectedValue == null ? emptyValue : selectedValue},
+      rangeMax=${!invalid and selectedValue != null and selectedValue > max ? selectedValue : max},
+      unset=${selectedValue == null or selectedValue == emptyValue},
+      rangeLabel=${invalid ? '입력 오류' : (unset ? '전체' : (unit == '점' ? (selectedValue.stripTrailingZeros().scale() > 1 ? selectedValue.stripTrailingZeros().toPlainString() : #numbers.formatDecimal(selectedValue, 1, 1, 'POINT')) : #numbers.formatInteger(selectedValue, 1, 'COMMA')) + unit)}"
+      th:attr="data-catalog-range=${fieldName},data-field=${fieldName},data-unit=${unit},data-empty-value=${emptyValue},data-step=${step},data-invalid=${invalid}">
+  <input type="hidden" th:field="*{__${fieldName}__}" data-catalog-range-value>
+  <div class="salon-rating-slider" th:classappend="${invalid} ? 'is-invalid'">
+   <div class="salon-rating-slider__header">
+    <label class="salon-rating-slider__label" th:for="|${fieldName}-range|" th:text="${label}">검색 조건</label>
+    <strong class="salon-rating-slider__value" data-catalog-range-output th:text="${rangeLabel}" th:title="${rangeLabel}">전체</strong>
+   </div>
+   <div class="salon-rating-slider__control" th:style="|--rating-progress: ${(currentValue - emptyValue) * 100.0 / (rangeMax - emptyValue)}%;|">
+    <div class="salon-rating-slider__track" aria-hidden="true"><span class="salon-rating-slider__fill"></span></div>
+    <input class="salon-rating-slider__input" type="range" data-catalog-range-input
+           th:id="|${fieldName}-range|" th:min="${emptyValue}" th:max="${rangeMax}" th:value="${currentValue}"
+           th:step="${!invalid and selectedValue != null and (selectedValue - emptyValue) % step != 0 ? 'any' : step}"
+           th:attr="aria-label=${label},aria-invalid=${invalid},aria-describedby=${invalid ? fieldName + 'Error' : null},aria-valuetext=${rangeLabel}">
+    <div class="salon-rating-slider__ticks" aria-hidden="true">
+     <span class="salon-rating-slider__tick" th:each="tick : ${#numbers.sequence(0, 10)}" th:classappend="|salon-rating-slider__tick--${tick % 2 == 0 ? 'major' : 'minor'}|" th:style="|--rating-tick-position: ${tick * 10}%;|"></span>
+    </div>
+   </div>
+  </div>
+  <p class="invalid-feedback catalog-range__error" th:if="${invalid}" th:id="|${fieldName}Error|" role="alert">
+   <span th:errors="*{__${fieldName}__}">입력값을 확인해 주세요.</span>
+   <span th:text="|입력값: ${#vars['org.springframework.validation.BindingResult.search'].getFieldValue(fieldName)}|"></span>
+  </p>
+ </div>
+</th:block>
+</html>

@@ -5,6 +5,8 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>리뷰 목록</title>
  <link rel="stylesheet" th:href="@{/css/review.css}">
+ <link rel="stylesheet" th:href="@{/css/catalog-select.css}">
+ <script th:src="@{/js/catalog-select.js}" defer></script>
  <script th:src="@{/js/review.js}" defer></script>
 </head>
 <body>
@@ -13,58 +15,76 @@
   <div class="catalog-hero">
    <p class="catalog-hero__eyebrow">Review Archive</p>
    <h1 class="catalog-hero__title">리뷰 목록</h1>
-   <p class="catalog-hero__subtitle">고객 리뷰와 평점, 이미지, 디자이너 답변까지 한 번에 확인해보세요.</p>
+   <p class="catalog-hero__subtitle">디자이너별 리뷰를 골라 평점·사진·답변을 함께 확인해보세요.</p>
   </div>
 
-  <form class="review-filter" method="get" action="/reviews">
+  <form id="review-search-form" class="review-filter" method="get" action="/reviews" data-review-auto-search>
    <input type="hidden" name="searched" value="true">
-
-   <div class="review-filter__intro">
-	<p class="review-filter__eyebrow">Review Filter</p>
-	<h2>원하는 리뷰만 골라서 확인해보세요.</h2>
-	<p>디자이너와 정렬 기준을 선택해 필요한 후기만 빠르게 살펴볼 수 있습니다.</p>
-   </div>
-
-   <div class="review-filter__controls">
-	<div class="review-filter__group">
-	 <label for="designerId">디자이너</label>
-	 <select id="designerId" name="designerId">
+   <div class="review-filter__controls catalog-form-layout">
+	<div class="catalog-form-layout__inputs">
+	 <div class="review-filter__group">
+	 <label class="visually-hidden" for="designerId">디자이너</label>
+	 <div class="catalog-select" data-catalog-select>
+	 <select id="designerId" name="designerId" aria-label="디자이너">
 	  <option value="">전체 디자이너</option>
 	  <option th:each="designerOption : ${designerOptions.entrySet()}" th:value="${designerOption.key}" th:text="${designerOption.value}" th:selected="${selectedDesignerId != null and selectedDesignerId == designerOption.key}"></option>
 	 </select>
+	 <button type="button" class="catalog-select__trigger" role="combobox" aria-label="디자이너" aria-haspopup="listbox" aria-expanded="false" aria-controls="review-designer-options" hidden>
+	  <span data-catalog-select-label>전체 디자이너</span>
+	  <svg class="catalog-select__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+	 </button>
+	 <ul class="catalog-select__menu" id="review-designer-options" role="listbox" aria-label="디자이너" hidden></ul>
+	 </div>
+	 </div>
 	</div>
-	<div class="review-filter__group">
-	 <label for="sortBy">정렬</label>
-	 <select id="sortBy" name="sortBy">
-	  <option value="latest" th:selected="${currentSort == 'latest'}">최신순</option>
-	  <option value="rating" th:selected="${currentSort == 'rating'}">평점순</option>
-	  <option value="likes" th:selected="${currentSort == 'likes'}">좋아요순</option>
-	 </select>
-	</div>
-	<div class="review-filter__actions">
-	 <button type="submit" class="btn btn-primary">검색</button>
-	 <a href="/reviews" class="btn btn-outline">초기화</a>
+	<div class="review-filter__actions catalog-form-layout__actions">
+	 <div class="catalog-form-layout__reset">
+	  <a href="/reviews" class="btn btn-primary catalog-search-reset">초기화</a>
+	 </div>
+	 <noscript><button type="submit" class="btn btn-primary">검색</button></noscript>
 	</div>
    </div>
   </form>
 
+  <div class="review-results-head catalog-results-head">
+	<div id="review-results-heading" class="catalog-results-heading" th:if="${searched}">
+	 <p class="review-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
+	 <div class="catalog-results-heading__row">
+	  <h2>리뷰 <span th:text="${totalReviewCount}">0</span>건</h2>
+	  <th:block th:replace="~{fragments/catalog-pagination :: pagination('리뷰 목록 페이지', ${currentPage}, ${totalPages}, @{/reviews(page=${currentPage - 1}, searched=true, designerId=${selectedDesignerId}, sortBy=${currentSort})}, @{/reviews(page=${currentPage + 1}, searched=true, designerId=${selectedDesignerId}, sortBy=${currentSort})}, 'review')}"></th:block>
+	 </div>
+	</div>
+	<div class="review-results-sort">
+	 <label class="visually-hidden" for="sortBy">정렬 기준</label>
+	 <div class="catalog-select" data-catalog-select>
+	 <select id="sortBy" class="review-results-sort__control" name="sortBy" form="review-search-form" aria-label="정렬 기준">
+	  <option value="latest" th:selected="${currentSort == 'latest'}">최신순</option>
+	  <option value="rating" th:selected="${currentSort == 'rating'}">평점순</option>
+	  <option value="likes" th:selected="${currentSort == 'likes'}">좋아요순</option>
+	 </select>
+	 <button type="button" class="catalog-select__trigger" role="combobox" aria-label="정렬 기준" aria-haspopup="listbox" aria-expanded="false" aria-controls="review-sort-options" hidden>
+	  <span data-catalog-select-label>최신순</span>
+	  <svg class="catalog-select__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+	 </button>
+	 <ul class="catalog-select__menu" id="review-sort-options" role="listbox" aria-label="정렬 기준" hidden></ul>
+	 </div>
+	</div>
+  </div>
+
+  <div id="review-results-area">
   <div class="review-empty review-empty--guide" th:if="${!searched}">
-   <p>디자이너와 정렬 조건을 선택하면 리뷰 결과가 여기에 표시됩니다.</p>
+   <p>디자이너나 정렬 기준을 선택하면 리뷰 결과가 표시됩니다.</p>
+   <a th:href="@{/reviews(searched=true)}" class="btn btn-primary">전체 리뷰 보기</a>
   </div>
 
   <div th:if="${searched}">
-   <div class="review-results-head catalog-results-head">
-	<div>
-	 <p class="review-results-head__eyebrow catalog-results-head__eyebrow">Results</p>
-	 <h2>리뷰 <span th:text="${totalReviewCount}">0</span>건</h2>
-	</div>
-   </div>
-
    <div class="review-list" th:if="${!#lists.isEmpty(reviews)}">
 	<article class="review-card" th:each="review : ${reviews}">
+	 <div class="review-card__body">
 	 <a class="review-card__link" th:href="@{/reviews/{reviewId}(reviewId=${review.reviewId})}">
+	  <p class="review-card__salon" th:text="${review.salonName}">미용실명</p>
 	  <div class="review-card__header">
-	   <div class="review-card__avatar" th:text="${#strings.substring(review.memberName, 0, 1)}">김</div>
+	   <div class="review-card__avatar" th:text="${review.memberName != null and !#strings.isEmpty(review.memberName) ? #strings.substring(review.memberName, 0, 1) : 'R'}">김</div>
 	   <div class="review-card__meta">
 		<p class="review-card__name" th:text="${review.memberName}">회원명</p>
 		<p class="review-card__info">
@@ -91,23 +111,20 @@
 
 	 <div class="review-card__bottom">
 	  <span class="review-card__reservation" th:text="${review.serviceName + ' | 예약번호 ' + review.reservationId}">여성 커트 | 예약번호 1</span>
-	  <button type="button" class="review-like-button" th:classappend="${review.likedByCurrentUser ? ' is-liked' : ''}" th:attr="data-review-like=${review.reviewId}" th:disabled="${!isLoggedIn}">
+	  <button type="button" class="review-like-button" aria-label="리뷰 좋아요" th:classappend="${review.likedByCurrentUser ? ' is-liked' : ''}" th:attr="data-review-like=${review.reviewId},aria-pressed=${review.likedByCurrentUser}" th:disabled="${!isLoggedIn}">
 	   <span class="review-like-button__icon">♥</span>
 	   <span class="review-like-button__count" th:text="${review.likeCount}">0</span>
 	  </button>
+	 </div>
 	 </div>
 	</article>
    </div>
 
    <div class="review-empty" th:if="${#lists.isEmpty(reviews)}">
 	<p>조건에 맞는 리뷰가 없습니다.</p>
+	<a href="/reviews" class="btn btn-primary">검색 다시 하기</a>
    </div>
-
-   <div class="pagination" th:if="${totalPages > 1}">
-	<a class="page-link" th:classappend="${currentPage == 1 ? ' disabled' : ''}" th:href="@{/reviews(page=${currentPage > 1 ? currentPage - 1 : 1}, searched=true, designerId=${selectedDesignerId}, sortBy=${currentSort})}">이전</a>
-	<a class="page-link" th:each="pageNumber : ${pageNumbers}" th:classappend="${pageNumber == currentPage ? ' active' : ''}" th:href="@{/reviews(page=${pageNumber}, searched=true, designerId=${selectedDesignerId}, sortBy=${currentSort})}" th:text="${pageNumber}">1</a>
-	<a class="page-link" th:classappend="${currentPage == totalPages ? ' disabled' : ''}" th:href="@{/reviews(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, searched=true, designerId=${selectedDesignerId}, sortBy=${currentSort})}">다음</a>
-   </div>
+  </div>
   </div>
  </div>
 </main>

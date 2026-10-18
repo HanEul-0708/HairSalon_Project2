@@ -4,6 +4,7 @@
  <title th:text="${pageTitle} ?: '살롱 목록'">살롱 목록</title>
  <th:block th:fragment="headExtra">
   <link rel="stylesheet" th:href="@{/css/salon.css}">
+  <link rel="stylesheet" th:href="@{/css/catalog-range.css}">
   <link rel="stylesheet" th:href="@{/css/catalog-select.css}">
   <script th:if="${branchView and kakaoMapConfigured}" th:src="|https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJavascriptKey}&autoload=false&libraries=services|" defer></script>
   <script th:src="@{/js/catalog-select.js}" defer></script>
@@ -43,6 +44,30 @@
 
   <div id="salon-kakao-results-area">
    <th:block th:replace="~{salon/list-fragments :: kakaoResults(kakaoResults=${kakaoResults}, kakaoResultsMessage=${kakaoResultsMessage})}"></th:block>
+  </div>
+  <div class="salon-results-head catalog-results-head">
+   <div id="salon-results-heading" class="salon-results-heading">
+    <p class="catalog-results-head__eyebrow">Results</p>
+    <div class="salon-results-heading__row">
+     <h2>살롱 <span th:text="${salonPage != null ? salonPage.totalElements : (salons != null ? #lists.size(salons) : 0)}">0</span>개</h2>
+     <th:block th:replace="~{salon/list-fragments :: salonPagination}"></th:block>
+    </div>
+   </div>
+   <div class="salon-results-sort" th:if="${showPrimarySearch}">
+    <label class="visually-hidden" for="salonResultSort">정렬 기준</label>
+    <div class="salon-sort catalog-select catalog-select--compact" data-salon-sort data-catalog-select>
+     <select id="salonResultSort" class="salon-search-form__control salon-search-form__control--sort salon-results-sort__control" name="sort" form="salon-search-form" aria-label="정렬 기준">
+      <option value="recommended" th:selected="${search.sort == 'recommended' or search.sort == null}">추천순</option>
+      <option value="rating" th:selected="${search.sort == 'rating'}">평점순</option>
+      <option value="likes" th:selected="${search.sort == 'likes'}">좋아요순</option>
+     </select>
+     <button type="button" class="salon-sort__trigger catalog-select__trigger" role="combobox" aria-label="정렬 기준" aria-haspopup="listbox" aria-expanded="false" aria-controls="salon-sort-options" hidden>
+      <span data-salon-sort-label data-catalog-select-label>추천순</span>
+      <svg class="salon-sort__chevron catalog-select__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+     </button>
+     <ul class="salon-sort__menu catalog-select__menu" id="salon-sort-options" role="listbox" aria-label="정렬 기준" hidden></ul>
+    </div>
+   </div>
   </div>
   <div id="salon-results-area">
    <th:block th:replace="~{salon/list-fragments :: salonResults(salons=${salons}, branchView=${branchView}, emptyMessage=${emptyMessage})}"></th:block>

@@ -30,7 +30,9 @@ function bindAutoSubmitForm(form) {
  bindSalonSort(form);
 
  var textInputs = Array.from(form.querySelectorAll("input[type='text']"));
- var controls = Array.from(form.querySelectorAll("select, input[type='checkbox']"));
+ var controls = Array.from(form.elements).filter(function (control) {
+  return control.tagName === "SELECT" || control.type === "checkbox";
+ });
  var ratingSliderInput = form.querySelector("[data-rating-slider-input]");
  var presetLinks = Array.from(form.querySelectorAll("[data-preset-mode]"));
  var resetButton = form.querySelector("[data-search-reset]");
@@ -147,7 +149,7 @@ function bindAutoSubmitForm(form) {
 }
 
 function bindSalonSort(form) {
- bindCatalogSelect(form.querySelector("[data-salon-sort]"));
+ bindCatalogSelect(form.elements.namedItem("sort")?.closest("[data-salon-sort]"));
 }
 
 function bindSalonPagination() {
@@ -416,6 +418,7 @@ function applySalonListResponse(parsedDocument, url, resetSearchControls) {
  syncSalonSearchForm(parsedDocument, resetSearchControls);
  replaceElementById("salon-kakao-sync-area", parsedDocument);
  replaceElementById("salon-kakao-results-area", parsedDocument);
+ replaceElementById("salon-results-heading", parsedDocument);
  replaceElementById("salon-results-area", parsedDocument);
  syncBranchMapSupplementalContent(parsedDocument);
 
@@ -477,7 +480,7 @@ function syncSalonSearchForm(parsedDocument, resetSearchControls) {
   var sliderInput = form.querySelector("[data-rating-slider-input]");
   var nextSliderInput = nextForm.querySelector("[data-rating-slider-input]");
   if (sliderInput && nextSliderInput) setRatingSliderValue(form, sliderInput, nextSliderInput.value, false);
-  var sortRoot = form.querySelector("[data-salon-sort]");
+  var sortRoot = form.elements.namedItem("sort")?.closest("[data-salon-sort]");
   if (sortRoot) sortRoot.dispatchEvent(new Event("catalog-select-sync"));
  }
 

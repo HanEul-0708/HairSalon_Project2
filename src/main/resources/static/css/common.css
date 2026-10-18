@@ -315,6 +315,7 @@ hr {
  align-items: end;
  justify-content: space-between;
  gap: 16px;
+ flex-wrap: wrap;
  margin-bottom: 18px;
 }
 
@@ -326,6 +327,408 @@ hr {
 
 .catalog-results-head h2 span {
  color: var(--gold);
+}
+
+.catalog-results-heading {
+ min-width: 0;
+}
+
+.catalog-results-heading > .catalog-results-head__eyebrow {
+ margin-bottom: 10px;
+}
+
+.catalog-results-heading__row {
+ display: flex;
+ align-items: center;
+ gap: 16px;
+}
+
+.catalog-results-heading__row h2 {
+ flex: 0 0 auto;
+ margin: 0;
+ white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+ .catalog-results-heading {
+  width: 100%;
+ }
+
+ .catalog-results-heading__row {
+  justify-content: space-between;
+  gap: 10px;
+ }
+}
+
+:is(.salon-page, .service-page, .review-page) .page-header {
+ display: flex;
+ flex-wrap: nowrap;
+ align-items: center;
+ justify-content: center;
+ gap: 14px;
+ text-align: left;
+}
+
+:is(.salon-page, .service-page, .review-page) .page-header :is(h1, h2) {
+ flex: 0 1 auto;
+ min-width: 0;
+ max-width: 42%;
+ margin: 0;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+}
+
+:is(.salon-page, .service-page, .review-page) .page-header p {
+ flex: 1 1 auto;
+ min-width: 0;
+ margin: 0;
+ padding-left: 14px;
+ border-left: 1px solid var(--gold-border);
+ overflow: hidden;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+}
+
+:is(.salon-search-form, .designer-search-form, .service-search-form, .review-filter, .review-form) select {
+ appearance: none;
+ background-image: linear-gradient(45deg, transparent 50%, #8f7b57 50%),
+ linear-gradient(135deg, #8f7b57 50%, transparent 50%);
+ background-position: calc(100% - 19px) calc(50% - 2px),
+ calc(100% - 13px) calc(50% - 2px);
+ background-size: 6px 6px, 6px 6px;
+ background-repeat: no-repeat;
+ padding-right: 40px;
+ cursor: pointer;
+}
+
+/* Catalog controls share salon typography and decoration. */
+:is(.salon-page, .designer-page, .service-page, .review-page) {
+ --catalog-control-height: 48px;
+ --catalog-control-font-size: 0.95rem;
+ --catalog-control-radius: 14px;
+ --catalog-sort-font-size: 0.91rem;
+ --catalog-action-stack-gap: 18px;
+ --catalog-form-gap: clamp(10px, 0.35vw + 0.55vh, 14px);
+ --catalog-form-padding-block: clamp(16px, 0.8vw + 0.95vh, 22px);
+ --catalog-form-padding-inline: clamp(16px, 1.05vw + 1vh, 24px);
+ --catalog-primary-columns: minmax(182px, 1.28fr) minmax(136px, 0.92fr) minmax(258px, 1.88fr) minmax(126px, 0.78fr) minmax(148px, 1fr);
+}
+
+/* Keep the input group centered in the space left by the actions, with a safe inset. */
+:is(.designer-list-page, .service-list-page) .catalog-form-layout__inputs {
+ container: filter-inputs / inline-size;
+ padding-inline: 16px;
+}
+
+.designer-search-form,
+.designer-ai-panel,
+.service-search-form,
+.review-filter,
+.review-form {
+ padding: var(--catalog-form-padding-block) var(--catalog-form-padding-inline);
+}
+
+.catalog-form-layout {
+ display: grid;
+ grid-template-columns: minmax(0, 1fr) 260px;
+ align-items: stretch;
+ gap: 24px;
+ min-width: 0;
+ width: 100%;
+}
+
+.catalog-form-layout__inputs {
+ display: flex;
+ flex-direction: column;
+ justify-content: center;
+ gap: 12px;
+ min-width: 0;
+ min-height: 128px;
+ width: 100%;
+}
+
+.catalog-form-layout__fields {
+ display: grid;
+ grid-template-columns: minmax(0, 1fr);
+ align-items: center;
+ gap: 16px;
+ min-width: 0;
+ width: 100%;
+ max-width: 420px;
+ margin-inline: auto;
+}
+
+.catalog-form-layout__text-fields {
+ display: grid;
+ grid-template-columns: minmax(0, 1fr);
+ gap: 10px;
+ min-width: 0;
+}
+
+.catalog-form-layout__ranges {
+ width: 100%;
+ max-width: 100%;
+ justify-self: center;
+}
+
+.catalog-form-layout__actions {
+ display: flex;
+ flex-direction: column;
+ align-items: flex-end;
+ justify-content: space-between;
+ gap: var(--catalog-action-stack-gap);
+ width: 100%;
+ min-width: 0;
+}
+
+.catalog-form-layout__reset {
+ display: flex;
+ justify-content: flex-end;
+ width: 168px;
+ max-width: 100%;
+ margin-top: 0;
+}
+
+.catalog-form-layout__reset .catalog-search-reset {
+ width: 168px;
+ max-width: 100%;
+}
+
+.catalog-form-layout__secondary {
+ display: flex;
+ justify-content: flex-end;
+ min-width: 0;
+ width: 100%;
+}
+
+@media (max-width: 1199px) {
+ :is(.salon-page, .designer-page, .service-page, .review-page) {
+  --catalog-action-stack-gap: 132px;
+ }
+}
+
+/* Let each listing's content determine its height instead of the viewport action gap. */
+.designer-list-page,
+.service-list-page {
+ --catalog-action-stack-gap: 18px;
+}
+
+@container filter-inputs (min-width: 566px) {
+ .catalog-form-layout__fields {
+  grid-template-columns: minmax(200px, 4fr) minmax(346px, 7fr);
+  max-width: 680px;
+  gap: 20px;
+ }
+}
+
+@media (min-width: 769px) and (max-width: 1199px) {
+ .catalog-form-layout {
+  gap: 20px;
+ }
+
+}
+
+@media (max-width: 768px) {
+ .catalog-form-layout {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "reset" "inputs" "secondary";
+  gap: 12px;
+ }
+
+ .catalog-form-layout__inputs {
+  grid-area: inputs;
+ }
+
+ :is(.designer-list-page, .service-list-page) .catalog-form-layout__inputs {
+  padding-inline: 0;
+ }
+
+ .catalog-form-layout__actions {
+  display: contents;
+ }
+
+ .catalog-form-layout__reset {
+  grid-area: reset;
+  justify-self: end;
+ }
+
+ .catalog-form-layout__secondary {
+  grid-area: secondary;
+  justify-self: end;
+  width: min(100%, 260px);
+ }
+}
+
+:is(.salon-page, .designer-page, .service-page, .review-page) .catalog-hero {
+ display: flex;
+ flex: 1 1 auto;
+ flex-wrap: nowrap;
+ align-items: center;
+ justify-content: center;
+ gap: 12px;
+ min-width: 0;
+ max-width: min(1120px, 100%);
+ text-align: left;
+ white-space: nowrap;
+}
+
+:is(.salon-page, .designer-page, .service-page, .review-page) .catalog-hero__eyebrow {
+ flex: 0 0 auto;
+ margin: 0;
+ padding: 6px 10px;
+ border: 1px solid var(--gold-border);
+ border-radius: var(--radius-full);
+ background: #fffaf0;
+}
+
+:is(.salon-page, .designer-page, .service-page, .review-page) .catalog-hero > :is(h1, .catalog-hero__title) {
+ flex: 0 1 auto;
+ min-width: 0;
+ max-width: 42%;
+ margin: 0;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+}
+
+:is(.salon-page, .designer-page, .service-page, .review-page) .catalog-hero > p:last-child {
+ flex: 1 1 auto;
+ min-width: 0;
+ max-width: none;
+ margin: 0;
+ padding-left: 14px;
+ border-left: 1px solid var(--gold-border);
+ overflow: hidden;
+ color: #7b6e56;
+ line-height: 1.55;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+}
+
+.salon-search-map-shell,
+.salon-search-form,
+.designer-search-form,
+.designer-ai-panel,
+.service-search-form,
+.review-filter,
+.review-form {
+ background: radial-gradient(circle at top left, rgba(201, 168, 76, 0.14), transparent 34%),
+ linear-gradient(180deg, #fffdf8 0%, #ffffff 100%);
+ border: 1px solid var(--gold-border);
+ border-radius: var(--radius-lg);
+ box-shadow: var(--shadow-sm);
+}
+
+.designer-ai-panel {
+ background: radial-gradient(circle at top left, rgba(201, 168, 76, 0.18), transparent 30%),
+ linear-gradient(135deg, #fffaf0 0%, #ffffff 58%, #fbf7ec 100%);
+}
+
+:is(.salon-search-form, .designer-search-form, .designer-ai-inline-form, .service-search-form, .review-filter, .review-form)
+ :where(input:not([type='hidden']):not([type='range']):not([type='checkbox']), select, textarea) {
+ width: 100%;
+ min-width: 0;
+ min-height: var(--catalog-control-height);
+ padding: 0 16px;
+ border: 1px solid var(--border-dark);
+ border-radius: var(--catalog-control-radius);
+ background-color: #fffdfa;
+ color: var(--text-main);
+ font-family: inherit;
+ font-size: var(--catalog-control-font-size);
+ line-height: 1.2;
+ transition: var(--transition);
+}
+
+:is(.salon-search-form, .designer-search-form, .service-search-form, .review-filter, .review-form)
+ :where(input:not([type='hidden']):not([type='range']):not([type='checkbox']), select) {
+ height: var(--catalog-control-height);
+}
+
+:is(.salon-search-form, .designer-search-form, .designer-ai-inline-form, .service-search-form, .review-filter, .review-form)
+ :where(input:not([type='range']), textarea)::placeholder {
+ color: #9a907e;
+}
+
+:is(.salon-search-form, .designer-search-form, .designer-ai-inline-form, .service-search-form, .review-filter, .review-form)
+ :where(input:not([type='range']), select, textarea):focus {
+ outline: none;
+ border-color: var(--gold);
+ box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.14);
+ background-color: var(--white);
+}
+
+:is(.salon-results-sort, .designer-results-sort, .service-results-sort, .review-results-sort) {
+ width: 198px;
+ max-width: 100%;
+ margin-left: auto;
+}
+
+:is(.salon-results-sort__control, .designer-results-sort__control, .service-results-sort__control, .review-results-sort__control) {
+ width: 100%;
+ min-width: 0;
+ height: var(--catalog-control-height);
+ padding: 0 40px 0 14px;
+ border: 1px solid #dacbb0;
+ border-radius: var(--catalog-control-radius);
+ appearance: none;
+ background: linear-gradient(45deg, transparent 50%, #8f7b57 50%) calc(100% - 19px) calc(50% - 2px) / 6px 6px no-repeat,
+ linear-gradient(135deg, #8f7b57 50%, transparent 50%) calc(100% - 13px) calc(50% - 2px) / 6px 6px no-repeat, #fffdfa;
+ color: #5e4c2d;
+ font-family: inherit;
+ font-size: var(--catalog-sort-font-size);
+ font-weight: 600;
+ line-height: 1.2;
+}
+
+:is(.salon-results-sort__control, .designer-results-sort__control, .service-results-sort__control, .review-results-sort__control):hover {
+ border-color: #b79a62;
+}
+
+:is(.salon-results-sort__control, .designer-results-sort__control, .service-results-sort__control, .review-results-sort__control):focus-visible {
+ outline: 2px solid #a17e37;
+ outline-offset: 3px;
+}
+
+.salon-card,
+.designer-card,
+.service-list-page .service-card,
+.review-list-page .review-card {
+ background: var(--white);
+ border: 1px solid var(--border);
+ border-radius: var(--radius-lg);
+ box-shadow: var(--shadow-sm);
+ overflow: hidden;
+ transition: var(--transition-slow);
+}
+
+.salon-card:hover,
+.designer-card:hover,
+.service-list-page .service-card:hover,
+.review-list-page .review-card:hover {
+ transform: translateY(-4px);
+ border-color: var(--gold-border);
+ box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 768px) {
+ :is(.salon-page, .designer-page, .service-page, .review-page) {
+  --catalog-form-gap: 10px;
+  --catalog-form-padding-block: 16px;
+  --catalog-form-padding-inline: 16px;
+ }
+
+ :is(.salon-results-sort, .designer-results-sort, .service-results-sort, .review-results-sort) {
+  width: 100%;
+  margin-left: 0;
+ }
+}
+
+@media (max-width: 480px) {
+ .catalog-results-heading__row h2 {
+  font-size: 1.25rem;
+ }
 }
 
 /* =============================================
@@ -1040,17 +1443,25 @@ main > .container {
 }
 
 /* 외곽선 골드 버튼 */
-.btn-outline-gold {
+.btn-outline-gold,
+.review-like-button {
  background: transparent;
  color: var(--gold);
  border-color: var(--gold);
 }
 
-.btn-outline-gold:hover {
+.btn-outline-gold:hover,
+.review-like-button:hover:not(:disabled),
+.review-like-button.is-liked {
  background: var(--gold-soft);
 }
 
 /* 위험 버튼 */
+:is(.btn-outline-gold, .review-like-button):focus-visible {
+ outline: 2px solid #a17e37;
+ outline-offset: 3px;
+}
+
 .btn-danger {
  background: #c62828;
  color: var(--white);
@@ -1070,6 +1481,40 @@ main > .container {
 .btn-lg {
  padding: 12px 30px;
  font-size: 15px;
+}
+
+/* 검색 초기화 버튼은 살롱 목록의 디자인을 공유합니다. */
+.salon-search-form__submit,
+.catalog-search-reset {
+ min-width: 132px;
+ min-height: 48px;
+ height: 48px;
+ padding: 0 22px;
+ border-radius: 14px;
+ font-size: 0.95rem;
+ font-weight: 700;
+ white-space: nowrap;
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ text-align: center;
+ justify-self: stretch;
+ width: 100%;
+}
+
+.catalog-search-reset {
+ width: min(100%, 168px);
+ max-width: 100%;
+ flex-shrink: 0;
+ align-self: flex-end;
+}
+
+@media (max-width: 768px) {
+ .salon-search-form__submit,
+ .catalog-search-reset {
+  min-width: 0;
+  width: 100%;
+ }
 }
 
 
@@ -1341,6 +1786,123 @@ textarea.form-control {
    16. 페이지네이션
    ============================================= */
 
+.salon-pagination,
+.catalog-pagination {
+ display: inline-flex;
+ flex: 0 0 auto;
+ align-items: center;
+ gap: 6px;
+ padding: 4px;
+ border: 1px solid #e2d3b1;
+ border-radius: 999px;
+ background: linear-gradient(135deg, #fffdf8, #f8f0de);
+ box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px rgba(82, 62, 25, 0.04);
+ white-space: nowrap;
+}
+
+.catalog-pagination {
+ max-width: 100%;
+}
+
+.salon-pagination__button,
+.catalog-pagination__button {
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ gap: 4px;
+ min-width: 56px;
+ min-height: 30px;
+ padding: 5px 9px;
+ border-radius: 999px;
+ color: #75603a;
+ font-size: 0.76rem;
+ font-weight: 700;
+ line-height: 1;
+}
+
+.salon-pagination__button:not(.is-disabled):hover,
+.catalog-pagination__button:not(.is-disabled):hover {
+ color: #4f3b1b;
+ background: #f3e4b9;
+}
+
+.salon-pagination__button:focus-visible,
+.catalog-pagination__button:focus-visible {
+ outline: 2px solid var(--gold);
+ outline-offset: 2px;
+}
+
+.salon-pagination__button.is-disabled,
+.catalog-pagination__button.is-disabled {
+ color: #b9ac91;
+ cursor: default;
+}
+
+.salon-pagination__status,
+.catalog-pagination__status {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ color: #6f5a35;
+ font-size: 0.78rem;
+ font-weight: 600;
+ font-variant-numeric: tabular-nums;
+}
+
+.salon-pagination__current,
+.catalog-pagination__current {
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ min-width: 28px;
+ height: 28px;
+ padding: 0 7px;
+ border: 1px solid #e2cc8a;
+ border-radius: 50px;
+ background: linear-gradient(135deg, #f3df9b, #fff3cc);
+ color: #5d471d;
+ font-weight: 800;
+}
+
+.salon-pagination__divider,
+.catalog-pagination__divider {
+ color: #baaa87;
+}
+
+.salon-pagination__caption,
+.catalog-pagination__caption {
+ margin-left: 1px;
+ color: #958362;
+ font-size: 0.72rem;
+}
+
+@media (max-width: 480px) {
+ .salon-pagination,
+ .catalog-pagination {
+  gap: 4px;
+  padding: 3px;
+ }
+
+ .salon-pagination__button,
+ .catalog-pagination__button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 5px;
+ }
+
+ .salon-pagination__button-label,
+ .salon-pagination__caption,
+ .catalog-pagination__button-label,
+ .catalog-pagination__caption {
+  display: none;
+ }
+
+ .salon-pagination__status,
+ .catalog-pagination__status {
+  gap: 4px;
+ }
+}
+
 .pagination {
  display: flex;
  align-items: center;
@@ -1520,10 +2082,25 @@ textarea.form-control {
    19. 푸터
    ============================================= */
 
+/* 짧은 본문은 남은 화면 높이를 채우고, 긴 본문은 footer 앞에서 자연스럽게 이어집니다. */
+body:has(> .site-footer) {
+ display: flex;
+ flex-direction: column;
+ min-height: 100vh;
+ min-height: 100dvh;
+}
+
+body:has(> .site-footer) > .page-container {
+ flex: 1 0 auto;
+ min-width: 0;
+ width: 100%;
+}
+
 .site-footer {
+ flex-shrink: 0;
+ margin-top: var(--spacing-xl);
  background: var(--primary);
  color: rgba(255, 255, 255, 0.85);
- margin-top: var(--spacing-xl);
 }
 
 /* 골드 상단 강조 라인 */
