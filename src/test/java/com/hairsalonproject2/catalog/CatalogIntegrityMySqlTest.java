@@ -3,6 +3,7 @@ package com.hairsalonproject2.catalog;
 import com.hairsalonproject2.common.catalog.CatalogConflictException;
 import com.hairsalonproject2.common.catalog.CatalogIntegrityService;
 import com.hairsalonproject2.common.constant.MemberRole;
+import com.hairsalonproject2.common.constant.PaymentMethod;
 import com.hairsalonproject2.common.constant.ReservationStatus;
 import com.hairsalonproject2.designer.dto.request.DesignerUpdateRequest;
 import com.hairsalonproject2.designer.entity.Designer;
@@ -12,6 +13,11 @@ import com.hairsalonproject2.designer.service.DesignerQueryService;
 import com.hairsalonproject2.member.entity.Member;
 import com.hairsalonproject2.member.service.MemberService;
 import com.hairsalonproject2.common.exception.BusinessException;
+import com.hairsalonproject2.reservation.dto.ReservationStatusUpdateRequest;
+import com.hairsalonproject2.reservation.dto.ReservationUpdateRequest;
+import com.hairsalonproject2.reservation.entity.Reservation;
+import com.hairsalonproject2.reservation.entity.ReservationSlot;
+import com.hairsalonproject2.reservation.service.ReservationService;
 import com.hairsalonproject2.salon.entity.Salon;
 import com.hairsalonproject2.salon.entity.SalonLike;
 import com.hairsalonproject2.salon.service.SalonQueryService;
@@ -23,7 +29,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +50,78 @@ class CatalogIntegrityMySqlTest extends CatalogMySqlTestSupport {
  @Autowired DesignerRepository designerRepository;
  @Autowired SalonServiceRepository serviceRepository;
  @Autowired MemberService members;
+ @Autowired ReservationService reservations;
+
+ enum ReservationSlotChange { COMPLETE, SAME_TIME, MOVE_TIME }
+
+ @ParameterizedTest
+ @EnumSource(ReservationSlotChange.class)
+ void reservationChangesKeepOneSlotWhenTheManagedCollectionWasAlreadyInitialized(ReservationSlotChange change) {
+  Fixture fixture = fixture();
+  int reservationId = reservationWithSlot(fixture, LocalTime.of(10, 0));
+  LocalTime targetTime = change == ReservationSlotChange.MOVE_TIME ? LocalTime.of(11, 0) : LocalTime.of(10, 0);
+
+  tx(em -> {
+   Reservation managed = em.find(Reservation.class, reservationId);
+   assertThat(managed.getReservationSlots()).hasSize(1);
+   if (change == ReservationSlotChange.COMPLETE) {
+    var request = new ReservationStatusUpdateRequest();
+    ReflectionTestUtils.setField(request, "status", ReservationStatus.COMPLETED);
+    assertThat(reservations.updateReservationStatus(reservationId, request).getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+   } else {
+    assertThat(reservations.updateReservation(reservationId, reservationUpdate(fixture, targetTime)).getTotalPrice()).isEqualTo(25000);
+   }
+   assertThat(managed.getReservationSlots()).singleElement().satisfies(slot -> assertThat(slot.getSlotTime()).isEqualTo(targetTime));
+   return null;
+  });
+
+  assertThat(jdbc.queryForObject("select count(*) from reservation_slot where reservation_id = ?", Integer.class, reservationId)).isOne();
+  assertThat(jdbc.queryForObject("select slot_time from reservation_slot where reservation_id = ?", java.sql.Time.class, reservationId).toLocalTime()).isEqualTo(targetTime);
+  assertThat(jdbc.queryForObject("select reservation_time from reservation where reservation_id = ?", java.sql.Time.class, reservationId).toLocalTime()).isEqualTo(targetTime);
+  assertThat(jdbc.queryForObject("select status from reservation where reservation_id = ?", String.class, reservationId))
+    .isEqualTo(change == ReservationSlotChange.COMPLETE ? "COMPLETED" : "RESERVED");
+ }
+
+ @Test
+ void conflictingReservationUpdateKeepsBothExistingSlotsAndOriginalReservationDetails() {
+  Fixture fixture = fixture();
+  int first = reservationWithSlot(fixture, LocalTime.of(10, 0));
+  int second = reservationWithSlot(fixture, LocalTime.of(11, 0));
+
+  assertThatThrownBy(() -> tx(em -> {
+   assertThat(em.find(Reservation.class, first).getReservationSlots()).hasSize(1);
+   return reservations.updateReservation(first, reservationUpdate(fixture, LocalTime.of(11, 0)));
+  })).isInstanceOf(IllegalArgumentException.class).hasMessage("이미 예약된 시간입니다.");
+
+  assertThat(jdbc.queryForObject("select count(*) from reservation_slot", Integer.class)).isEqualTo(2);
+  assertThat(jdbc.queryForObject("select slot_time from reservation_slot where reservation_id = ?", java.sql.Time.class, first).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
+  assertThat(jdbc.queryForObject("select slot_time from reservation_slot where reservation_id = ?", java.sql.Time.class, second).toLocalTime()).isEqualTo(LocalTime.of(11, 0));
+  assertThat(jdbc.queryForObject("select total_price from reservation where reservation_id = ?", Integer.class, first)).isEqualTo(20000);
+  assertThat(jdbc.queryForObject("select reservation_time from reservation where reservation_id = ?", java.sql.Time.class, first).toLocalTime()).isEqualTo(LocalTime.of(10, 0));
+ }
+
+ private int reservationWithSlot(Fixture fixture, LocalTime time) {
+  return tx(em -> {
+   Reservation reservation = reservation(fixture, ReservationStatus.RESERVED);
+   reservation.updateReservation(reservation.getDesigner(), reservation.getSalonService(), reservation.getReservationDate(), time, reservation.getTotalPrice(), reservation.getPaymentMethod());
+   ReservationSlot slot = ReservationSlot.builder().reservation(reservation).designer(reservation.getDesigner())
+     .reservationDate(reservation.getReservationDate()).slotTime(time).build();
+   reservation.addReservationSlot(slot);
+   em.persist(slot);
+   return reservation.getReservationId();
+  });
+ }
+
+ private static ReservationUpdateRequest reservationUpdate(Fixture fixture, LocalTime time) {
+  var request = new ReservationUpdateRequest();
+  ReflectionTestUtils.setField(request, "designerId", fixture.designerId());
+  ReflectionTestUtils.setField(request, "salonServiceId", fixture.serviceId());
+  ReflectionTestUtils.setField(request, "reservationDate", LocalDate.now().plusDays(10));
+  ReflectionTestUtils.setField(request, "reservationTime", time);
+  ReflectionTestUtils.setField(request, "totalPrice", 25000);
+  ReflectionTestUtils.setField(request, "paymentMethod", PaymentMethod.CARD);
+  return request;
+ }
 
  @ParameterizedTest
  @EnumSource(ReservationStatus.class)

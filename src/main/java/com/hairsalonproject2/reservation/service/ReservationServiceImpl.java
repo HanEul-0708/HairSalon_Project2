@@ -164,7 +164,9 @@ public class ReservationServiceImpl implements ReservationService {
  }
 
  private void ensureReservationSlot(Reservation reservation) {
-  reservationSlotRepository.deleteByReservation_ReservationId(reservation.getReservationId());
+  reservation.getReservationSlots().clear();
+  // Remove managed orphans before the IDENTITY insert can reuse their unique slot key.
+  reservationSlotRepository.flush();
   saveReservationSlot(reservation);
  }
 

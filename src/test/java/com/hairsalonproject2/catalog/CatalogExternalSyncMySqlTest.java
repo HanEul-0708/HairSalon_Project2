@@ -123,7 +123,8 @@ class CatalogExternalSyncMySqlTest extends CatalogMySqlTestSupport {
  @Test
  void aiNetworkCallHappensAfterCandidateTransactionEndsAndSuspendsCallerTransaction() {
   Fixture fixture = fixture();
-  when(aiClient.recommend(eq("커트"), anyList(), eq(3))).thenAnswer(invocation -> {
+  // The request asks for three, but this fixture has only one eligible candidate.
+  when(aiClient.recommend(eq("커트"), anyList(), eq(1))).thenAnswer(invocation -> {
    assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
    List<DesignerAiCandidatePrompt> candidates = invocation.getArgument(1);
    assertThat(candidates).extracting(DesignerAiCandidatePrompt::designerId).containsExactly(fixture.designerId());
@@ -140,7 +141,7 @@ class CatalogExternalSyncMySqlTest extends CatalogMySqlTestSupport {
 
   assertThat(result.getSource()).isEqualTo("LOCAL_RULES");
   assertThat(result.getRecommendations()).extracting(item -> item.getDesignerId()).containsExactly(fixture.designerId());
-  verify(aiClient).recommend(eq("커트"), anyList(), eq(3));
+  verify(aiClient).recommend(eq("커트"), anyList(), eq(1));
   verifyNoInteractions(kakao);
  }
 
